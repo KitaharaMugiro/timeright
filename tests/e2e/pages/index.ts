@@ -11,6 +11,7 @@ export { SubscribePage } from './SubscribePage';
 export { DashboardPage } from './DashboardPage';
 export { SubscriptionSettingsPage } from './SubscriptionSettingsPage';
 export { EventEntryPage } from './EventEntryPage';
+export { EntrySuccessPage } from './EntrySuccessPage';
 export { InvitePage } from './InvitePage';
 export { ReviewPage } from './ReviewPage';
 export { AdminReviewsPage } from './AdminReviewsPage';

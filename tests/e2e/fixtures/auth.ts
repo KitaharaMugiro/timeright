@@ -308,3 +308,81 @@ export async function mockStripeCheckout(
     }
   });
 }
+
+/**
+ * Helper to mock Stripe checkout with event-specific success URL
+ * Used for testing the payment timing change feature
+ */
+export async function mockStripeCheckoutForEvent(
+  page: Page,
+  eventId: string,
+  options: { success?: boolean } = {}
+): Promise<void> {
+  const { success = true } = options;
+
+  await page.route('**/api/stripe/create-checkout', async (route) => {
+    if (success) {
+      const request = route.request();
+      const postData = request.postDataJSON();
+      const targetEventId = postData?.event_id || eventId;
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          url: `http://localhost:3000/events/${targetEventId}/entry/success`,
+        }),
+      });
+    } else {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Failed to create checkout session' }),
+      });
+    }
+  });
+}
+
+/**
+ * Helper to mock event entry API
+ * Used for testing subscribed user entry flow
+ */
+export async function mockEventEntry(
+  page: Page,
+  options: {
+    success?: boolean;
+    inviteToken?: string;
+    participationId?: string;
+  } = {}
+): Promise<void> {
+  const {
+    success = true,
+    inviteToken,
+    participationId = 'mock-participation-id',
+  } = options;
+
+  await page.route('**/api/events/entry', async (route) => {
+    if (success) {
+      const response: Record<string, unknown> = {
+        success: true,
+        participation_id: participationId,
+      };
+
+      if (inviteToken) {
+        response.invite_token = inviteToken;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(response),
+      });
+    } else {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Failed to create entry' }),
+      });
+    }
+  });
+}

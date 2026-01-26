@@ -68,7 +68,8 @@ export class OnboardingPage {
     this.personalityTitle = page.locator('h2');
     this.personalityDescription = page.locator('p.text-neutral-600').first();
     this.matchingInfoBox = page.locator('div', { hasText: '相性の良いメンバー' });
-    this.subscribeButton = page.locator('button', { hasText: /次へ（お支払い設定）|処理中/ });
+    // Updated: After payment timing change, this button now says "始める" and redirects to /dashboard
+    this.subscribeButton = page.locator('button', { hasText: /始める|処理中/ });
   }
 
   /**
