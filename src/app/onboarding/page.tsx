@@ -11,6 +11,7 @@ import {
   BlurFade,
   Particles,
 } from '@/components/ui/magicui';
+import { BirthdatePicker } from '@/components/ui/birthdate-picker';
 import type { PersonalityType, Gender } from '@/types/database';
 import { ArrowRight, Sparkles, User, Briefcase, Calendar, Users2 } from 'lucide-react';
 
@@ -310,12 +311,10 @@ export default function OnboardingPage() {
                         <Calendar className="w-4 h-4 inline mr-1" />
                         生年月日
                       </label>
-                      <input
-                        type="date"
+                      <BirthdatePicker
                         value={profile.birth_date}
-                        onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
+                        onChange={(value) => setProfile({ ...profile, birth_date: value })}
                         required
-                        className="w-full px-4 py-3 rounded-xl border border-neutral-200 focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20 outline-none transition-all"
                       />
                     </div>
 
