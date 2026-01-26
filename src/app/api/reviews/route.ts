@@ -1,0 +1,126 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createServiceClient } from '@/lib/supabase/server';
+import { isReviewAccessible } from '@/lib/utils';
+import type { Match, Event } from '@/types/database';
+
+interface ReviewRequest {
+  match_id: string;
+  target_user_id: string;
+  rating: number;
+  comment: string | null;
+  block_flag: boolean;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const supabase = await createServiceClient();
+
+    const { match_id, target_user_id, rating, comment, block_flag }: ReviewRequest =
+      await request.json();
+
+    // Validate rating
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return NextResponse.json(
+        { error: 'Rating must be an integer between 1 and 5' },
+        { status: 400 }
+      );
+    }
+
+    // Check match exists and user is part of it
+    const { data: matchData } = await supabase
+      .from('matches')
+      .select('table_members, events!inner(event_date)')
+      .eq('id', match_id)
+      .single();
+
+    const match = matchData as (Pick<Match, 'table_members'> & { events: Pick<Event, 'event_date'> }) | null;
+    if (!match) {
+      return NextResponse.json(
+        { error: 'Match not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if 2 hours have passed since event start
+    if (!isReviewAccessible(match.events.event_date)) {
+      return NextResponse.json(
+        { error: 'Reviews are not yet available. Please wait until 2 hours after the event starts.' },
+        { status: 403 }
+      );
+    }
+
+    if (!match.table_members.includes(userId)) {
+      return NextResponse.json(
+        { error: 'You are not part of this match' },
+        { status: 403 }
+      );
+    }
+
+    if (!match.table_members.includes(target_user_id)) {
+      return NextResponse.json(
+        { error: 'Target user is not part of this match' },
+        { status: 400 }
+      );
+    }
+
+    if (userId === target_user_id) {
+      return NextResponse.json(
+        { error: 'Cannot review yourself' },
+        { status: 400 }
+      );
+    }
+
+    // Check for existing review
+    const { data: existingReview } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('reviewer_id', userId)
+      .eq('target_user_id', target_user_id)
+      .eq('match_id', match_id)
+      .single();
+
+    if (existingReview) {
+      return NextResponse.json(
+        { error: 'Already reviewed this user for this match' },
+        { status: 400 }
+      );
+    }
+
+    // Create review
+    const { error: insertError } = await (supabase.from('reviews') as any).insert({
+      reviewer_id: userId,
+      target_user_id,
+      match_id,
+      rating,
+      comment,
+      block_flag,
+    });
+
+    if (insertError) {
+      console.error('Insert review error:', insertError);
+      return NextResponse.json(
+        { error: 'Failed to create review' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Review error:', err);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
