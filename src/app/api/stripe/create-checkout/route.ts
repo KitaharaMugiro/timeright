@@ -1,11 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/server';
-import type { User } from '@/types/database';
+import type { User, EntryType, ParticipationMood } from '@/types/database';
 import Stripe from 'stripe';
 
-export async function POST() {
+interface CheckoutRequest {
+  event_id?: string;
+  entry_type?: EntryType;
+  mood?: ParticipationMood;
+  mood_text?: string | null;
+}
+
+export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const userId = cookieStore.get('user_id')?.value;
@@ -32,9 +39,34 @@ export async function POST() {
       );
     }
 
-    // Create checkout session without pre-filling email
-    // User will enter their email in the checkout form
-    // Stripe customer will be created/linked via webhook after successful payment
+    // Parse request body (optional event info)
+    const body: CheckoutRequest = await request.json().catch(() => ({}));
+
+    // Build metadata
+    const metadata: Record<string, string> = {
+      user_id: userId,
+    };
+
+    // Add event info to metadata if provided
+    if (body.event_id) {
+      metadata.event_id = body.event_id;
+      metadata.entry_type = body.entry_type || 'solo';
+      metadata.mood = body.mood || 'lively';
+      if (body.mood_text) {
+        metadata.mood_text = body.mood_text;
+      }
+    }
+
+    // Set success/cancel URLs based on whether event info is provided
+    const successUrl = body.event_id
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/events/${body.event_id}/entry/success`
+      : `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`;
+
+    const cancelUrl = body.event_id
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/events/${body.event_id}/entry?canceled=true`
+      : `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/subscribe?canceled=true`;
+
+    // Create checkout session
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -44,11 +76,9 @@ export async function POST() {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/subscribe?canceled=true`,
-      metadata: {
-        user_id: userId,
-      },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata,
     };
 
     // Apply referral coupon if user was referred

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
   Users,
   Calendar,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
 import {
   ShimmerButton,
   MagicCard,
@@ -82,6 +84,35 @@ const features = [
 ];
 
 export default function LandingPage() {
+  const [nextEvent, setNextEvent] = useState<{ area: string; date: string } | null>(null);
+
+  useEffect(() => {
+    const fetchNextEvent = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('events')
+        .select('area, event_date')
+        .eq('status', 'open' as const)
+        .gte('event_date', new Date().toISOString())
+        .order('event_date', { ascending: true })
+        .limit(1)
+        .returns<{ area: string; event_date: string }[]>();
+
+      if (data && data.length > 0) {
+        const event = data[0];
+        const eventDate = new Date(event.event_date);
+        const month = eventDate.getMonth() + 1;
+        const day = eventDate.getDate();
+        const weekday = ['日', '月', '火', '水', '木', '金', '土'][eventDate.getDay()];
+        setNextEvent({
+          area: event.area,
+          date: `${month}/${day}(${weekday})`,
+        });
+      }
+    };
+    fetchNextEvent();
+  }, []);
+
   const handleLogin = async () => {
     window.location.href = '/api/auth/line';
   };
@@ -121,20 +152,22 @@ export default function LandingPage() {
 
         <div className="relative max-w-3xl mx-auto text-center">
           <BlurFade delay={0.1}>
-            <motion.div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-50 to-red-50 border border-orange-100 mb-6"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-              </span>
-              <span className="text-sm font-medium text-orange-700">
-                次回開催: 渋谷 2/8(土)
-              </span>
-            </motion.div>
+            {nextEvent && (
+              <motion.div
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-50 to-red-50 border border-orange-100 mb-6"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                </span>
+                <span className="text-sm font-medium text-orange-700">
+                  次回開催: {nextEvent.area} {nextEvent.date}
+                </span>
+              </motion.div>
+            )}
           </BlurFade>
 
           <BlurFade delay={0.2}>

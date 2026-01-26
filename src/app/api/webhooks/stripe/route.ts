@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/server';
+import { generateInviteToken } from '@/lib/utils';
+import { v4 as uuidv4 } from 'uuid';
 import Stripe from 'stripe';
-import type { User } from '@/types/database';
+import type { User, EntryType, ParticipationMood } from '@/types/database';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -41,6 +43,7 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.user_id;
         const customerId = session.customer as string;
+        const eventId = session.metadata?.event_id;
 
         if (userId && session.subscription) {
           // Fetch the subscription to get current_period_end
@@ -75,6 +78,38 @@ export async function POST(request: NextRequest) {
               })
               .eq('referred_user_id', userId)
               .eq('status', 'pending');
+          }
+
+          // イベント申込情報があれば自動で参加登録を作成
+          if (eventId) {
+            const entryType = (session.metadata?.entry_type || 'solo') as EntryType;
+            const mood = (session.metadata?.mood || 'lively') as ParticipationMood;
+            const moodText = session.metadata?.mood_text || null;
+
+            // 重複チェック
+            const { data: existingParticipation } = await supabase
+              .from('participations')
+              .select('id')
+              .eq('user_id', userId)
+              .eq('event_id', eventId)
+              .neq('status', 'canceled')
+              .single();
+
+            if (!existingParticipation) {
+              const groupId = uuidv4();
+              const inviteToken = generateInviteToken();
+
+              await (supabase.from('participations') as any).insert({
+                user_id: userId,
+                event_id: eventId,
+                group_id: groupId,
+                entry_type: entryType,
+                mood,
+                mood_text: moodText,
+                invite_token: inviteToken,
+                status: 'pending',
+              });
+            }
           }
         }
         break;

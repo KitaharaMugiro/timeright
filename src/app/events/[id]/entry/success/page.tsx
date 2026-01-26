@@ -1,23 +1,20 @@
 import { redirect, notFound } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
-import { isWithin48Hours } from '@/lib/utils';
-import { EntryClient } from './client';
-import type { Event } from '@/types/database';
+import type { Event, Participation } from '@/types/database';
+import { SuccessClient } from './client';
 
-interface EntryPageProps {
+interface SuccessPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function EntryPage({ params }: EntryPageProps) {
+export default async function EntrySuccessPage({ params }: SuccessPageProps) {
   const { id: eventId } = await params;
   const user = await getCurrentUser();
 
   if (!user) {
     redirect('/');
   }
-
-  // subscription_status をクライアントに渡す（決済はイベント申込時に行う）
 
   const supabase = await createServiceClient();
 
@@ -26,7 +23,6 @@ export default async function EntryPage({ params }: EntryPageProps) {
     .from('events')
     .select('*')
     .eq('id', eventId)
-    .eq('status', 'open')
     .single();
 
   const event = eventData as Event | null;
@@ -34,8 +30,8 @@ export default async function EntryPage({ params }: EntryPageProps) {
     notFound();
   }
 
-  // Check if user already entered
-  const { data: existingParticipation } = await supabase
+  // Get user's participation for this event
+  const { data: participationData } = await supabase
     .from('participations')
     .select('*')
     .eq('user_id', user.id)
@@ -43,15 +39,17 @@ export default async function EntryPage({ params }: EntryPageProps) {
     .neq('status', 'canceled')
     .single();
 
-  if (existingParticipation) {
+  const participation = participationData as Participation | null;
+
+  // If no participation found, redirect to dashboard
+  if (!participation) {
     redirect('/dashboard');
   }
 
-  // Check if entry is allowed (no entries within 48 hours)
-  const canEntry = !isWithin48Hours(event.event_date);
-  if (!canEntry) {
-    redirect('/dashboard');
-  }
-
-  return <EntryClient event={event} canInvite={canEntry} subscriptionStatus={user.subscription_status} />;
+  return (
+    <SuccessClient
+      event={event}
+      participation={participation}
+    />
+  );
 }

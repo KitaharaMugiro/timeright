@@ -13,6 +13,7 @@ import type { Event, ParticipationMood } from '@/types/database';
 interface EntryClientProps {
   event: Event;
   canInvite: boolean;
+  subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'none';
 }
 
 type EntryMode = 'select' | 'mood' | 'confirm' | 'invite';
@@ -39,7 +40,7 @@ const moodOptions: { value: ParticipationMood; label: string; description: strin
   },
 ];
 
-export function EntryClient({ event, canInvite }: EntryClientProps) {
+export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<EntryMode>('select');
   const [entryType, setEntryType] = useState<EntryType>('solo');
@@ -83,6 +84,32 @@ export function EntryClient({ event, canInvite }: EntryClientProps) {
   const handleConfirm = async () => {
     setLoading(true);
     try {
+      // 未契約の場合、Stripe Checkoutへリダイレクト
+      if (subscriptionStatus !== 'active') {
+        const response = await fetch('/api/stripe/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_id: event.id,
+            entry_type: entryType,
+            mood,
+            mood_text: mood === 'other' ? moodText : null,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create checkout');
+        }
+
+        if (data.url) {
+          window.location.href = data.url;
+        }
+        return;
+      }
+
+      // 契約済みの場合は通常の申込処理
       const response = await fetch('/api/events/entry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -329,13 +356,21 @@ export function EntryClient({ event, canInvite }: EntryClientProps) {
                 </p>
               </div>
 
+              {subscriptionStatus !== 'active' && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-orange-800">
+                    イベントに参加するには月額プラン（¥1,980/月）への登録が必要です。
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <Button
                   onClick={handleConfirm}
                   loading={loading}
                   className="w-full"
                 >
-                  参加を確定する
+                  {subscriptionStatus !== 'active' ? '決済して参加する' : '参加を確定する'}
                 </Button>
                 <Button
                   variant="ghost"

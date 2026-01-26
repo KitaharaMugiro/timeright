@@ -199,7 +199,7 @@ export default function OnboardingPage() {
         throw new Error('Failed to save profile');
       }
 
-      router.push('/onboarding/subscribe');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Onboarding error:', error);
       alert('エラーが発生しました。もう一度お試しください。');
@@ -493,7 +493,7 @@ export default function OnboardingPage() {
                         </span>
                       ) : (
                         <>
-                          次へ（お支払い設定）
+                          始める
                           <ArrowRight className="w-5 h-5 ml-2" />
                         </>
                       )}
