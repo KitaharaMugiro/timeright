@@ -4,13 +4,14 @@ import { Page, Locator, expect } from '@playwright/test';
  * Page Object Model for the Landing Page (/)
  *
  * The landing page is the main entry point for the unplanned app.
- * It displays:
- * - Header with logo and login button
- * - Hero section with CTA buttons
- * - How it works section (4 steps)
+ * Updated for the new dark mode design with:
+ * - Glassmorphism header and components
+ * - Hero section with AnimatedGradientText and particles
+ * - How it works section (4 steps with STEP X format)
  * - Features section (3 features)
+ * - Testimonials with Marquee
  * - FAQ section
- * - Footer CTA
+ * - Footer CTA with particles
  */
 export class LandingPage {
   readonly page: Page;
@@ -23,6 +24,7 @@ export class LandingPage {
   // Hero section
   readonly heroSection: Locator;
   readonly heroTitle: Locator;
+  readonly heroSubtitle: Locator;
   readonly heroCTAButton: Locator;
   readonly nextEventBadge: Locator;
 
@@ -34,6 +36,9 @@ export class LandingPage {
   readonly featuresSection: Locator;
   readonly featureCards: Locator;
 
+  // Testimonials section
+  readonly testimonialsSection: Locator;
+
   // FAQ section
   readonly faqSection: Locator;
   readonly faqItems: Locator;
@@ -43,40 +48,42 @@ export class LandingPage {
   readonly footerCTAButton: Locator;
   readonly termsLink: Locator;
   readonly privacyLink: Locator;
-  readonly contactLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
 
-    // Header
+    // Header - glassmorphism style
     this.header = page.locator('header');
     this.logo = page.locator('header a[href="/"]');
     this.loginButton = page.locator('header button', { hasText: /ログイン/ });
 
-    // Hero section
+    // Hero section - new design with "Life is unplanned"
     this.heroSection = page.locator('section').first();
     this.heroTitle = page.locator('h1');
+    this.heroSubtitle = page.locator('text=人生は、予測不能な「点」でできている。');
     this.heroCTAButton = page.locator('button', { hasText: /メンバーになる/ }).first();
     this.nextEventBadge = page.locator('text=次回開催');
 
-    // How it works section
-    this.howItWorksSection = page.locator('section', { hasText: 'How it works' });
-    this.steps = page.locator('text=/Step \\d/');
+    // How it works section - uses "STEP X" format now
+    this.howItWorksSection = page.locator('section', { hasText: 'HOW IT WORKS' });
+    this.steps = page.locator('text=/STEP \\d/');
 
     // Features section
     this.featuresSection = page.locator('section', { hasText: 'unplanned の特徴' });
     this.featureCards = this.featuresSection.locator('text=/安心の会員制|シンプルな料金|手間いらず/');
 
+    // Testimonials section
+    this.testimonialsSection = page.locator('section', { hasText: 'VOICES' });
+
     // FAQ section
     this.faqSection = page.locator('section', { hasText: 'よくある質問' });
     this.faqItems = page.locator('text=/安全性は大丈夫|料金はいくら|1人で参加|どんな人が参加/');
 
-    // Footer
+    // Footer - no contact link in new design
     this.footer = page.locator('footer');
     this.footerCTAButton = page.locator('section').last().locator('button', { hasText: /メンバーになる/ });
     this.termsLink = page.locator('a[href="/terms"]');
     this.privacyLink = page.locator('a[href="/privacy"]');
-    this.contactLink = page.locator('a[href="/contact"]');
   }
 
   /**
@@ -104,17 +111,20 @@ export class LandingPage {
   }
 
   /**
-   * Verify hero section content
+   * Verify hero section content - updated for new design
+   * Hero now shows "Life is unplanned" with animated gradient text
    */
   async verifyHeroSection() {
     await expect(this.heroTitle).toBeVisible();
-    await expect(this.heroTitle).toContainText(/目的のない出会い/);
+    // New hero title: "Life is unplanned."
+    await expect(this.heroTitle).toContainText(/unplanned/i);
     await expect(this.heroCTAButton).toBeVisible();
     await expect(this.nextEventBadge).toBeVisible();
   }
 
   /**
    * Verify how it works section has all 4 steps
+   * Updated for new design using "STEP X" format
    */
   async verifyHowItWorksSection() {
     await expect(this.howItWorksSection).toBeVisible();
@@ -141,13 +151,12 @@ export class LandingPage {
   }
 
   /**
-   * Verify footer content
+   * Verify footer content - updated for new design (no contact link)
    */
   async verifyFooter() {
     await expect(this.footer).toBeVisible();
     await expect(this.termsLink).toBeVisible();
     await expect(this.privacyLink).toBeVisible();
-    await expect(this.contactLink).toBeVisible();
   }
 
   /**

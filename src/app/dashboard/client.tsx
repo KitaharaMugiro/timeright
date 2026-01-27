@@ -2,15 +2,17 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { formatDate, formatTime, getAreaLabel, isReviewAccessible } from '@/lib/utils';
-import { Calendar, MapPin, Users, ExternalLink, LogOut, Star, ArrowRight, Sparkles, Settings, User as UserIcon } from 'lucide-react';
+import { formatDate, formatTime, getAreaLabel, isReviewAccessible, isWithin48Hours } from '@/lib/utils';
+import { Calendar, MapPin, LogOut, Star, ArrowRight, Settings, User as UserIcon, X, Ticket, Clock } from 'lucide-react';
+import { useState } from 'react';
 import {
   ShimmerButton,
-  MagicCard,
+  GlassCard,
   AnimatedGradientText,
   BlurFade,
   Particles,
 } from '@/components/ui/magicui';
+import { AvatarCircles } from '@/components/ui/avatar-circles';
 import { ReferralCard } from '@/components/ReferralCard';
 import type { User, Event, Participation, Match } from '@/types/database';
 
@@ -19,6 +21,7 @@ interface DashboardClientProps {
   events: Event[];
   participations: (Participation & { events: Event })[];
   matches: (Match & { events: Event })[];
+  participantsMap: Record<string, { avatar_url: string | null; job: string }>;
 }
 
 export function DashboardClient({
@@ -26,33 +29,65 @@ export function DashboardClient({
   events,
   participations,
   matches,
+  participantsMap,
 }: DashboardClientProps) {
-  const userParticipationEventIds = participations.map((p) => p.event_id);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [localParticipations, setLocalParticipations] = useState(participations);
+
+  const userParticipationEventIds = localParticipations.map((p) => p.event_id);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/';
   };
 
+  const handleCancel = async (participationId: string) => {
+    if (!confirm('エントリーをキャンセルしますか？')) {
+      return;
+    }
+
+    setCancelingId(participationId);
+    try {
+      const response = await fetch('/api/events/entry', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participation_id: participationId }),
+      });
+
+      if (response.ok) {
+        setLocalParticipations((prev) =>
+          prev.filter((p) => p.id !== participationId)
+        );
+      } else {
+        const data = await response.json();
+        alert(data.error || 'キャンセルに失敗しました');
+      }
+    } catch {
+      alert('キャンセルに失敗しました');
+    } finally {
+      setCancelingId(null);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50 relative overflow-hidden">
-      <Particles className="absolute inset-0 pointer-events-none" quantity={15} color="#FF6B6B" staticity={60} />
+    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
+      <Particles className="absolute inset-0 pointer-events-none" quantity={20} color="#f59e0b" staticity={70} />
 
       {/* Header */}
       <motion.header
-        className="bg-white/80 backdrop-blur-md border-b border-neutral-100 sticky top-0 z-50"
+        className="glass sticky top-0 z-50"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/dashboard" className="text-xl font-bold">
-            <AnimatedGradientText>unplanned</AnimatedGradientText>
+          <Link href="/dashboard" className="text-xl font-semibold text-white">
+            unplanned
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Link href="/profile">
               <motion.div
-                className="p-2 text-neutral-500 hover:text-neutral-700 transition-colors"
+                className="p-2 text-slate-400 hover:text-white transition-colors"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
@@ -61,7 +96,7 @@ export function DashboardClient({
             </Link>
             <Link href="/settings">
               <motion.div
-                className="p-2 text-neutral-500 hover:text-neutral-700 transition-colors"
+                className="p-2 text-slate-400 hover:text-white transition-colors"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
@@ -70,7 +105,7 @@ export function DashboardClient({
             </Link>
             <motion.button
               onClick={handleLogout}
-              className="p-2 text-neutral-500 hover:text-neutral-700 transition-colors"
+              className="p-2 text-slate-400 hover:text-white transition-colors"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
@@ -84,12 +119,13 @@ export function DashboardClient({
         {/* User greeting */}
         <BlurFade>
           <div className="mb-8">
-            <h1 className="text-2xl font-bold mb-2">
+            <p className="text-amber-500 text-sm font-medium tracking-wider mb-2">WELCOME BACK</p>
+            <h1 className="text-2xl font-serif text-white mb-2">
               こんにちは、
-              <AnimatedGradientText>{user.display_name}</AnimatedGradientText>
+              <AnimatedGradientText className="font-serif">{user.display_name}</AnimatedGradientText>
               さん
             </h1>
-            <p className="text-neutral-600">
+            <p className="text-slate-400">
               今週末のディナーに参加しませんか？
             </p>
           </div>
@@ -100,66 +136,83 @@ export function DashboardClient({
           <ReferralCard />
         </section>
 
-        {/* Confirmed matches */}
+        {/* Confirmed matches - Premium Ticket Style */}
         {matches.length > 0 && (
           <section className="mb-8">
             <BlurFade>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#FF6B6B]" />
-                確定したディナー
-              </h2>
+              <div className="flex items-center gap-2 mb-4">
+                <Ticket className="w-5 h-5 text-amber-500" />
+                <h2 className="text-lg font-semibold text-white">確定したディナー</h2>
+              </div>
             </BlurFade>
             <div className="space-y-4">
               {matches.map((match, index) => (
                 <BlurFade key={match.id} delay={index * 0.1}>
-                  <MagicCard
-                    className="border-[#FF6B6B]/20 bg-gradient-to-br from-orange-50 to-red-50"
-                    gradientColor="#FF6B6B"
-                    gradientOpacity={0.2}
-                  >
+                  <div className="ticket">
                     <div className="p-6">
+                      {/* Top section */}
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          <h3 className="font-semibold text-lg">
+                          <p className="text-amber-500 text-xs font-medium tracking-wider mb-1">
+                            DINNER TICKET
+                          </p>
+                          <h3 className="font-serif text-xl text-white">
                             {match.restaurant_name}
                           </h3>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-neutral-600">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              {formatDate(match.events.event_date)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              {getAreaLabel(match.events.area)}
-                            </span>
-                          </div>
                         </div>
                         {match.restaurant_url && (
                           <motion.a
                             href={match.restaurant_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-neutral-600 hover:text-[#FF6B6B] transition-colors"
+                            className="text-slate-400 hover:text-amber-500 transition-colors"
                             whileHover={{ scale: 1.1 }}
                           >
-                            <ExternalLink className="w-5 h-5" />
+                            <ArrowRight className="w-5 h-5" />
                           </motion.a>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-sm text-neutral-600">
-                        <Users className="w-4 h-4" />
-                        <span>{match.table_members.length}人で食事</span>
+                      {/* Date and location */}
+                      <div className="flex items-center gap-6 mb-4">
+                        <div className="flex items-center gap-2 text-slate-300">
+                          <Calendar className="w-4 h-4 text-amber-500/70" />
+                          <span className="text-sm">{formatDate(match.events.event_date)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-300">
+                          <MapPin className="w-4 h-4 text-amber-500/70" />
+                          <span className="text-sm">{getAreaLabel(match.events.area)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-300">
+                          <Clock className="w-4 h-4 text-amber-500/70" />
+                          <span className="text-sm">{formatTime(match.events.event_date)}</span>
+                        </div>
                       </div>
 
-                      <div className="mt-4 pt-4 border-t border-[#FF6B6B]/20 flex items-center justify-between">
-                        <p className="text-sm text-neutral-600">
-                          当日は {formatTime(match.events.event_date)} にお店へお越しください
-                        </p>
+                      {/* Divider with ticket punch effect */}
+                      <div className="ticket-divider my-4" />
+
+                      {/* Bottom section - participants */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <AvatarCircles
+                            avatarUrls={match.table_members
+                              .filter((id) => id !== user.id)
+                              .map((memberId) => ({
+                                imageUrl: participantsMap[memberId]?.avatar_url || '/default-avatar.png',
+                                job: participantsMap[memberId]?.job || '',
+                              }))}
+                            showJob
+                          />
+                          <span className="text-sm text-slate-400">
+                            他{match.table_members.length - 1}人と食事
+                          </span>
+                        </div>
+
                         {isReviewAccessible(match.events.event_date) && (
                           <Link href={`/reviews/${match.id}`} data-testid="review-link">
                             <motion.button
-                              className="flex items-center gap-1 px-4 py-2 bg-white rounded-full text-sm font-medium text-[#FF6B6B] border border-[#FF6B6B]/30 hover:bg-[#FF6B6B]/5 transition-colors"
+                              className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-amber-500 border border-amber-500/30 hover:bg-amber-500/10 transition-colors"
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                               data-testid="review-button"
@@ -171,7 +224,7 @@ export function DashboardClient({
                         )}
                       </div>
                     </div>
-                  </MagicCard>
+                  </div>
                 </BlurFade>
               ))}
             </div>
@@ -179,48 +232,67 @@ export function DashboardClient({
         )}
 
         {/* Pending participations */}
-        {participations.filter((p) => p.status === 'pending').length > 0 && (
+        {localParticipations.filter((p) => p.status === 'pending').length > 0 && (
           <section className="mb-8">
             <BlurFade>
-              <h2 className="text-lg font-semibold mb-4">エントリー中</h2>
+              <h2 className="text-lg font-semibold text-white mb-4">エントリー中</h2>
             </BlurFade>
             <div className="space-y-4">
-              {participations
+              {localParticipations
                 .filter((p) => p.status === 'pending')
-                .map((participation, index) => (
-                  <BlurFade key={participation.id} delay={index * 0.1}>
-                    <MagicCard gradientColor="#FF8E53" gradientOpacity={0.15}>
-                      <div className="p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="flex items-center gap-4 text-sm text-neutral-600">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
-                                {formatDate(participation.events.event_date)}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-4 h-4" />
-                                {getAreaLabel(participation.events.area)}
-                              </span>
+                .map((participation, index) => {
+                  const canCancel = !isWithin48Hours(participation.events.event_date);
+                  const isCanceling = cancelingId === participation.id;
+
+                  return (
+                    <BlurFade key={participation.id} delay={index * 0.1}>
+                      <GlassCard>
+                        <div className="p-5">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="flex items-center gap-4 text-sm text-slate-300">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4 text-amber-500/70" />
+                                  {formatDate(participation.events.event_date)}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-4 h-4 text-amber-500/70" />
+                                  {getAreaLabel(participation.events.area)}
+                                </span>
+                              </div>
+                              <p className="mt-2 text-sm font-medium text-slate-400">
+                                {participation.entry_type === 'pair'
+                                  ? 'ペアで参加'
+                                  : 'ソロで参加'}
+                              </p>
                             </div>
-                            <p className="mt-2 text-sm font-medium">
-                              {participation.entry_type === 'pair'
-                                ? 'ペアで参加'
-                                : 'ソロで参加'}
-                            </p>
+                            <div className="flex items-center gap-3">
+                              <motion.span
+                                className="text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 font-medium"
+                                animate={{ opacity: [1, 0.6, 1] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                              >
+                                マッチング待ち
+                              </motion.span>
+                              {canCancel && (
+                                <motion.button
+                                  onClick={() => handleCancel(participation.id)}
+                                  disabled={isCanceling}
+                                  className="p-2 text-slate-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  title="キャンセル"
+                                >
+                                  <X className="w-5 h-5" />
+                                </motion.button>
+                              )}
+                            </div>
                           </div>
-                          <motion.span
-                            className="text-sm px-3 py-1 rounded-full bg-amber-100 text-amber-700"
-                            animate={{ opacity: [1, 0.7, 1] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          >
-                            マッチング待ち
-                          </motion.span>
                         </div>
-                      </div>
-                    </MagicCard>
-                  </BlurFade>
-                ))}
+                      </GlassCard>
+                    </BlurFade>
+                  );
+                })}
             </div>
           </section>
         )}
@@ -228,16 +300,19 @@ export function DashboardClient({
         {/* Upcoming events */}
         <section>
           <BlurFade>
-            <h2 className="text-lg font-semibold mb-4">開催予定</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="w-5 h-5 text-amber-500" />
+              <h2 className="text-lg font-semibold text-white">開催予定</h2>
+            </div>
           </BlurFade>
           {events.length === 0 ? (
             <BlurFade>
-              <MagicCard gradientColor="#FF6B6B" gradientOpacity={0.1}>
-                <div className="p-8 text-center text-neutral-600">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
-                  <p>現在、予定されている開催はありません</p>
+              <GlassCard>
+                <div className="p-10 text-center">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 text-slate-600" />
+                  <p className="text-slate-500">現在、予定されている開催はありません</p>
                 </div>
-              </MagicCard>
+              </GlassCard>
             </BlurFade>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
@@ -246,40 +321,40 @@ export function DashboardClient({
 
                 return (
                   <BlurFade key={event.id} delay={index * 0.1}>
-                    <MagicCard gradientColor={isEntered ? '#10B981' : '#FF6B6B'}>
-                      <div className="p-6">
-                        <div className="flex items-center gap-4 mb-4 text-sm text-neutral-600">
+                    <GlassCard className={isEntered ? 'border-emerald-500/20' : ''}>
+                      <div className="p-5">
+                        <div className="flex items-center gap-4 mb-3 text-sm text-slate-300">
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
+                            <Calendar className="w-4 h-4 text-amber-500/70" />
                             {formatDate(event.event_date)}
                           </span>
                           <span className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
+                            <MapPin className="w-4 h-4 text-amber-500/70" />
                             {getAreaLabel(event.area)}
                           </span>
                         </div>
 
-                        <p className="text-sm text-neutral-600 mb-4">
+                        <p className="text-sm text-slate-400 mb-4">
                           {formatTime(event.event_date)}〜
                         </p>
 
                         {isEntered ? (
                           <motion.button
-                            className="w-full py-3 rounded-full bg-neutral-100 text-neutral-500 font-medium cursor-not-allowed"
+                            className="w-full py-3 rounded-xl bg-emerald-500/10 text-emerald-400 font-medium cursor-not-allowed border border-emerald-500/20"
                             disabled
                           >
                             エントリー済み
                           </motion.button>
                         ) : (
                           <Link href={`/events/${event.id}/entry`}>
-                            <ShimmerButton className="w-full">
+                            <ShimmerButton variant="primary" className="w-full">
                               参加する
                               <ArrowRight className="w-4 h-4 ml-2" />
                             </ShimmerButton>
                           </Link>
                         )}
                       </div>
-                    </MagicCard>
+                    </GlassCard>
                   </BlurFade>
                 );
               })}

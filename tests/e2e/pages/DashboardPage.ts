@@ -3,26 +3,43 @@ import { Page, Locator, expect } from '@playwright/test';
 /**
  * Page Object Model for the Dashboard Page (/dashboard)
  *
+ * Updated for the new dark mode design with:
+ * - Glassmorphism header and cards (GlassCard components)
+ * - Particles background
+ * - Amber accent colors
+ * - Premium ticket style for confirmed dinners
+ * - ShimmerButton for entry actions
+ * - AvatarCircles for participants
+ *
  * The dashboard shows:
- * - User profile info
+ * - User greeting with AnimatedGradientText
+ * - Referral card
+ * - Confirmed dinners (ticket style)
+ * - Pending participations
  * - Upcoming events
- * - User's participations
- * - Matches (if any)
  *
  * Note: This page requires authentication with an active subscription
  */
 export class DashboardPage {
   readonly page: Page;
 
-  // Page elements (these will be based on DashboardClient component)
+  // Page elements
   readonly pageContainer: Locator;
+  readonly header: Locator;
   readonly userGreeting: Locator;
+  readonly welcomeText: Locator;
   readonly eventsSection: Locator;
   readonly participationsSection: Locator;
   readonly matchesSection: Locator;
 
-  // Confirmed dinner section elements
+  // Header elements
+  readonly profileLink: Locator;
+  readonly settingsLink: Locator;
+  readonly logoutButton: Locator;
+
+  // Confirmed dinner section elements (ticket style)
   readonly confirmedDinnerSection: Locator;
+  readonly dinnerTickets: Locator;
   readonly restaurantName: Locator;
   readonly restaurantLink: Locator;
   readonly tableMembersCount: Locator;
@@ -34,40 +51,58 @@ export class DashboardPage {
   readonly pendingSection: Locator;
   readonly pendingStatus: Locator;
   readonly entryTypeLabel: Locator;
+  readonly cancelButton: Locator;
 
   // Event entry elements
   readonly eventCards: Locator;
   readonly entryButtons: Locator;
   readonly enteredBadge: Locator;
 
+  // Referral section
+  readonly referralCard: Locator;
+
   constructor(page: Page) {
     this.page = page;
 
-    // These locators are generic and may need adjustment based on actual DashboardClient implementation
+    // Main container
     this.pageContainer = page.locator('main');
-    this.userGreeting = page.locator('h1, h2').first();
-    this.eventsSection = page.locator('section, div').filter({ hasText: /イベント|開催/ });
-    this.participationsSection = page.locator('section, div').filter({ hasText: /参加|エントリー/ });
-    this.matchesSection = page.locator('section, div').filter({ hasText: /マッチ/ });
 
-    // Confirmed dinner section
+    // Header - glassmorphism style
+    this.header = page.locator('header');
+    this.profileLink = page.locator('a[href="/profile"]');
+    this.settingsLink = page.locator('a[href="/settings"]');
+    this.logoutButton = page.locator('button').filter({ has: page.locator('svg.lucide-log-out') });
+
+    // User greeting - "WELCOME BACK" + animated name
+    this.welcomeText = page.locator('text=WELCOME BACK');
+    this.userGreeting = page.locator('h1');
+    this.eventsSection = page.locator('section').filter({ hasText: '開催予定' });
+    this.participationsSection = page.locator('section').filter({ hasText: 'エントリー中' });
+    this.matchesSection = page.locator('section').filter({ hasText: '確定したディナー' });
+
+    // Confirmed dinner section - ticket style
     this.confirmedDinnerSection = page.locator('section').filter({ hasText: '確定したディナー' });
-    this.restaurantName = this.confirmedDinnerSection.locator('h3');
-    this.restaurantLink = this.confirmedDinnerSection.locator('a[href*="http"]');
-    this.tableMembersCount = this.confirmedDinnerSection.locator('text=/\\d+人で食事/');
-    this.eventDate = this.confirmedDinnerSection.locator('span').filter({ has: page.locator('svg') }).first();
-    this.eventArea = this.confirmedDinnerSection.locator('span').filter({ has: page.locator('svg') }).nth(1);
+    this.dinnerTickets = page.locator('.ticket');
+    this.restaurantName = this.confirmedDinnerSection.locator('h3.font-serif');
+    this.restaurantLink = this.confirmedDinnerSection.locator('a[target="_blank"]');
+    this.tableMembersCount = page.locator('text=/他\\d+人と食事/');
+    this.eventDate = this.confirmedDinnerSection.locator('span').filter({ has: page.locator('svg.lucide-calendar') });
+    this.eventArea = this.confirmedDinnerSection.locator('span').filter({ has: page.locator('svg.lucide-map-pin') });
     this.reviewButton = page.locator('[data-testid="review-button"]');
 
-    // Pending participation section
+    // Pending participation section - GlassCard style
     this.pendingSection = page.locator('section').filter({ hasText: 'エントリー中' });
     this.pendingStatus = page.locator('text=マッチング待ち');
-    this.entryTypeLabel = this.pendingSection.locator('text=/ペアで参加|ソロで参加/');
+    this.entryTypeLabel = page.locator('text=/ペアで参加|ソロで参加/');
+    this.cancelButton = page.locator('button').filter({ has: page.locator('svg.lucide-x') });
 
-    // Event cards
-    this.eventCards = page.locator('[class*="MagicCard"], [class*="card"]');
-    this.entryButtons = page.getByRole('link', { name: '参加する' });
-    this.enteredBadge = page.getByRole('button', { name: 'エントリー済み' });
+    // Event cards - GlassCard style
+    this.eventCards = page.locator('.glass-card, [class*="GlassCard"]');
+    this.entryButtons = page.locator('a', { hasText: '参加する' });
+    this.enteredBadge = page.locator('button', { hasText: 'エントリー済み' });
+
+    // Referral card
+    this.referralCard = page.locator('div').filter({ hasText: /友達を招待/ }).first();
   }
 
   /**

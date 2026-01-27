@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { generateInviteToken, isWithin48Hours } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
-import type { EntryType, User, Event, ParticipationMood } from '@/types/database';
+import type { EntryType, User, Event, ParticipationMood, Participation } from '@/types/database';
 
 interface EntryRequest {
   event_id: string;
@@ -112,6 +112,98 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error('Entry error:', err);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+interface CancelRequest {
+  participation_id: string;
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { participation_id }: CancelRequest = await request.json();
+
+    if (!participation_id) {
+      return NextResponse.json(
+        { error: 'participation_id is required' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = await createServiceClient();
+
+    // Get participation and verify ownership
+    const { data: participationData } = await supabase
+      .from('participations')
+      .select('*, events(*)')
+      .eq('id', participation_id)
+      .eq('user_id', userId)
+      .single();
+
+    const participation = participationData as (Participation & { events: Event }) | null;
+
+    if (!participation) {
+      return NextResponse.json(
+        { error: 'Participation not found' },
+        { status: 404 }
+      );
+    }
+
+    // Cannot cancel if already matched
+    if (participation.status === 'matched') {
+      return NextResponse.json(
+        { error: 'マッチング済みのためキャンセルできません' },
+        { status: 400 }
+      );
+    }
+
+    // Cannot cancel if already canceled
+    if (participation.status === 'canceled') {
+      return NextResponse.json(
+        { error: 'Already canceled' },
+        { status: 400 }
+      );
+    }
+
+    // Cannot cancel within 48 hours of event
+    if (isWithin48Hours(participation.events.event_date)) {
+      return NextResponse.json(
+        { error: '開催48時間前を過ぎているためキャンセルできません' },
+        { status: 400 }
+      );
+    }
+
+    // Update status to canceled
+    const { error: updateError } = await (supabase
+      .from('participations') as any)
+      .update({ status: 'canceled' })
+      .eq('id', participation_id);
+
+    if (updateError) {
+      console.error('Cancel error:', updateError);
+      return NextResponse.json(
+        { error: 'Failed to cancel participation' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Cancel error:', err);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

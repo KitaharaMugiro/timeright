@@ -49,7 +49,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
             イベント開始から2時間後にレビューできます。
           </p>
           <p className="text-sm text-neutral-500 mt-2">
-            レビュー可能時刻: {formatDate(reviewAccessTime)} {formatTime(reviewAccessTime)}
+            レビュー可能時刻: {formatDate(reviewAccessTime.toISOString())} {formatTime(reviewAccessTime.toISOString())}
           </p>
         </div>
       </div>

@@ -17,10 +17,11 @@ import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import {
   ShimmerButton,
-  MagicCard,
+  GlassCard,
   AnimatedGradientText,
   Particles,
   BlurFade,
+  Marquee,
 } from '@/components/ui/magicui';
 
 const steps = [
@@ -83,17 +84,53 @@ const features = [
   },
 ];
 
+const testimonials = [
+  {
+    name: 'ゆうこ',
+    age: 28,
+    body: '1人で参加するのは緊張したけど、同じ趣味の人と出会えて本当に楽しかった！今では月1で参加してます。',
+  },
+  {
+    name: 'けんた',
+    age: 32,
+    body: '仕事以外で新しい人と出会う機会がなかったので、すごく新鮮でした。マッチングの精度が高くて驚き。',
+  },
+  {
+    name: 'あやか',
+    age: 26,
+    body: '友達と2人で参加しました。初対面の人とも自然に話せる雰囲気で、また参加したいです！',
+  },
+  {
+    name: 'たくや',
+    age: 30,
+    body: 'お店選びも任せられるのがラク。仕事終わりにふらっと参加できるのが気に入ってます。',
+  },
+  {
+    name: 'みさき',
+    age: 29,
+    body: '性格診断で相性の良い人と同じグループになれるので、会話が弾みやすい！毎回新しい発見があります。',
+  },
+  {
+    name: 'しょうた',
+    age: 34,
+    body: '料金がシンプルでわかりやすいのがいい。変な勧誘もないし、純粋に楽しめる場所です。',
+  },
+];
+
 export default function LandingPage() {
   const [nextEvent, setNextEvent] = useState<{ area: string; date: string } | null>(null);
 
   useEffect(() => {
     const fetchNextEvent = async () => {
       const supabase = createClient();
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() + 2);
+      cutoffDate.setHours(0, 0, 0, 0);
       const { data } = await supabase
         .from('events')
         .select('area, event_date')
         .eq('status', 'open' as const)
-        .gte('event_date', new Date().toISOString())
+        .gte('event_date', cutoffDate.toISOString())
         .order('event_date', { ascending: true })
         .limit(1)
         .returns<{ area: string; event_date: string }[]>();
@@ -118,21 +155,21 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white overflow-hidden">
+    <div className="min-h-screen bg-slate-900 overflow-hidden">
       {/* Header */}
       <motion.header
-        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-100"
+        className="fixed top-0 left-0 right-0 z-50 glass"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold tracking-tight">
-            <AnimatedGradientText>unplanned</AnimatedGradientText>
+          <Link href="/" className="text-xl font-semibold tracking-tight text-white">
+            unplanned
           </Link>
           <motion.button
             onClick={handleLogin}
-            className="text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
+            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -141,29 +178,35 @@ export default function LandingPage() {
         </div>
       </motion.header>
 
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4">
+      {/* Hero Section - Cinematic */}
+      <section className="relative min-h-screen flex items-center justify-center px-4">
+        {/* Background gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-900" />
+
+        {/* Subtle ambient light effect */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[120px]" />
+
         <Particles
           className="absolute inset-0"
-          quantity={30}
-          color="#FF6B6B"
-          staticity={30}
+          quantity={40}
+          color="#f59e0b"
+          staticity={50}
         />
 
-        <div className="relative max-w-3xl mx-auto text-center">
+        <div className="relative max-w-3xl mx-auto text-center pt-20">
           <BlurFade delay={0.1}>
             {nextEvent && (
               <motion.div
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-50 to-red-50 border border-orange-100 mb-6"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
               >
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                 </span>
-                <span className="text-sm font-medium text-orange-700">
+                <span className="text-sm font-medium text-slate-300">
                   次回開催: {nextEvent.area} {nextEvent.date}
                 </span>
               </motion.div>
@@ -171,30 +214,41 @@ export default function LandingPage() {
           </BlurFade>
 
           <BlurFade delay={0.2}>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
-              目的のない出会いを、
-              <br />
-              <AnimatedGradientText className="text-4xl md:text-6xl font-bold">
-                友達と。
-              </AnimatedGradientText>
-            </h1>
-          </BlurFade>
-
-          <BlurFade delay={0.3}>
-            <p className="text-lg md:text-xl text-neutral-600 mb-10 max-w-xl mx-auto">
-              4〜6人のソーシャルディナーで、
-              <br className="md:hidden" />
-              新しい出会いを楽しむ。
+            <p className="text-amber-500 font-medium tracking-widest text-sm mb-4">
+              SOCIAL SERENDIPITY PLATFORM
             </p>
           </BlurFade>
 
+          <BlurFade delay={0.3}>
+            <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white leading-tight mb-6">
+              Life is{' '}
+              <AnimatedGradientText className="font-serif text-4xl md:text-6xl lg:text-7xl">
+                unplanned
+              </AnimatedGradientText>
+              .
+            </h1>
+          </BlurFade>
+
           <BlurFade delay={0.4}>
+            <p className="font-serif text-xl md:text-2xl text-slate-300 mb-4">
+              人生は、予測不能な「点」でできている。
+            </p>
+          </BlurFade>
+
+          <BlurFade delay={0.5}>
+            <p className="text-slate-400 mb-12 max-w-lg mx-auto">
+              4〜6人のソーシャルディナーで、
+              偶然の出会いを楽しむ。
+            </p>
+          </BlurFade>
+
+          <BlurFade delay={0.6}>
             <div className="flex flex-col items-center gap-4">
-              <ShimmerButton onClick={handleLogin} className="text-lg px-8 py-4">
+              <ShimmerButton onClick={handleLogin} variant="accent" className="text-lg px-8 py-4">
                 メンバーになる
                 <ArrowRight className="w-5 h-5 ml-2" />
               </ShimmerButton>
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-slate-500">
                 月額1,980円 ・ LINE でかんたん登録
               </p>
             </div>
@@ -203,50 +257,53 @@ export default function LandingPage() {
 
         {/* Scroll indicator */}
         <motion.div
-          className="flex justify-center pt-16"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2"
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         >
-          <ChevronDown className="w-6 h-6 text-neutral-400" />
+          <ChevronDown className="w-6 h-6 text-slate-500" />
         </motion.div>
       </section>
 
       {/* How it works */}
-      <section className="py-20 px-4 bg-gradient-to-b from-neutral-50 to-white">
+      <section className="py-24 px-4 bg-slate-900">
         <div className="max-w-4xl mx-auto">
           <BlurFade>
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-4">
-              How it works
-            </h2>
-            <p className="text-neutral-600 text-center mb-12">
+            <p className="text-amber-500 font-medium tracking-widest text-sm text-center mb-4">
+              HOW IT WORKS
+            </p>
+            <h2 className="font-serif text-3xl md:text-4xl text-white text-center mb-4">
               たった4ステップで、新しい出会いへ
+            </h2>
+            <p className="text-slate-400 text-center mb-16 max-w-xl mx-auto">
+              面倒な準備は一切不要。あなたは当日お店に行くだけ。
             </p>
           </BlurFade>
 
           <div className="grid md:grid-cols-2 gap-6">
             {steps.map((step, index) => (
               <BlurFade key={index} delay={0.1 * index}>
-                <MagicCard className="h-full" gradientColor="#FF6B6B">
+                <GlassCard className="h-full">
                   <div className="p-6">
                     <div className="flex items-start gap-4">
                       <motion.div
-                        className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B6B] to-[#FF8E53] text-white flex items-center justify-center flex-shrink-0"
+                        className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0"
                         whileHover={{ scale: 1.1, rotate: 5 }}
                       >
                         <step.icon className="w-5 h-5" />
                       </motion.div>
                       <div>
-                        <div className="text-sm text-neutral-500 mb-1">
-                          Step {index + 1}
+                        <div className="text-xs text-amber-500/80 font-medium tracking-wider mb-1">
+                          STEP {index + 1}
                         </div>
-                        <h3 className="font-semibold mb-2">{step.title}</h3>
-                        <p className="text-sm text-neutral-600">
+                        <h3 className="font-semibold text-white mb-2">{step.title}</h3>
+                        <p className="text-sm text-slate-400">
                           {step.description}
                         </p>
                       </div>
                     </div>
                   </div>
-                </MagicCard>
+                </GlassCard>
               </BlurFade>
             ))}
           </div>
@@ -254,10 +311,13 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="py-20 px-4">
+      <section className="py-24 px-4 bg-slate-950">
         <div className="max-w-4xl mx-auto">
           <BlurFade>
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
+            <p className="text-amber-500 font-medium tracking-widest text-sm text-center mb-4">
+              WHY UNPLANNED
+            </p>
+            <h2 className="font-serif text-3xl md:text-4xl text-white text-center mb-16">
               unplanned の特徴
             </h2>
           </BlurFade>
@@ -271,13 +331,13 @@ export default function LandingPage() {
                   transition={{ duration: 0.2 }}
                 >
                   <motion.div
-                    className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-100 to-red-100 text-[#FF6B6B] flex items-center justify-center mx-auto mb-4"
+                    className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto mb-4"
                     whileHover={{ scale: 1.1 }}
                   >
                     <feature.icon className="w-7 h-7" />
                   </motion.div>
-                  <h3 className="font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-neutral-600">
+                  <h3 className="font-semibold text-white mb-2">{feature.title}</h3>
+                  <p className="text-sm text-slate-400">
                     {feature.description}
                   </p>
                 </motion.div>
@@ -287,11 +347,93 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="py-20 px-4 bg-gradient-to-b from-white to-neutral-50">
+      {/* Founder Story Section */}
+      <section className="py-24 px-4 bg-slate-900">
         <div className="max-w-2xl mx-auto">
           <BlurFade>
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
+            <GlassCard className="p-8 md:p-12">
+              <p className="text-amber-500 font-medium tracking-widest text-sm mb-6">
+                FOUNDER&apos;S NOTE
+              </p>
+              <div className="font-serif text-lg md:text-xl text-slate-300 leading-relaxed space-y-6">
+                <p>
+                  「人生を変える出会いは、いつも予想外の場所で起きる。」
+                </p>
+                <p className="text-slate-400">
+                  私自身、仕事を通じて出会った人、旅先で偶然話しかけた人、
+                  友人の紹介で知り合った人。人生の転機となった出会いは、
+                  すべて「予定になかった」ものでした。
+                </p>
+                <p className="text-slate-400">
+                  unplannedは、そんな「偶然の出会い」を、
+                  安心して楽しめる場所として作りました。
+                  恋愛目的ではなく、純粋に「新しい人と話す」楽しさを
+                  もう一度思い出してほしい。
+                </p>
+                <p className="text-slate-400">
+                  次の「点」が、あなたを待っています。
+                </p>
+              </div>
+              <div className="mt-8 pt-6 border-t border-slate-700">
+                <p className="text-slate-500 text-sm">Founder, unplanned</p>
+              </div>
+            </GlassCard>
+          </BlurFade>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-24 px-4 bg-slate-950">
+        <div className="max-w-4xl mx-auto">
+          <BlurFade>
+            <p className="text-amber-500 font-medium tracking-widest text-sm text-center mb-4">
+              VOICES
+            </p>
+            <h2 className="font-serif text-3xl md:text-4xl text-white text-center mb-4">
+              メンバーの声
+            </h2>
+            <p className="text-slate-400 text-center mb-12">
+              実際に参加した方々からの感想
+            </p>
+          </BlurFade>
+        </div>
+
+        <div className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-slate-950 to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-slate-950 to-transparent z-10" />
+
+          <Marquee pauseOnHover className="[--duration:50s]">
+            {testimonials.map((testimonial, index) => (
+              <figure
+                key={index}
+                className="relative w-72 mx-4 glass-card rounded-2xl p-6"
+              >
+                <blockquote className="text-sm text-slate-300 leading-relaxed">
+                  &ldquo;{testimonial.body}&rdquo;
+                </blockquote>
+                <figcaption className="mt-4 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500 text-xs font-medium">
+                    {testimonial.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-white">{testimonial.name}</div>
+                    <div className="text-xs text-slate-500">{testimonial.age}歳</div>
+                  </div>
+                </figcaption>
+              </figure>
+            ))}
+          </Marquee>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-24 px-4 bg-slate-900">
+        <div className="max-w-2xl mx-auto">
+          <BlurFade>
+            <p className="text-amber-500 font-medium tracking-widest text-sm text-center mb-4">
+              FAQ
+            </p>
+            <h2 className="font-serif text-3xl md:text-4xl text-white text-center mb-12">
               よくある質問
             </h2>
           </BlurFade>
@@ -299,12 +441,12 @@ export default function LandingPage() {
           <div className="space-y-4">
             {faqs.map((faq, index) => (
               <BlurFade key={index} delay={0.1 * index}>
-                <MagicCard gradientColor="#FF8E53" gradientOpacity={0.15}>
+                <GlassCard>
                   <div className="p-6">
-                    <h3 className="font-semibold mb-2">{faq.question}</h3>
-                    <p className="text-sm text-neutral-600">{faq.answer}</p>
+                    <h3 className="font-semibold text-white mb-2">{faq.question}</h3>
+                    <p className="text-sm text-slate-400">{faq.answer}</p>
                   </div>
-                </MagicCard>
+                </GlassCard>
               </BlurFade>
             ))}
           </div>
@@ -312,34 +454,35 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="relative py-24 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B6B]/5 via-transparent to-[#FF8E53]/5" />
+      <section className="relative py-32 px-4 overflow-hidden bg-slate-950">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[100px]" />
+
         <Particles
           className="absolute inset-0"
-          quantity={20}
-          color="#FF8E53"
+          quantity={25}
+          color="#f59e0b"
           staticity={50}
         />
 
         <div className="relative max-w-xl mx-auto text-center">
           <BlurFade>
-            <h2 className="text-2xl md:text-4xl font-bold mb-6">
+            <h2 className="font-serif text-3xl md:text-5xl text-white mb-6">
               新しい出会いを、
               <br />
-              <AnimatedGradientText className="text-2xl md:text-4xl font-bold">
+              <AnimatedGradientText className="font-serif text-3xl md:text-5xl">
                 はじめよう
               </AnimatedGradientText>
             </h2>
           </BlurFade>
 
           <BlurFade delay={0.1}>
-            <p className="text-neutral-600 mb-8">
+            <p className="text-slate-400 mb-10">
               今すぐ登録して、次回の開催に参加しませんか？
             </p>
           </BlurFade>
 
           <BlurFade delay={0.2}>
-            <ShimmerButton onClick={handleLogin} className="text-lg px-8 py-4">
+            <ShimmerButton onClick={handleLogin} variant="accent" className="text-lg px-8 py-4">
               メンバーになる
               <ArrowRight className="w-5 h-5 ml-2" />
             </ShimmerButton>
@@ -348,20 +491,20 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-10 px-4 border-t border-neutral-100 bg-white">
+      <footer className="py-10 px-4 border-t border-slate-800 bg-slate-950">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <AnimatedGradientText className="text-xl font-bold">
+          <span className="text-xl font-semibold text-white">
             unplanned
-          </AnimatedGradientText>
-          <div className="flex gap-6 text-sm text-neutral-600">
-            <Link href="/terms" className="hover:text-neutral-900 transition-colors">
+          </span>
+          <div className="flex gap-6 text-sm text-slate-500">
+            <Link href="/terms" className="hover:text-slate-300 transition-colors">
               利用規約
             </Link>
-            <Link href="/privacy" className="hover:text-neutral-900 transition-colors">
+            <Link href="/privacy" className="hover:text-slate-300 transition-colors">
               プライバシーポリシー
             </Link>
           </div>
-          <div className="text-sm text-neutral-500">
+          <div className="text-sm text-slate-600">
             © 2024 unplanned
           </div>
         </div>

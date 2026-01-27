@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
 import { DashboardClient } from './client';
+import type { Match, Event } from '@/types/database';
 
 interface DashboardPageProps {
   searchParams: Promise<{ success?: string }>;
@@ -40,12 +41,16 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const supabase = await createServiceClient();
 
-  // Get upcoming events
+  // Get upcoming events (at least 2 days away)
+  // e.g., on 1/27, don't show 1/28 events
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() + 2);
+  cutoffDate.setHours(0, 0, 0, 0);
   const { data: events } = await supabase
     .from('events')
     .select('*')
     .eq('status', 'open')
-    .gte('event_date', new Date().toISOString())
+    .gte('event_date', cutoffDate.toISOString())
     .order('event_date', { ascending: true });
 
   // Get user's participations
@@ -60,7 +65,24 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const { data: matches } = await supabase
     .from('matches')
     .select('*, events(*)')
-    .contains('table_members', JSON.stringify([user.id]));
+    .contains('table_members', JSON.stringify([user.id])) as { data: (Match & { events: Event })[] | null };
+
+  // Get all unique member IDs from matches for participant info
+  const allMemberIds = [...new Set((matches || []).flatMap((m) => m.table_members))];
+
+  // Fetch participant details (avatar_url and job only)
+  const { data: participants } = allMemberIds.length > 0
+    ? await supabase
+        .from('users')
+        .select('id, avatar_url, job')
+        .in('id', allMemberIds) as { data: { id: string; avatar_url: string | null; job: string }[] | null }
+    : { data: [] as { id: string; avatar_url: string | null; job: string }[] };
+
+  // Create a map for quick lookup
+  const participantsMap: Record<string, { avatar_url: string | null; job: string }> = {};
+  (participants || []).forEach((p) => {
+    participantsMap[p.id] = { avatar_url: p.avatar_url, job: p.job };
+  });
 
   return (
     <DashboardClient
@@ -68,6 +90,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       events={events || []}
       participations={participations || []}
       matches={matches || []}
+      participantsMap={participantsMap}
     />
   );
 }

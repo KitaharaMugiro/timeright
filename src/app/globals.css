@@ -1,10 +1,84 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ====================================
+   UNPLANNED - Visual Identity System
+   ==================================== */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --accent: #FF6B6B;
-  --accent-secondary: #FF8E53;
+  /* Core Brand Colors */
+  --accent: oklch(0.795 0.184 86.047); /* amber-500 */
+  --accent-secondary: oklch(0.705 0.213 47.604); /* warm amber */
+  --radius: 0.75rem;
+
+  /* Light Mode (Clean, Professional) */
+  --background: oklch(0.984 0.003 247.858); /* slate-50 */
+  --foreground: oklch(0.129 0.042 264.695); /* slate-900 */
+  --card: oklch(1 0 0); /* white */
+  --card-foreground: oklch(0.129 0.042 264.695); /* slate-900 */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.129 0.042 264.695);
+  --primary: oklch(0.129 0.042 264.695); /* slate-900 */
+  --primary-foreground: oklch(0.985 0 0); /* white */
+  --secondary: oklch(0.968 0.007 247.896); /* slate-100 */
+  --secondary-foreground: oklch(0.129 0.042 264.695);
+  --muted: oklch(0.968 0.007 247.896); /* slate-100 */
+  --muted-foreground: oklch(0.446 0.03 256.802); /* slate-500 */
+  --accent-foreground: oklch(0.129 0.042 264.695);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.929 0.013 255.508); /* slate-200 */
+  --input: oklch(0.929 0.013 255.508);
+  --ring: oklch(0.795 0.184 86.047); /* amber-500 */
+  --chart-1: oklch(0.795 0.184 86.047);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.984 0.003 247.858);
+  --sidebar-foreground: oklch(0.129 0.042 264.695);
+  --sidebar-primary: oklch(0.129 0.042 264.695);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.968 0.007 247.896);
+  --sidebar-accent-foreground: oklch(0.129 0.042 264.695);
+  --sidebar-border: oklch(0.929 0.013 255.508);
+  --sidebar-ring: oklch(0.795 0.184 86.047);
+}
+
+/* Dark Mode (Premium, Urban) - Default for this app */
+.dark {
+  --background: oklch(0.129 0.042 264.695); /* slate-900 */
+  --foreground: oklch(0.985 0 0); /* white */
+  --card: oklch(0.208 0.042 265.755); /* slate-800 */
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0); /* white */
+  --primary-foreground: oklch(0.129 0.042 264.695); /* slate-900 */
+  --secondary: oklch(0.279 0.041 260.031); /* slate-700 */
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.04 256.788); /* slate-400 */
+  --accent: oklch(0.795 0.184 86.047); /* amber-500 */
+  --accent-foreground: oklch(0.129 0.042 264.695);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.795 0.184 86.047); /* amber-500 */
+  --chart-1: oklch(0.795 0.184 86.047);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.795 0.184 86.047);
+  --sidebar-primary-foreground: oklch(0.129 0.042 264.695);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.795 0.184 86.047);
 }
 
 @theme inline {
@@ -12,14 +86,56 @@
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-accent-secondary: var(--accent-secondary);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans), var(--font-sans-jp), system-ui, sans-serif;
+  --font-serif: var(--font-serif), "Yu Mincho", serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* Base Styles */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), var(--font-sans-jp), system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Serif Headings for Editorial Feel */
+.font-serif {
+  font-family: var(--font-serif), "Yu Mincho", serif;
+  font-weight: 500;
 }
 
 /* Smooth scroll */
@@ -38,13 +154,97 @@ html {
   scrollbar-width: none;
 }
 
-/* Magic UI Animations */
+/* ====================================
+   Glassmorphism Utilities
+   ==================================== */
+.glass {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.glass-light {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-card {
+  backdrop-filter: blur(16px);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* ====================================
+   Premium Ticket Style
+   ==================================== */
+.ticket {
+  position: relative;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.ticket::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #f59e0b, #d97706, #f59e0b);
+  background-size: 200% 100%;
+  animation: shimmer-line 3s ease-in-out infinite;
+}
+
+.ticket-divider {
+  position: relative;
+  border-top: 2px dashed rgba(255, 255, 255, 0.15);
+}
+
+.ticket-divider::before,
+.ticket-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  background: var(--background);
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+.ticket-divider::before {
+  left: -10px;
+}
+
+.ticket-divider::after {
+  right: -10px;
+}
+
+/* ====================================
+   Animations
+   ==================================== */
 @keyframes shimmer {
   0% {
     transform: translateX(-100%);
   }
   100% {
     transform: translateX(100%);
+  }
+}
+
+@keyframes shimmer-line {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 200% 50%;
   }
 }
 
@@ -68,10 +268,43 @@ html {
 
 @keyframes pulse-glow {
   0%, 100% {
-    opacity: 0.6;
+    opacity: 0.4;
+    transform: scale(1);
   }
   50% {
     opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pulse-light {
+  0%, 100% {
+    opacity: 0.6;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.6);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
   }
 }
 
@@ -89,4 +322,88 @@ html {
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-pulse-light {
+  animation: pulse-light 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
+
+.animate-marquee {
+  animation: marquee var(--duration) linear infinite;
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical var(--duration) linear infinite;
+}
+
+/* ====================================
+   Base Layer Styles
+   ==================================== */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ====================================
+   Text Gradient Utility
+   ==================================== */
+.text-gradient-amber {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #f59e0b 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient 3s ease infinite;
+}
+
+/* ====================================
+   Button Styles
+   ==================================== */
+.btn-primary {
+  @apply bg-slate-900 text-white font-medium px-6 py-3 rounded-xl transition-all duration-200;
+  @apply hover:bg-slate-800 active:scale-[0.98];
+}
+
+.btn-primary-dark {
+  @apply bg-white text-slate-900 font-medium px-6 py-3 rounded-xl transition-all duration-200;
+  @apply hover:bg-slate-100 active:scale-[0.98];
+}
+
+.btn-accent {
+  @apply bg-amber-500 text-slate-900 font-semibold px-6 py-3 rounded-xl transition-all duration-200;
+  @apply hover:bg-amber-400 active:scale-[0.98];
+}
+
+/* ====================================
+   Selection Style
+   ==================================== */
+::selection {
+  background: rgba(245, 158, 11, 0.3);
+  color: inherit;
 }

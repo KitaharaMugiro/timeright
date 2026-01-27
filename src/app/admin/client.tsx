@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { BorderBeam } from '@/components/ui/magicui';
 import { formatDate, formatTime, getAreaLabel, isWithin48Hours } from '@/lib/utils';
 import { Plus, Calendar, MapPin, Users, AlertCircle, Star } from 'lucide-react';
 import type { Event } from '@/types/database';
@@ -126,7 +127,8 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
 
         {/* Create form */}
         {showCreateForm && (
-          <Card className="mb-8">
+          <Card className="mb-8 relative overflow-hidden">
+            <BorderBeam size={250} duration={12} delay={0} />
             <CardHeader>
               <h2 className="font-semibold">新規イベント作成</h2>
             </CardHeader>

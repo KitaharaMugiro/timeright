@@ -3,6 +3,14 @@ import { Page, Locator, expect } from '@playwright/test';
 /**
  * Page Object Model for the Onboarding Page (/onboarding)
  *
+ * Updated for the new dark mode design with:
+ * - Glassmorphism cards (GlassCard components)
+ * - Particles background
+ * - Amber accent colors
+ * - BirthdatePicker component instead of date input
+ * - "STEP X / 3" format for progress
+ * - ShimmerButton for submit
+ *
  * The onboarding flow has 3 steps:
  * 1. Profile - User enters display name, gender, birth date, job
  * 2. Personality Quiz - 5 questions with 2 options each
@@ -20,7 +28,7 @@ export class OnboardingPage {
   readonly nicknameInput: Locator;
   readonly maleButton: Locator;
   readonly femaleButton: Locator;
-  readonly birthDateInput: Locator;
+  readonly birthDatePicker: Locator;
   readonly jobInput: Locator;
   readonly profileNextButton: Locator;
 
@@ -42,33 +50,35 @@ export class OnboardingPage {
   constructor(page: Page) {
     this.page = page;
 
-    // Progress
-    this.progressBar = page.locator('.h-2.bg-neutral-200');
-    this.stepIndicator = page.locator('text=/Step \\d+ \\/ 3/');
+    // Progress - new design uses "STEP X / 3" format with amber gradient
+    this.progressBar = page.locator('.h-1.bg-slate-800');
+    this.stepIndicator = page.locator('text=/STEP \\d+ \\/ 3/i');
 
-    // Profile form (Step 1)
+    // Profile form (Step 1) - GlassCard with new input styles
     this.profileCard = page.locator('form').first();
     this.nicknameInput = page.locator('input[placeholder="食事中に呼ばれる名前"]');
     this.maleButton = page.locator('button', { hasText: '男性' });
     this.femaleButton = page.locator('button', { hasText: '女性' });
-    this.birthDateInput = page.locator('input[type="date"]');
+    // BirthdatePicker component - uses aria-labels to find selects
+    this.birthDatePicker = page.locator('select[aria-label="年"]');
     this.jobInput = page.locator('input[placeholder*="エンジニア"]');
     this.profileNextButton = page.locator('button[type="submit"]', { hasText: '次へ' });
 
-    // Quiz (Step 2)
+    // Quiz (Step 2) - GlassCard with serif font questions
     this.quizCard = page.locator('div', { hasText: '性格診断' }).first();
-    this.questionText = page.locator('p.text-lg.font-medium');
-    this.questionProgress = page.locator('text=/質問 \\d+ \\/ 5/');
-    this.optionButtons = page.locator('button.w-full.p-4');
+    this.questionText = page.locator('p.font-serif');
+    this.questionProgress = page.locator('text=/Q\\d+ \\/ \\d+/');
+    // Quiz options are buttons with rounded-xl and p-4
+    this.optionButtons = page.locator('button.w-full.p-4.rounded-xl');
     this.progressDots = page.locator('.w-2.h-2.rounded-full');
 
-    // Result (Step 3)
+    // Result (Step 3) - GlassCard with AnimatedGradientText
     this.resultCard = page.locator('div', { hasText: 'あなたは...' });
-    this.personalityEmoji = page.locator('.text-4xl').first();
+    this.personalityEmoji = page.locator('.text-5xl').first();
     this.personalityTitle = page.locator('h2');
-    this.personalityDescription = page.locator('p.text-neutral-600').first();
+    this.personalityDescription = page.locator('p.text-slate-400').first();
     this.matchingInfoBox = page.locator('div', { hasText: '相性の良いメンバー' });
-    // Updated: After payment timing change, this button now says "始める" and redirects to /dashboard
+    // ShimmerButton with "始める" text - redirects to /dashboard
     this.subscribeButton = page.locator('button', { hasText: /始める|処理中/ });
   }
 
@@ -86,8 +96,28 @@ export class OnboardingPage {
   async verifyProfileStep() {
     await expect(this.page.locator('text=プロフィール登録')).toBeVisible();
     await expect(this.nicknameInput).toBeVisible();
-    await expect(this.birthDateInput).toBeVisible();
+    await expect(this.birthDatePicker).toBeVisible();
     await expect(this.jobInput).toBeVisible();
+  }
+
+  /**
+   * Fill birth date using the BirthdatePicker component
+   * @param dateString Date in YYYY-MM-DD format
+   */
+  async fillBirthDate(dateString: string) {
+    const [year, month, day] = dateString.split('-');
+
+    // Select year
+    const yearSelect = this.page.locator('select[aria-label="年"]');
+    await yearSelect.selectOption(year);
+
+    // Wait for month select to be enabled, then select month
+    const monthSelect = this.page.locator('select[aria-label="月"]');
+    await monthSelect.selectOption(month);
+
+    // Wait for day select to be enabled, then select day
+    const daySelect = this.page.locator('select[aria-label="日"]');
+    await daySelect.selectOption(day);
   }
 
   /**
@@ -107,7 +137,7 @@ export class OnboardingPage {
       await this.femaleButton.click();
     }
 
-    await this.birthDateInput.fill(data.birthDate);
+    await this.fillBirthDate(data.birthDate);
     await this.jobInput.fill(data.job);
   }
 

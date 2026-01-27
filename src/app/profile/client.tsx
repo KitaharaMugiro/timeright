@@ -4,9 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { User as UserIcon, ArrowLeft, Edit3, Save, X, Briefcase, Calendar, Sparkles, Check } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, Edit3, Save, X, Briefcase, Calendar, Sparkles, Check, ArrowRight } from 'lucide-react';
 import {
-  MagicCard,
+  GlassCard,
   AnimatedGradientText,
   BlurFade,
   Particles,
@@ -91,18 +91,18 @@ export function ProfileClient({ user }: ProfileClientProps) {
   const personality = user.personality_type ? personalityLabels[user.personality_type] : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50 relative overflow-hidden">
-      <Particles className="absolute inset-0 pointer-events-none" quantity={15} color="#FF6B6B" staticity={60} />
+    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
+      <Particles className="absolute inset-0 pointer-events-none" quantity={20} color="#f59e0b" staticity={70} />
 
       {/* Header */}
       <motion.header
-        className="bg-white/80 backdrop-blur-md border-b border-neutral-100 sticky top-0 z-50"
+        className="glass sticky top-0 z-50"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors">
+          <Link href="/dashboard" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
             <ArrowLeft className="w-5 h-5" />
             <span>戻る</span>
           </Link>
@@ -118,24 +118,24 @@ export function ProfileClient({ user }: ProfileClientProps) {
         <BlurFade>
           <div className="text-center mb-8">
             <motion.div
-              className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#FF6B6B] to-[#FF8E53] flex items-center justify-center"
+              className="w-24 h-24 mx-auto mb-4 rounded-2xl bg-amber-500/20 flex items-center justify-center"
               whileHover={{ scale: 1.05 }}
             >
               {user.avatar_url ? (
-                <img src={user.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                <img src={user.avatar_url} alt="" className="w-full h-full rounded-2xl object-cover" />
               ) : (
-                <UserIcon className="w-12 h-12 text-white" />
+                <UserIcon className="w-12 h-12 text-amber-500" />
               )}
             </motion.div>
-            <h2 className="text-2xl font-bold">{user.display_name}</h2>
-            <p className="text-neutral-600">{genderLabels[user.gender]} · {calculateAge(user.birth_date)}歳</p>
+            <h2 className="text-2xl font-serif text-white">{user.display_name}</h2>
+            <p className="text-slate-400">{genderLabels[user.gender]} · {calculateAge(user.birth_date)}歳</p>
           </div>
         </BlurFade>
 
         {/* Success Message */}
         {saveSuccess && (
           <motion.div
-            className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700"
+            className="mb-4 p-4 glass rounded-xl flex items-center gap-2 text-emerald-400"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -147,7 +147,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
         {/* Error Message */}
         {error && (
           <motion.div
-            className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"
+            className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -157,144 +157,138 @@ export function ProfileClient({ user }: ProfileClientProps) {
 
         {/* Profile Info */}
         <BlurFade delay={0.1}>
-          <MagicCard gradientColor="#FF6B6B" gradientOpacity={0.1}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold">基本情報</h3>
-                {!isEditing ? (
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-white">基本情報</h3>
+              {!isEditing ? (
+                <motion.button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Edit3 className="w-4 h-4" />
+                  編集
+                </motion.button>
+              ) : (
+                <div className="flex gap-2">
                   <motion.button
-                    onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-[#FF6B6B] hover:bg-[#FF6B6B]/5 rounded-lg transition-colors"
+                    onClick={handleCancel}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-800 rounded-lg transition-colors"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Edit3 className="w-4 h-4" />
-                    編集
+                    <X className="w-4 h-4" />
+                    キャンセル
                   </motion.button>
+                  <motion.button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-slate-900 bg-amber-500 hover:bg-amber-400 rounded-lg transition-colors disabled:opacity-50"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Save className="w-4 h-4" />
+                    {isSaving ? '保存中...' : '保存'}
+                  </motion.button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {/* Display Name */}
+              <div>
+                <label className="block text-sm text-slate-500 mb-1">表示名</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.display_name}
+                    onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
+                  />
                 ) : (
-                  <div className="flex gap-2">
-                    <motion.button
-                      onClick={handleCancel}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <X className="w-4 h-4" />
-                      キャンセル
-                    </motion.button>
-                    <motion.button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-white bg-[#FF6B6B] hover:bg-[#FF5252] rounded-lg transition-colors disabled:opacity-50"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Save className="w-4 h-4" />
-                      {isSaving ? '保存中...' : '保存'}
-                    </motion.button>
-                  </div>
+                  <p className="text-lg font-medium text-white flex items-center gap-2">
+                    <UserIcon className="w-5 h-5 text-amber-500/70" />
+                    {user.display_name}
+                  </p>
                 )}
               </div>
 
-              <div className="space-y-4">
-                {/* Display Name */}
-                <div>
-                  <label className="block text-sm text-neutral-500 mb-1">表示名</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={formData.display_name}
-                      onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
-                      className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/50"
-                    />
-                  ) : (
-                    <p className="text-lg font-medium flex items-center gap-2">
-                      <UserIcon className="w-5 h-5 text-neutral-400" />
-                      {user.display_name}
-                    </p>
-                  )}
-                </div>
-
-                {/* Job */}
-                <div>
-                  <label className="block text-sm text-neutral-500 mb-1">職業</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={formData.job}
-                      onChange={(e) => setFormData({ ...formData, job: e.target.value })}
-                      className="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]/50"
-                    />
-                  ) : (
-                    <p className="text-lg font-medium flex items-center gap-2">
-                      <Briefcase className="w-5 h-5 text-neutral-400" />
-                      {user.job}
-                    </p>
-                  )}
-                </div>
-
-                {/* Gender (Read-only) */}
-                <div>
-                  <label className="block text-sm text-neutral-500 mb-1">性別</label>
-                  <p className="text-lg font-medium">{genderLabels[user.gender]}</p>
-                </div>
-
-                {/* Birth Date (Read-only) */}
-                <div>
-                  <label className="block text-sm text-neutral-500 mb-1">生年月日</label>
-                  <p className="text-lg font-medium flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-neutral-400" />
-                    {new Date(user.birth_date).toLocaleDateString('ja-JP', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+              {/* Job */}
+              <div>
+                <label className="block text-sm text-slate-500 mb-1">職業</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.job}
+                    onChange={(e) => setFormData({ ...formData, job: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
+                  />
+                ) : (
+                  <p className="text-lg font-medium text-white flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-amber-500/70" />
+                    {user.job}
                   </p>
-                </div>
+                )}
+              </div>
+
+              {/* Gender (Read-only) */}
+              <div>
+                <label className="block text-sm text-slate-500 mb-1">性別</label>
+                <p className="text-lg font-medium text-white">{genderLabels[user.gender]}</p>
+              </div>
+
+              {/* Birth Date (Read-only) */}
+              <div>
+                <label className="block text-sm text-slate-500 mb-1">生年月日</label>
+                <p className="text-lg font-medium text-white flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-amber-500/70" />
+                  {new Date(user.birth_date).toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
               </div>
             </div>
-          </MagicCard>
+          </GlassCard>
         </BlurFade>
 
         {/* Personality Type */}
         {personality && (
           <BlurFade delay={0.2}>
-            <MagicCard className="mt-6" gradientColor="#FF8E53" gradientOpacity={0.15}>
-              <div className="p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-[#FF6B6B]" />
-                  パーソナリティタイプ
-                </h3>
-                <div className="flex items-center gap-4">
-                  <span className="text-4xl">{personality.emoji}</span>
-                  <div>
-                    <p className="text-xl font-bold">{personality.label}</p>
-                    <p className="text-neutral-600">{personality.description}</p>
-                  </div>
+            <GlassCard className="mt-6 p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+                パーソナリティタイプ
+              </h3>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                  <span className="text-3xl">{personality.emoji}</span>
+                </div>
+                <div>
+                  <p className="text-xl font-serif text-white">{personality.label}</p>
+                  <p className="text-slate-400">{personality.description}</p>
                 </div>
               </div>
-            </MagicCard>
+            </GlassCard>
           </BlurFade>
         )}
 
         {/* Quick Links */}
         <BlurFade delay={0.3}>
-          <div className="mt-6 grid gap-3">
+          <div className="mt-6 space-y-3">
             <Link href="/settings">
-              <MagicCard className="hover:scale-[1.02] transition-transform" gradientColor="#FF6B6B" gradientOpacity={0.1}>
-                <div className="p-4 flex items-center justify-between">
-                  <span className="font-medium">アカウント設定</span>
-                  <ArrowLeft className="w-5 h-5 rotate-180 text-neutral-400" />
-                </div>
-              </MagicCard>
+              <GlassCard className="p-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
+                <span className="font-medium text-white">アカウント設定</span>
+                <ArrowRight className="w-5 h-5 text-slate-500" />
+              </GlassCard>
             </Link>
             <Link href="/settings/subscription">
-              <MagicCard className="hover:scale-[1.02] transition-transform" gradientColor="#FF6B6B" gradientOpacity={0.1}>
-                <div className="p-4 flex items-center justify-between">
-                  <span className="font-medium">サブスクリプション管理</span>
-                  <ArrowLeft className="w-5 h-5 rotate-180 text-neutral-400" />
-                </div>
-              </MagicCard>
+              <GlassCard className="p-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
+                <span className="font-medium text-white">サブスクリプション管理</span>
+                <ArrowRight className="w-5 h-5 text-slate-500" />
+              </GlassCard>
             </Link>
           </div>
         </BlurFade>

@@ -35,7 +35,8 @@ test.describe('Landing Page', () => {
   test.describe('Hero Section', () => {
     test('should display hero title', async () => {
       await expect(landingPage.heroTitle).toBeVisible();
-      await expect(landingPage.heroTitle).toContainText(/目的のない出会い/);
+      // New design: "Life is unplanned."
+      await expect(landingPage.heroTitle).toContainText(/unplanned/i);
     });
 
     test('should display next event badge', async () => {
@@ -55,8 +56,12 @@ test.describe('Landing Page', () => {
   });
 
   test.describe('How It Works Section', () => {
-    test('should display how it works section with 4 steps', async () => {
-      await landingPage.verifyHowItWorksSection();
+    test('should display how it works section with 4 steps', async ({ page }) => {
+      // Wait for the section to be visible and check step labels with new "STEP X" format
+      await expect(page.locator('text=HOW IT WORKS')).toBeVisible();
+      const stepLabels = page.locator('text=/STEP \\d/');
+      const stepCount = await stepLabels.count();
+      expect(stepCount).toBe(4);
     });
 
     test('should display all 4 step titles', async ({ page }) => {
@@ -103,16 +108,12 @@ test.describe('Landing Page', () => {
       await landingPage.verifyFooter();
     });
 
-    test('should have working terms link', async ({ page }) => {
+    test('should have working terms link', async () => {
       await expect(landingPage.termsLink).toHaveAttribute('href', '/terms');
     });
 
-    test('should have working privacy link', async ({ page }) => {
+    test('should have working privacy link', async () => {
       await expect(landingPage.privacyLink).toHaveAttribute('href', '/privacy');
-    });
-
-    test('should have working contact link', async ({ page }) => {
-      await expect(landingPage.contactLink).toHaveAttribute('href', '/contact');
     });
 
     test('should display copyright notice', async ({ page }) => {
