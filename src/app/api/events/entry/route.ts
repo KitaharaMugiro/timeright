@@ -67,16 +67,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for existing participation
-    const { data: existingParticipation } = await supabase
+    // Check for existing participation (including canceled ones)
+    const { data: existingParticipationData } = await supabase
       .from('participations')
-      .select('id')
+      .select('id, status')
       .eq('user_id', userId)
       .eq('event_id', event_id)
-      .neq('status', 'canceled')
       .single();
 
-    if (existingParticipation) {
+    const existingParticipation = existingParticipationData as { id: string; status: string } | null;
+
+    if (existingParticipation && existingParticipation.status !== 'canceled') {
       return NextResponse.json(
         { error: 'Already entered this event' },
         { status: 400 }
@@ -86,24 +87,46 @@ export async function POST(request: NextRequest) {
     const groupId = uuidv4();
     const inviteToken = generateInviteToken();
 
-    // Create participation
-    const { error: insertError } = await (supabase.from('participations') as any).insert({
-      user_id: userId,
-      event_id,
-      group_id: groupId,
-      entry_type,
-      mood,
-      mood_text: mood_text || null,
-      invite_token: inviteToken,
-      status: 'pending',
-    });
+    if (existingParticipation && existingParticipation.status === 'canceled') {
+      // Reactivate canceled participation
+      const { error: updateError } = await (supabase.from('participations') as any)
+        .update({
+          group_id: groupId,
+          entry_type,
+          mood,
+          mood_text: mood_text || null,
+          invite_token: inviteToken,
+          status: 'pending',
+        })
+        .eq('id', existingParticipation.id);
 
-    if (insertError) {
-      console.error('Insert error:', insertError);
-      return NextResponse.json(
-        { error: 'Failed to create participation' },
-        { status: 500 }
-      );
+      if (updateError) {
+        console.error('Update error:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to reactivate participation' },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Create new participation
+      const { error: insertError } = await (supabase.from('participations') as any).insert({
+        user_id: userId,
+        event_id,
+        group_id: groupId,
+        entry_type,
+        mood,
+        mood_text: mood_text || null,
+        invite_token: inviteToken,
+        status: 'pending',
+      });
+
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        return NextResponse.json(
+          { error: 'Failed to create participation' },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json({

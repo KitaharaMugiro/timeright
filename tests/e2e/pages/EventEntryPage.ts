@@ -70,18 +70,18 @@ export class EventEntryPage {
 
     // Entry type selection
     this.entryTypeTitle = page.getByText('参加方法を選択');
-    this.soloCard = page.locator('[class*="Card"]').filter({ hasText: '1人で参加' });
-    this.pairCard = page.locator('[class*="Card"]').filter({ hasText: '友達と参加（ペア）' });
+    this.soloCard = page.locator('div').filter({ hasText: /^1人で参加/ }).first();
+    this.pairCard = page.locator('div').filter({ hasText: /^友達と参加（ペア）/ }).first();
     this.pairDisabledNote = page.getByText('開催2日前を過ぎたため選択できません');
 
     // Mood selection
     this.moodTitle = page.getByText('今日はどんな気分？');
-    this.moodDescription = page.getByText('当日の雰囲気を教えてください');
-    this.livelyyMoodCard = page.locator('[class*="Card"]').filter({ hasText: 'ワイワイ飲み' });
-    this.relaxedMoodCard = page.locator('[class*="Card"]').filter({ hasText: 'まったりトーク' });
-    this.inspireMoodCard = page.locator('[class*="Card"]').filter({ hasText: 'インスパイア' });
-    this.otherMoodCard = page.locator('[class*="Card"]').filter({ hasText: 'その他' }).filter({ hasText: '自由に気分を入力' });
-    this.otherMoodInput = page.locator('input[placeholder*="仕事の話"]');
+    this.moodDescription = page.getByText(/当日の雰囲気を教えてください/);
+    this.livelyyMoodCard = page.locator('div').filter({ hasText: /^ワイワイ飲み/ }).first();
+    this.relaxedMoodCard = page.locator('div').filter({ hasText: /^まったりトーク/ }).first();
+    this.inspireMoodCard = page.locator('div').filter({ hasText: /^インスパイア/ }).first();
+    this.otherMoodCard = page.getByText('その他').locator('xpath=ancestor::div[contains(@class, "cursor-pointer")]').first();
+    this.otherMoodInput = page.locator('input[placeholder*="仕事の話"]').or(page.locator('input[placeholder*="例:"]'));
     this.otherMoodConfirmButton = page.getByRole('button', { name: '決定' });
     this.moodBackButton = page.getByRole('button', { name: '戻る' }).first();
 
