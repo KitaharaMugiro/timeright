@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
 import {
   ShimmerButton,
   GlassCard,
