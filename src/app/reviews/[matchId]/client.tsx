@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { UserAvatar } from '@/components/UserAvatar';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Star, Check } from 'lucide-react';
 import type { Match, Event, User } from '@/types/database';
@@ -111,26 +112,12 @@ export function ReviewClient({
           <Card data-testid="review-form-card">
             <CardContent className="p-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-3" data-testid="review-target-name">
-                <div className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0',
-                  currentMember.avatar_url
-                    ? ''
-                    : currentMember.gender === 'male'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-pink-100 text-pink-700'
-                )}>
-                  {currentMember.avatar_url ? (
-                    <img
-                      src={currentMember.avatar_url}
-                      alt={currentMember.display_name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="font-medium">
-                      {currentMember.display_name.charAt(0)}
-                    </span>
-                  )}
-                </div>
+                <UserAvatar
+                  displayName={currentMember.display_name}
+                  avatarUrl={currentMember.avatar_url}
+                  gender={currentMember.gender}
+                  size="md"
+                />
                 <span>{currentMember.display_name}さんへのレビュー</span>
               </h2>
 
@@ -232,26 +219,12 @@ export function ReviewClient({
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={cn(
-                          'w-12 h-12 rounded-full flex items-center justify-center overflow-hidden',
-                          member.avatar_url
-                            ? ''
-                            : member.gender === 'male'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-pink-100 text-pink-700'
-                        )}>
-                          {member.avatar_url ? (
-                            <img
-                              src={member.avatar_url}
-                              alt={member.display_name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-lg font-medium">
-                              {member.display_name.charAt(0)}
-                            </span>
-                          )}
-                        </div>
+                        <UserAvatar
+                          displayName={member.display_name}
+                          avatarUrl={member.avatar_url}
+                          gender={member.gender}
+                          size="lg"
+                        />
                         <div>
                           <div className="font-medium text-base">{member.display_name}</div>
                           <div className="text-sm text-neutral-600">

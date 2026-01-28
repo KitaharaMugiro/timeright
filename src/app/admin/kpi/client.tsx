@@ -31,13 +31,13 @@ interface StatCardProps {
 
 function StatCard({ label, value, subValue, icon }: StatCardProps) {
   return (
-    <Card>
+    <Card className="glass-card border-slate-700">
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div>
-            <div className="text-sm text-neutral-500">{label}</div>
-            <div className="text-2xl font-bold mt-1">{value}</div>
-            {subValue && <div className="text-xs text-neutral-400 mt-1">{subValue}</div>}
+            <div className="text-sm text-slate-400">{label}</div>
+            <div className="text-2xl font-bold mt-1 text-white">{value}</div>
+            {subValue && <div className="text-xs text-slate-500 mt-1">{subValue}</div>}
           </div>
           {icon && <div className="text-amber-500">{icon}</div>}
         </div>
@@ -78,15 +78,15 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-slate-900">
       {/* Header */}
-      <header className="bg-white border-b border-neutral-100">
+      <header className="glass border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-xl font-bold">
+            <Link href="/dashboard" className="text-xl font-bold text-white">
               unplanned
             </Link>
-            <span className="text-sm text-neutral-500 bg-neutral-100 px-2 py-1 rounded">
+            <span className="text-sm text-slate-400 bg-slate-800 px-2 py-1 rounded">
               Admin
             </span>
           </div>
@@ -96,25 +96,25 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
       <main className="max-w-6xl mx-auto px-4 py-8">
         <Link
           href="/admin"
-          className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-4"
+          className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           管理画面へ戻る
         </Link>
 
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2 text-white">
             <TrendingUp className="w-6 h-6 text-amber-500" />
             KPIダッシュボード
           </h1>
-          <div className="text-sm text-neutral-500">
+          <div className="text-sm text-slate-400">
             最終更新: {new Date(data.generatedAt).toLocaleString('ja-JP')}
           </div>
         </div>
 
         {/* User Metrics Section */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
             <Users className="w-5 h-5 text-amber-500" />
             ユーザー指標
           </h2>
@@ -146,9 +146,9 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
         {/* Daily Signups Chart */}
         {dailySignups.length > 0 && (
           <section className="mb-8">
-            <Card>
+            <Card className="glass-card border-slate-700">
               <CardContent className="p-6">
-                <h3 className="text-sm font-medium text-neutral-500 mb-4">
+                <h3 className="text-sm font-medium text-slate-400 mb-4">
                   日別新規登録（過去30日）
                 </h3>
                 <TrendChart data={dailySignups} dataKey="signups" label="登録数" />
@@ -159,7 +159,7 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
 
         {/* Subscription Metrics Section */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
             <CreditCard className="w-5 h-5 text-amber-500" />
             サブスクリプション指標
           </h2>
@@ -185,9 +185,9 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
             />
           </div>
           {subscriptionDistribution.length > 0 && (
-            <Card>
+            <Card className="glass-card border-slate-700">
               <CardContent className="p-6">
-                <h3 className="text-sm font-medium text-neutral-500 mb-4">
+                <h3 className="text-sm font-medium text-slate-400 mb-4">
                   ステータス分布
                 </h3>
                 <DistributionChart data={subscriptionDistribution} />
@@ -198,7 +198,7 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
 
         {/* Event Metrics Section */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
             <Calendar className="w-5 h-5 text-amber-500" />
             イベント指標
           </h2>
@@ -212,7 +212,7 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
 
         {/* Participation Metrics Section */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
             <Activity className="w-5 h-5 text-amber-500" />
             参加指標
           </h2>
@@ -231,9 +231,9 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
 
           <div className="grid md:grid-cols-2 gap-4">
             {dailyParticipations.length > 0 && (
-              <Card>
+              <Card className="glass-card border-slate-700">
                 <CardContent className="p-6">
-                  <h3 className="text-sm font-medium text-neutral-500 mb-4">
+                  <h3 className="text-sm font-medium text-slate-400 mb-4">
                     日別参加数（過去30日）
                   </h3>
                   <TrendChart
@@ -246,9 +246,9 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
                 </CardContent>
               </Card>
             )}
-            <Card>
+            <Card className="glass-card border-slate-700">
               <CardContent className="p-6">
-                <h3 className="text-sm font-medium text-neutral-500 mb-4">
+                <h3 className="text-sm font-medium text-slate-400 mb-4">
                   エントリータイプ
                 </h3>
                 <BarChartComponent data={entryTypeData} height={200} />
@@ -257,9 +257,9 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
           </div>
 
           {moodDistribution.length > 0 && (
-            <Card className="mt-4">
+            <Card className="mt-4 glass-card border-slate-700">
               <CardContent className="p-6">
-                <h3 className="text-sm font-medium text-neutral-500 mb-4">ムード分布</h3>
+                <h3 className="text-sm font-medium text-slate-400 mb-4">ムード分布</h3>
                 <DistributionChart data={moodDistribution} />
               </CardContent>
             </Card>
@@ -268,7 +268,7 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
 
         {/* Review Metrics Section */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
             <Star className="w-5 h-5 text-amber-500" />
             レビュー指標
           </h2>
@@ -282,9 +282,9 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
             <StatCard label="ブロック数" value={reviewMetrics.block_count} />
             <StatCard label="ブロック率" value={`${reviewMetrics.block_rate || 0}%`} />
           </div>
-          <Card>
+          <Card className="glass-card border-slate-700">
             <CardContent className="p-6">
-              <h3 className="text-sm font-medium text-neutral-500 mb-4">評価分布</h3>
+              <h3 className="text-sm font-medium text-slate-400 mb-4">評価分布</h3>
               <BarChartComponent data={ratingDistribution} height={200} />
             </CardContent>
           </Card>
@@ -292,7 +292,7 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
 
         {/* Referral Metrics Section */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
             <Share2 className="w-5 h-5 text-amber-500" />
             紹介指標
           </h2>

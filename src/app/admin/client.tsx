@@ -93,15 +93,15 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-slate-900">
       {/* Header */}
-      <header className="bg-white border-b border-neutral-100">
+      <header className="glass border-b border-slate-700">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-xl font-bold">
+            <Link href="/dashboard" className="text-xl font-bold text-white">
               unplanned
             </Link>
-            <span className="text-sm text-neutral-500 bg-neutral-100 px-2 py-1 rounded">
+            <span className="text-sm text-slate-400 bg-slate-800 px-2 py-1 rounded">
               Admin
             </span>
           </div>
@@ -110,7 +110,7 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">イベント管理</h1>
+          <h1 className="text-2xl font-bold text-white">イベント管理</h1>
           <div className="flex gap-2">
             <Link href="/admin/kpi">
               <Button variant="outline">
@@ -133,10 +133,10 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
 
         {/* Create form */}
         {showCreateForm && (
-          <Card className="mb-8 relative overflow-hidden">
+          <Card className="mb-8 relative overflow-hidden glass-card border-slate-700">
             <BorderBeam size={250} duration={12} delay={0} />
             <CardHeader>
-              <h2 className="font-semibold">新規イベント作成</h2>
+              <h2 className="font-semibold text-white">新規イベント作成</h2>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateEvent} className="space-y-4">
@@ -189,8 +189,8 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
         {/* Events list */}
         <div className="space-y-4">
           {events.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center text-neutral-600">
+            <Card className="glass-card border-slate-700">
+              <CardContent className="p-6 text-center text-slate-400">
                 イベントがありません
               </CardContent>
             </Card>
@@ -198,22 +198,22 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
             events.map((event) => {
               const isUrgent = needsUrgentMatching(event);
               return (
-                <Card key={event.id} className={isUrgent ? 'border-orange-300 bg-orange-50' : ''}>
+                <Card key={event.id} className={`glass-card border-slate-700 ${isUrgent ? 'border-warning/30 bg-warning/10' : ''}`}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
                         {isUrgent && (
-                          <div className="flex items-center gap-2 text-orange-600 text-sm font-medium mb-2">
+                          <div className="flex items-center gap-2 text-warning text-sm font-medium mb-2">
                             <AlertCircle className="w-4 h-4" />
                             要マッチング（48時間以内）
                           </div>
                         )}
                         <div className="flex items-center gap-4 mb-2">
-                          <span className="flex items-center gap-1 text-sm text-neutral-600">
+                          <span className="flex items-center gap-1 text-sm text-slate-400">
                             <Calendar className="w-4 h-4" />
                             {formatDate(event.event_date)} {formatTime(event.event_date)}
                           </span>
-                          <span className="flex items-center gap-1 text-sm text-neutral-600">
+                          <span className="flex items-center gap-1 text-sm text-slate-400">
                             <MapPin className="w-4 h-4" />
                             {getAreaLabel(event.area)}
                           </span>
@@ -222,10 +222,10 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
                           <span
                             className={`text-xs px-2 py-1 rounded ${
                               event.status === 'open'
-                                ? 'bg-green-100 text-green-700'
+                                ? 'bg-success/10 text-success'
                                 : event.status === 'matched'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-neutral-100 text-neutral-600'
+                                ? 'bg-info/10 text-info'
+                                : 'bg-slate-800 text-slate-400'
                             }`}
                           >
                             {event.status === 'open'

@@ -13,7 +13,6 @@ import {
   Particles,
 } from '@/components/ui/magicui';
 import { AvatarCircles } from '@/components/ui/avatar-circles';
-import { ReferralCard } from '@/components/ReferralCard';
 import type { User, Event, Participation, Match } from '@/types/database';
 
 interface DashboardClientProps {
@@ -130,11 +129,6 @@ export function DashboardClient({
             </p>
           </div>
         </BlurFade>
-
-        {/* Referral section */}
-        <section className="mb-8">
-          <ReferralCard />
-        </section>
 
         {/* Confirmed matches - Premium Ticket Style */}
         {matches.length > 0 && (

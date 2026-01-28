@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { User as UserIcon, ArrowLeft, Edit3, Save, X, Briefcase, Calendar, Sparkles, Check, ArrowRight } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, Edit3, Save, X, Briefcase, Calendar, Sparkles, Check, ArrowRight, Camera, Loader2, Trash2 } from 'lucide-react';
 import {
   GlassCard,
   AnimatedGradientText,
@@ -35,11 +35,81 @@ export function ProfileClient({ user }: ProfileClientProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user.avatar_url);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     display_name: user.display_name,
     job: user.job,
   });
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingAvatar(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'アップロードに失敗しました');
+      }
+
+      const data = await response.json();
+      setAvatarUrl(data.avatar_url);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'アップロードに失敗しました');
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    if (!avatarUrl) return;
+
+    setIsUploadingAvatar(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/profile/avatar', {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || '削除に失敗しました');
+      }
+
+      setAvatarUrl(null);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '削除に失敗しました');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -117,16 +187,49 @@ export function ProfileClient({ user }: ProfileClientProps) {
         {/* Profile Header */}
         <BlurFade>
           <div className="text-center mb-8">
-            <motion.div
-              className="w-24 h-24 mx-auto mb-4 rounded-2xl bg-amber-500/20 flex items-center justify-center"
-              whileHover={{ scale: 1.05 }}
-            >
-              {user.avatar_url ? (
-                <img src={user.avatar_url} alt="" className="w-full h-full rounded-2xl object-cover" />
-              ) : (
-                <UserIcon className="w-12 h-12 text-amber-500" />
+            <div className="relative w-24 h-24 mx-auto mb-4">
+              <motion.div
+                className="w-full h-full rounded-2xl bg-amber-500/20 flex items-center justify-center overflow-hidden cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                onClick={handleAvatarClick}
+              >
+                {isUploadingAvatar ? (
+                  <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                ) : avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="w-full h-full rounded-2xl object-cover" />
+                ) : (
+                  <UserIcon className="w-12 h-12 text-amber-500" />
+                )}
+              </motion.div>
+
+              {/* カメラアイコン（アップロードボタン） */}
+              <button
+                onClick={handleAvatarClick}
+                disabled={isUploadingAvatar}
+                className="absolute -bottom-1 -right-1 w-8 h-8 bg-amber-500 hover:bg-amber-400 rounded-full flex items-center justify-center shadow-lg transition-colors disabled:opacity-50"
+              >
+                <Camera className="w-4 h-4 text-slate-900" />
+              </button>
+
+              {/* 削除ボタン */}
+              {avatarUrl && !isUploadingAvatar && (
+                <button
+                  onClick={handleAvatarDelete}
+                  className="absolute -bottom-1 -left-1 w-8 h-8 bg-red-500 hover:bg-red-400 rounded-full flex items-center justify-center shadow-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 text-white" />
+                </button>
               )}
-            </motion.div>
+
+              {/* 非表示のファイル入力 */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </div>
             <h2 className="text-2xl font-serif text-white">{user.display_name}</h2>
             <p className="text-slate-400">{genderLabels[user.gender]} · {calculateAge(user.birth_date)}歳</p>
           </div>

@@ -150,8 +150,8 @@ export default function LandingPage() {
     fetchNextEvent();
   }, []);
 
-  const handleLogin = async () => {
-    window.location.href = '/api/auth/line';
+  const handleLineOA = () => {
+    window.location.href = process.env.NEXT_PUBLIC_LINE_OFFICIAL_ACCOUNT_URL || 'https://lin.ee/5uOPktg';
   };
 
   return (
@@ -168,12 +168,13 @@ export default function LandingPage() {
             unplanned
           </Link>
           <motion.button
-            onClick={handleLogin}
-            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            onClick={handleLineOA}
+            className="text-sm font-medium text-slate-300 hover:text-white transition-colors flex items-center gap-1"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            ログイン
+            LINE公式
+            <ArrowRight className="w-4 h-4" />
           </motion.button>
         </div>
       </motion.header>
@@ -244,7 +245,7 @@ export default function LandingPage() {
 
           <BlurFade delay={0.6}>
             <div className="flex flex-col items-center gap-4">
-              <ShimmerButton onClick={handleLogin} variant="accent" className="text-lg px-8 py-4">
+              <ShimmerButton onClick={handleLineOA} variant="accent" className="text-lg px-8 py-4">
                 メンバーになる
                 <ArrowRight className="w-5 h-5 ml-2" />
               </ShimmerButton>
@@ -482,7 +483,7 @@ export default function LandingPage() {
           </BlurFade>
 
           <BlurFade delay={0.2}>
-            <ShimmerButton onClick={handleLogin} variant="accent" className="text-lg px-8 py-4">
+            <ShimmerButton onClick={handleLineOA} variant="accent" className="text-lg px-8 py-4">
               メンバーになる
               <ArrowRight className="w-5 h-5 ml-2" />
             </ShimmerButton>

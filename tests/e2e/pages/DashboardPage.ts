@@ -13,7 +13,6 @@ import { Page, Locator, expect } from '@playwright/test';
  *
  * The dashboard shows:
  * - User greeting with AnimatedGradientText
- * - Referral card
  * - Confirmed dinners (ticket style)
  * - Pending participations
  * - Upcoming events
@@ -58,9 +57,6 @@ export class DashboardPage {
   readonly entryButtons: Locator;
   readonly enteredBadge: Locator;
 
-  // Referral section
-  readonly referralCard: Locator;
-
   constructor(page: Page) {
     this.page = page;
 
@@ -100,9 +96,6 @@ export class DashboardPage {
     this.eventCards = page.locator('.glass-card, [class*="GlassCard"]');
     this.entryButtons = page.locator('a', { hasText: '参加する' });
     this.enteredBadge = page.locator('button', { hasText: 'エントリー済み' });
-
-    // Referral card
-    this.referralCard = page.locator('div').filter({ hasText: /友達を招待/ }).first();
   }
 
   /**

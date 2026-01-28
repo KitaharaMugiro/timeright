@@ -77,18 +77,18 @@ export function SettingsClient({ user }: SettingsClientProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50 relative overflow-hidden">
-      <Particles className="absolute inset-0 pointer-events-none" quantity={15} color="#FF6B6B" staticity={60} />
+    <div className="min-h-screen bg-slate-900 relative overflow-hidden">
+      <Particles className="absolute inset-0 pointer-events-none" quantity={15} color="#f59e0b" staticity={60} />
 
       {/* Header */}
       <motion.header
-        className="bg-white/80 backdrop-blur-md border-b border-neutral-100 sticky top-0 z-50"
+        className="glass border-b border-slate-700 sticky top-0 z-50"
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
       >
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors">
+          <Link href="/dashboard" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
             <ArrowLeft className="w-5 h-5" />
             <span>戻る</span>
           </Link>
@@ -104,7 +104,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
         <BlurFade>
           <div className="mb-8 text-center">
             <motion.div
-              className="w-20 h-20 mx-auto mb-3 rounded-full bg-gradient-to-br from-[#FF6B6B] to-[#FF8E53] flex items-center justify-center"
+              className="w-20 h-20 mx-auto mb-3 rounded-full bg-gradient-to-br from-amber-500 to-amber-400 flex items-center justify-center"
               whileHover={{ scale: 1.05 }}
             >
               {user.avatar_url ? (
@@ -113,8 +113,8 @@ export function SettingsClient({ user }: SettingsClientProps) {
                 <User className="w-10 h-10 text-white" />
               )}
             </motion.div>
-            <h2 className="text-xl font-bold">{user.display_name}</h2>
-            <p className="text-neutral-500 text-sm">{user.email}</p>
+            <h2 className="text-xl font-bold text-white">{user.display_name}</h2>
+            <p className="text-slate-400 text-sm">{user.email}</p>
           </div>
         </BlurFade>
 
@@ -122,22 +122,22 @@ export function SettingsClient({ user }: SettingsClientProps) {
         {menuItems.map((section, sectionIndex) => (
           <BlurFade key={section.section} delay={sectionIndex * 0.1}>
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-neutral-500 mb-3 px-1">
+              <h3 className="text-sm font-medium text-slate-400 mb-3 px-1">
                 {section.section}
               </h3>
-              <MagicCard gradientColor="#FF6B6B" gradientOpacity={0.1}>
-                <div className="divide-y divide-neutral-100">
+              <MagicCard gradientColor="#f59e0b" gradientOpacity={0.1}>
+                <div className="divide-y divide-slate-700">
                   {section.items.map((item) => (
                     <Link key={item.href} href={item.href}>
                       <motion.div
-                        className="flex items-center justify-between p-4 hover:bg-neutral-50 transition-colors"
+                        className="flex items-center justify-between p-4 hover:bg-slate-800 transition-colors"
                         whileHover={{ x: 4 }}
                       >
                         <div className="flex items-center gap-3">
-                          <item.icon className="w-5 h-5 text-neutral-500" />
-                          <span className="font-medium">{item.label}</span>
+                          <item.icon className="w-5 h-5 text-slate-400" />
+                          <span className="font-medium text-white">{item.label}</span>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-neutral-400" />
+                        <ChevronRight className="w-5 h-5 text-slate-500" />
                       </motion.div>
                     </Link>
                   ))}
@@ -150,17 +150,17 @@ export function SettingsClient({ user }: SettingsClientProps) {
         {/* Logout */}
         <BlurFade delay={0.3}>
           <div className="mb-6">
-            <MagicCard gradientColor="#FF6B6B" gradientOpacity={0.1}>
+            <MagicCard gradientColor="#f59e0b" gradientOpacity={0.1}>
               <motion.button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-between p-4 hover:bg-neutral-50 transition-colors"
+                className="w-full flex items-center justify-between p-4 hover:bg-slate-800 transition-colors"
                 whileHover={{ x: 4 }}
               >
                 <div className="flex items-center gap-3">
-                  <LogOut className="w-5 h-5 text-neutral-500" />
-                  <span className="font-medium">ログアウト</span>
+                  <LogOut className="w-5 h-5 text-slate-400" />
+                  <span className="font-medium text-white">ログアウト</span>
                 </div>
-                <ChevronRight className="w-5 h-5 text-neutral-400" />
+                <ChevronRight className="w-5 h-5 text-slate-500" />
               </motion.button>
             </MagicCard>
           </div>
@@ -169,13 +169,13 @@ export function SettingsClient({ user }: SettingsClientProps) {
         {/* Danger Zone */}
         <BlurFade delay={0.4}>
           <div className="mb-6">
-            <h3 className="text-sm font-medium text-red-500 mb-3 px-1">
+            <h3 className="text-sm font-medium text-error mb-3 px-1">
               危険な操作
             </h3>
-            <MagicCard className="border-red-200" gradientColor="#FF6B6B" gradientOpacity={0.15}>
+            <MagicCard className="border-error/30" gradientColor="#ef4444" gradientOpacity={0.15}>
               <motion.button
                 onClick={() => setShowDeleteModal(true)}
-                className="w-full flex items-center justify-between p-4 hover:bg-red-50 transition-colors text-red-600"
+                className="w-full flex items-center justify-between p-4 hover:bg-error/10 transition-colors text-error"
                 whileHover={{ x: 4 }}
               >
                 <div className="flex items-center gap-3">
@@ -190,7 +190,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
 
         {/* Version */}
         <BlurFade delay={0.5}>
-          <p className="text-center text-sm text-neutral-400 mt-8">
+          <p className="text-center text-sm text-slate-500 mt-8">
             unplanned v1.0.0
           </p>
         </BlurFade>
@@ -199,32 +199,32 @@ export function SettingsClient({ user }: SettingsClientProps) {
       {/* Delete Account Modal */}
       {showDeleteModal && (
         <motion.div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={() => !isDeleting && setShowDeleteModal(false)}
         >
           <motion.div
-            className="bg-white rounded-2xl max-w-md w-full p-6"
+            className="bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-slate-700"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center mb-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-red-600" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-error/20 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-error" />
               </div>
-              <h3 className="text-xl font-bold mb-2">アカウント削除</h3>
-              <p className="text-neutral-600">
+              <h3 className="text-xl font-bold mb-2 text-white">アカウント削除</h3>
+              <p className="text-slate-300">
                 本当にアカウントを削除しますか？この操作は取り消せません。
               </p>
-              <p className="text-sm text-neutral-500 mt-2">
+              <p className="text-sm text-slate-400 mt-2">
                 サブスクリプションも自動的に解約されます。
               </p>
             </div>
 
             {deleteError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <div className="mb-4 p-3 bg-error/10 border border-error/30 rounded-lg text-error text-sm">
                 {deleteError}
               </div>
             )}
@@ -233,7 +233,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
               <motion.button
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
-                className="flex-1 py-3 px-4 bg-neutral-100 text-neutral-700 rounded-lg font-medium hover:bg-neutral-200 transition-colors disabled:opacity-50"
+                className="flex-1 py-3 px-4 bg-slate-700 text-slate-200 rounded-lg font-medium hover:bg-slate-600 transition-colors disabled:opacity-50"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -242,7 +242,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
               <motion.button
                 onClick={handleDeleteAccount}
                 disabled={isDeleting}
-                className="flex-1 py-3 px-4 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="flex-1 py-3 px-4 bg-error text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >

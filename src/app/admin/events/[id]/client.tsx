@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { UserAvatar } from '@/components/UserAvatar';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
 import { ArrowLeft, Plus, X, Users, Store, Check, Trash2, UserPlus } from 'lucide-react';
 import type { Event, Participation, User, Match, Guest, Gender, ParticipationMood } from '@/types/database';
@@ -400,21 +401,22 @@ export function EventDetailClient({
     return (
       <div
         key={p.user_id}
-        className="flex items-center gap-2 p-2 rounded bg-white border border-neutral-200"
+        className="flex items-center gap-2 p-2 rounded bg-slate-800 border border-slate-700"
       >
-        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
-          p.users.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
-        }`}>
-          {p.users.gender === 'male' ? '男' : '女'}
-        </div>
+        <UserAvatar
+          displayName={p.users.display_name}
+          avatarUrl={p.users.avatar_url}
+          gender={p.users.gender}
+          size="xs"
+        />
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate">{p.users.display_name}</div>
-          <div className="text-xs text-neutral-500 truncate">
+          <div className="text-sm font-medium truncate text-white">{p.users.display_name}</div>
+          <div className="text-xs text-slate-400 truncate">
             {age}歳 / {p.users.job || '-'}
           </div>
         </div>
         {isPair && (
-          <span className="text-xs bg-purple-100 text-purple-700 px-1 py-0.5 rounded flex-shrink-0">
+          <span className="text-xs bg-accent/10 text-accent px-1 py-0.5 rounded flex-shrink-0">
             ペア
           </span>
         )}
@@ -423,9 +425,9 @@ export function EventDetailClient({
             e.stopPropagation();
             removeFromTable(tableId, p.user_id);
           }}
-          className="p-1 hover:bg-neutral-100 rounded flex-shrink-0"
+          className="p-1 hover:bg-slate-700 rounded flex-shrink-0"
         >
-          <X className="w-4 h-4 text-neutral-400" />
+          <X className="w-4 h-4 text-slate-500" />
         </button>
       </div>
     );
@@ -451,37 +453,38 @@ export function EventDetailClient({
         onClick={() => handleMemberClick(p.user_id, tableId)}
         className={`p-3 rounded cursor-pointer transition-colors ${
           isSelected
-            ? 'bg-blue-100 border-2 border-blue-400'
-            : 'bg-white border border-neutral-200 hover:border-neutral-400'
+            ? 'bg-info/20 border-2 border-info'
+            : 'bg-slate-800 border border-slate-700 hover:border-slate-500'
         }`}
       >
         <div className="flex items-start gap-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-            p.users.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
-          }`}>
-            {p.users.display_name.charAt(0)}
-          </div>
+          <UserAvatar
+            displayName={p.users.display_name}
+            avatarUrl={p.users.avatar_url}
+            gender={p.users.gender}
+            size="md"
+          />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium">{p.users.display_name}</span>
+              <span className="font-medium text-white">{p.users.display_name}</span>
               {moodInfo && (
-                <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded" title={p.mood === 'other' && p.mood_text ? p.mood_text : undefined}>
+                <span className="text-xs bg-warning/10 text-warning px-1.5 py-0.5 rounded" title={p.mood === 'other' && p.mood_text ? p.mood_text : undefined}>
                   {moodInfo.emoji} {p.mood === 'other' && p.mood_text ? p.mood_text : moodInfo.short}
                 </span>
               )}
               {isPair && (
-                <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                <span className="text-xs bg-accent/10 text-accent px-1.5 py-0.5 rounded">
                   ペア
                 </span>
               )}
               {isSubscribed && (
-                <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+                <span className="text-xs bg-success/10 text-success px-1.5 py-0.5 rounded">
                   有料
                 </span>
               )}
             </div>
-            <div className="text-sm text-neutral-600 mt-1">
-              <span className={p.users.gender === 'male' ? 'text-blue-600' : 'text-pink-600'}>
+            <div className="text-sm text-slate-400 mt-1">
+              <span className={p.users.gender === 'male' ? 'text-gender-male' : 'text-gender-female'}>
                 {p.users.gender === 'male' ? '男性' : '女性'}
               </span>
               <span className="mx-1">•</span>
@@ -494,7 +497,7 @@ export function EventDetailClient({
               )}
             </div>
             {personalityLabel && (
-              <div className="text-xs text-neutral-500 mt-1">
+              <div className="text-xs text-slate-500 mt-1">
                 性格: {personalityLabel}
               </div>
             )}
@@ -512,22 +515,22 @@ export function EventDetailClient({
     return (
       <div
         key={guestFullId}
-        className="flex items-center gap-2 p-2 rounded bg-white border border-neutral-200"
+        className="flex items-center gap-2 p-2 rounded bg-slate-800 border border-slate-700"
       >
         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
-          g.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
+          g.gender === 'male' ? 'bg-gender-male-bg text-gender-male' : 'bg-gender-female-bg text-gender-female'
         }`}>
           {g.gender === 'male' ? '男' : '女'}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate">{g.display_name}</div>
-          <div className="text-xs text-neutral-500">外部ゲスト</div>
+          <div className="text-sm font-medium truncate text-white">{g.display_name}</div>
+          <div className="text-xs text-slate-400">外部ゲスト</div>
         </div>
-        <span className="text-xs bg-orange-100 text-orange-700 px-1 py-0.5 rounded flex-shrink-0">
+        <span className="text-xs bg-warning/10 text-warning px-1 py-0.5 rounded flex-shrink-0">
           外部
         </span>
         {isPair && (
-          <span className="text-xs bg-purple-100 text-purple-700 px-1 py-0.5 rounded flex-shrink-0">
+          <span className="text-xs bg-accent/10 text-accent px-1 py-0.5 rounded flex-shrink-0">
             ペア
           </span>
         )}
@@ -536,9 +539,9 @@ export function EventDetailClient({
             e.stopPropagation();
             removeFromTable(tableId, guestFullId);
           }}
-          className="p-1 hover:bg-neutral-100 rounded flex-shrink-0"
+          className="p-1 hover:bg-slate-700 rounded flex-shrink-0"
         >
-          <X className="w-4 h-4 text-neutral-400" />
+          <X className="w-4 h-4 text-slate-500" />
         </button>
       </div>
     );
@@ -561,30 +564,30 @@ export function EventDetailClient({
         onClick={() => handleMemberClick(guestFullId, tableId)}
         className={`p-3 rounded cursor-pointer transition-colors ${
           isSelected
-            ? 'bg-blue-100 border-2 border-blue-400'
-            : 'bg-white border border-neutral-200 hover:border-neutral-400'
+            ? 'bg-info/20 border-2 border-info'
+            : 'bg-slate-800 border border-slate-700 hover:border-slate-500'
         }`}
       >
         <div className="flex items-start gap-3">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-            g.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
+            g.gender === 'male' ? 'bg-gender-male-bg text-gender-male' : 'bg-gender-female-bg text-gender-female'
           }`}>
             {g.display_name.charAt(0)}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium">{g.display_name}</span>
-              <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+              <span className="font-medium text-white">{g.display_name}</span>
+              <span className="text-xs bg-warning/10 text-warning px-1.5 py-0.5 rounded">
                 外部ゲスト
               </span>
               {isPair && (
-                <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                <span className="text-xs bg-accent/10 text-accent px-1.5 py-0.5 rounded">
                   ペア
                 </span>
               )}
             </div>
-            <div className="text-sm text-neutral-600 mt-1">
-              <span className={g.gender === 'male' ? 'text-blue-600' : 'text-pink-600'}>
+            <div className="text-sm text-slate-400 mt-1">
+              <span className={g.gender === 'male' ? 'text-gender-male' : 'text-gender-female'}>
                 {g.gender === 'male' ? '男性' : '女性'}
               </span>
             </div>
@@ -595,7 +598,7 @@ export function EventDetailClient({
                 e.stopPropagation();
                 handleDeleteGuest(g.id);
               }}
-              className="p-1 hover:bg-red-100 rounded text-neutral-400 hover:text-red-500 flex-shrink-0"
+              className="p-1 hover:bg-error/20 rounded text-slate-500 hover:text-error flex-shrink-0"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -703,15 +706,15 @@ export function EventDetailClient({
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-slate-900">
       {/* Header */}
-      <header className="bg-white border-b border-neutral-100 sticky top-0 z-10">
+      <header className="glass border-b border-slate-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-xl font-bold">
+            <Link href="/admin" className="text-xl font-bold text-white">
               unplanned
             </Link>
-            <span className="text-sm text-neutral-500 bg-neutral-100 px-2 py-1 rounded">
+            <span className="text-sm text-slate-400 bg-slate-800 px-2 py-1 rounded">
               Admin
             </span>
           </div>
@@ -729,29 +732,29 @@ export function EventDetailClient({
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Link
           href="/admin"
-          className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-4"
+          className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           イベント一覧へ
         </Link>
 
         {/* Event info */}
-        <Card className="mb-6">
+        <Card className="mb-6 glass-card border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-lg font-bold">
+                <h1 className="text-lg font-bold text-white">
                   {formatDate(event.event_date)} {formatTime(event.event_date)}
                 </h1>
-                <p className="text-neutral-600 text-sm">{getAreaLabel(event.area)}</p>
+                <p className="text-slate-400 text-sm">{getAreaLabel(event.area)}</p>
               </div>
               <span
                 className={`text-sm px-3 py-1 rounded ${
                   event.status === 'open'
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-success/10 text-success'
                     : event.status === 'matched'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-neutral-100 text-neutral-600'
+                    ? 'bg-info/10 text-info'
+                    : 'bg-slate-800 text-slate-400'
                 }`}
               >
                 {event.status === 'open'
@@ -765,27 +768,27 @@ export function EventDetailClient({
         </Card>
 
         {/* Statistics summary */}
-        <Card className="mb-6">
+        <Card className="mb-6 glass-card border-slate-700">
           <CardContent className="p-4">
-            <h2 className="font-semibold mb-3">参加者サマリー</h2>
+            <h2 className="font-semibold mb-3 text-white">参加者サマリー</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
               {/* Total */}
-              <div className="bg-neutral-50 rounded-lg p-3">
-                <div className="text-neutral-500 text-xs">合計</div>
-                <div className="text-xl font-bold">{stats.total}人</div>
-                <div className="text-xs text-neutral-500">
+              <div className="bg-slate-800 rounded-lg p-3">
+                <div className="text-slate-400 text-xs">合計</div>
+                <div className="text-xl font-bold text-white">{stats.total}人</div>
+                <div className="text-xs text-slate-500">
                   登録: {stats.totalUsers} / ゲスト: {stats.totalGuests}
                 </div>
               </div>
 
               {/* Gender */}
-              <div className="bg-neutral-50 rounded-lg p-3">
-                <div className="text-neutral-500 text-xs">性別</div>
+              <div className="bg-slate-800 rounded-lg p-3">
+                <div className="text-slate-400 text-xs">性別</div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-blue-600 font-bold">男 {stats.male}</span>
-                  <span className="text-pink-600 font-bold">女 {stats.female}</span>
+                  <span className="text-gender-male font-bold">男 {stats.male}</span>
+                  <span className="text-gender-female font-bold">女 {stats.female}</span>
                 </div>
-                <div className="text-xs text-neutral-500">
+                <div className="text-xs text-slate-500">
                   {stats.male > 0 && stats.female > 0 && (
                     <>比率 {(stats.male / stats.female).toFixed(1)}:1</>
                   )}
@@ -793,19 +796,19 @@ export function EventDetailClient({
               </div>
 
               {/* Age */}
-              <div className="bg-neutral-50 rounded-lg p-3">
-                <div className="text-neutral-500 text-xs">年齢</div>
-                <div className="text-xl font-bold">平均 {stats.avgAge}歳</div>
-                <div className="text-xs text-neutral-500">
+              <div className="bg-slate-800 rounded-lg p-3">
+                <div className="text-slate-400 text-xs">年齢</div>
+                <div className="text-xl font-bold text-white">平均 {stats.avgAge}歳</div>
+                <div className="text-xs text-slate-500">
                   {stats.minAge}〜{stats.maxAge}歳
                 </div>
               </div>
 
               {/* Subscription */}
-              <div className="bg-neutral-50 rounded-lg p-3">
-                <div className="text-neutral-500 text-xs">有料会員</div>
-                <div className="text-xl font-bold text-green-600">{stats.subscribedCount}人</div>
-                <div className="text-xs text-neutral-500">
+              <div className="bg-slate-800 rounded-lg p-3">
+                <div className="text-slate-400 text-xs">有料会員</div>
+                <div className="text-xl font-bold text-success">{stats.subscribedCount}人</div>
+                <div className="text-xs text-slate-500">
                   {stats.totalUsers > 0 && (
                     <>{Math.round((stats.subscribedCount / stats.totalUsers) * 100)}%</>
                   )}
@@ -813,16 +816,16 @@ export function EventDetailClient({
               </div>
 
               {/* Personality */}
-              <div className="bg-neutral-50 rounded-lg p-3 md:col-span-2">
-                <div className="text-neutral-500 text-xs mb-1">性格タイプ</div>
+              <div className="bg-slate-800 rounded-lg p-3 md:col-span-2">
+                <div className="text-slate-400 text-xs mb-1">性格タイプ</div>
                 <div className="flex flex-wrap gap-1">
                   {Object.entries(stats.personalityCount).map(([type, count]) => (
-                    <span key={type} className="text-xs bg-white border px-2 py-0.5 rounded">
+                    <span key={type} className="text-xs bg-slate-700 text-slate-300 border border-slate-600 px-2 py-0.5 rounded">
                       {personalityLabels[type] || type}: {count}
                     </span>
                   ))}
                   {Object.keys(stats.personalityCount).length === 0 && (
-                    <span className="text-xs text-neutral-400">データなし</span>
+                    <span className="text-xs text-slate-500">データなし</span>
                   )}
                 </div>
               </div>
@@ -830,14 +833,14 @@ export function EventDetailClient({
 
             {/* Job breakdown */}
             {Object.keys(stats.jobCount).length > 0 && (
-              <div className="mt-3 pt-3 border-t">
-                <div className="text-neutral-500 text-xs mb-2">職業</div>
+              <div className="mt-3 pt-3 border-t border-slate-700">
+                <div className="text-slate-400 text-xs mb-2">職業</div>
                 <div className="flex flex-wrap gap-1">
                   {Object.entries(stats.jobCount)
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 10)
                     .map(([job, count]) => (
-                      <span key={job} className="text-xs bg-neutral-100 px-2 py-1 rounded">
+                      <span key={job} className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded">
                         {job} ({count})
                       </span>
                     ))}
@@ -849,9 +852,9 @@ export function EventDetailClient({
 
         {/* Split pair errors */}
         {splitPairs.length > 0 && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <h3 className="font-semibold text-red-700 mb-2">ペア分割エラー</h3>
-            <ul className="text-sm text-red-600 space-y-1">
+          <div className="mb-6 bg-error/10 border border-error/30 rounded-lg p-4">
+            <h3 className="font-semibold text-error mb-2">ペア分割エラー</h3>
+            <ul className="text-sm text-error space-y-1">
               {splitPairs.map((error, idx) => (
                 <li key={idx}>• {error}</li>
               ))}
@@ -863,7 +866,7 @@ export function EventDetailClient({
           {/* Unassigned participants */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold flex items-center gap-2">
+              <h2 className="font-semibold flex items-center gap-2 text-white">
                 <Users className="w-5 h-5" />
                 未割当 ({totalUnassigned}人)
               </h2>
@@ -875,9 +878,9 @@ export function EventDetailClient({
 
             {/* Guest form */}
             {showGuestForm && (
-              <Card className="mb-4">
+              <Card className="mb-4 glass-card border-slate-700">
                 <CardContent className="p-4 space-y-3">
-                  <p className="text-sm font-medium">外部ゲストを追加</p>
+                  <p className="text-sm font-medium text-white">外部ゲストを追加</p>
                   <Input
                     placeholder="名前"
                     value={newGuest.display_name}
@@ -903,10 +906,10 @@ export function EventDetailClient({
               </Card>
             )}
 
-            <Card>
+            <Card className="glass-card border-slate-700">
               <CardContent className="p-4">
                 {totalUnassigned === 0 ? (
-                  <p className="text-sm text-neutral-500 text-center py-4">
+                  <p className="text-sm text-slate-400 text-center py-4">
                     全員割当済み
                   </p>
                 ) : (
@@ -916,15 +919,15 @@ export function EventDetailClient({
 
                     {/* External guests */}
                     {unassignedGuests.length > 0 && unassignedParticipants.length > 0 && (
-                      <div className="border-t my-3 pt-3">
-                        <p className="text-xs text-neutral-500 mb-2">外部ゲスト</p>
+                      <div className="border-t border-slate-700 my-3 pt-3">
+                        <p className="text-xs text-slate-400 mb-2">外部ゲスト</p>
                       </div>
                     )}
                     {unassignedGuests.map(g => renderGuest(g, undefined, true))}
                   </div>
                 )}
                 {selectedParticipant && !assignedIds.has(selectedParticipant) && (
-                  <p className="text-xs text-blue-600 mt-3 text-center">
+                  <p className="text-xs text-info mt-3 text-center">
                     テーブルをクリックして追加
                   </p>
                 )}
@@ -935,7 +938,7 @@ export function EventDetailClient({
           {/* Tables */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold flex items-center gap-2">
+              <h2 className="font-semibold flex items-center gap-2 text-white">
                 <Store className="w-5 h-5" />
                 テーブル ({tables.length})
               </h2>
@@ -946,9 +949,9 @@ export function EventDetailClient({
             </div>
 
             {tables.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center text-neutral-500">
-                  <Store className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
+              <Card className="glass-card border-slate-700">
+                <CardContent className="p-8 text-center text-slate-400">
+                  <Store className="w-12 h-12 mx-auto mb-4 text-slate-600" />
                   <p className="mb-4">テーブルがありません</p>
                   <Button onClick={addTable}>
                     <Plus className="w-4 h-4 mr-2" />
@@ -964,10 +967,10 @@ export function EventDetailClient({
                   return (
                     <Card
                       key={table.id}
-                      className={selectedParticipant && !assignedIds.has(selectedParticipant)
-                        ? 'border-blue-300 cursor-pointer hover:border-blue-400'
+                      className={`glass-card border-slate-700 ${selectedParticipant && !assignedIds.has(selectedParticipant)
+                        ? 'border-info/50 cursor-pointer hover:border-info'
                         : ''
-                      }
+                      }`}
                       onClick={() => {
                         if (selectedParticipant && !assignedIds.has(selectedParticipant)) {
                           addToTable(table.id, selectedParticipant);
@@ -976,7 +979,7 @@ export function EventDetailClient({
                     >
                       <CardHeader className="p-4 pb-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-sm">テーブル {idx + 1}</span>
+                          <span className="font-semibold text-sm text-white">テーブル {idx + 1}</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -984,7 +987,7 @@ export function EventDetailClient({
                                 removeTable(table.id);
                               }
                             }}
-                            className="p-1 hover:bg-neutral-100 rounded text-neutral-400 hover:text-red-500"
+                            className="p-1 hover:bg-slate-700 rounded text-slate-500 hover:text-error"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1010,31 +1013,31 @@ export function EventDetailClient({
                           className="text-sm"
                         />
 
-                        <div className="border-t pt-3">
+                        <div className="border-t border-slate-700 pt-3">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-neutral-500">
+                            <span className="text-xs text-slate-400">
                               メンバー ({table.members.length}/3-8人)
                             </span>
                             {validation && (
-                              <span className="text-xs text-orange-600">{validation}</span>
+                              <span className="text-xs text-warning">{validation}</span>
                             )}
                           </div>
 
                           {/* Table composition summary */}
                           {table.members.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-2 text-xs">
-                              <span className="bg-neutral-100 px-2 py-0.5 rounded">
-                                <span className="text-blue-600">男{tableStats.male}</span>
-                                <span className="mx-1">/</span>
-                                <span className="text-pink-600">女{tableStats.female}</span>
+                              <span className="bg-slate-800 px-2 py-0.5 rounded">
+                                <span className="text-gender-male">男{tableStats.male}</span>
+                                <span className="mx-1 text-slate-500">/</span>
+                                <span className="text-gender-female">女{tableStats.female}</span>
                               </span>
                               {tableStats.avgAge > 0 && (
-                                <span className="bg-neutral-100 px-2 py-0.5 rounded">
+                                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
                                   平均{tableStats.avgAge}歳
                                 </span>
                               )}
                               {tableStats.personalities.length > 0 && (
-                                <span className="bg-neutral-100 px-2 py-0.5 rounded">
+                                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
                                   {[...new Set(tableStats.personalities)].map(p =>
                                     personalityLabels[p]?.charAt(0) || p.charAt(0)
                                   ).join('')}
@@ -1044,7 +1047,7 @@ export function EventDetailClient({
                           )}
 
                           {table.members.length === 0 ? (
-                            <p className="text-sm text-neutral-400 text-center py-2">
+                            <p className="text-sm text-slate-500 text-center py-2">
                               参加者をクリックして追加
                             </p>
                           ) : (
@@ -1063,10 +1066,10 @@ export function EventDetailClient({
         </div>
 
         {/* Instructions */}
-        <Card className="mt-6">
+        <Card className="mt-6 glass-card border-slate-700">
           <CardContent className="p-4">
-            <h3 className="font-semibold mb-2">使い方</h3>
-            <ul className="text-sm text-neutral-600 space-y-1">
+            <h3 className="font-semibold mb-2 text-white">使い方</h3>
+            <ul className="text-sm text-slate-400 space-y-1">
               <li>• 参加者をクリックして選択し、テーブルをクリックして割り当てます</li>
               <li>• ペアで参加している人は一緒に移動します</li>
               <li>• 「ゲスト追加」で登録していない外部参加者を追加できます</li>
