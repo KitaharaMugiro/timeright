@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { BorderBeam } from '@/components/ui/magicui';
 import { formatDate, formatTime, getAreaLabel, isWithin48Hours } from '@/lib/utils';
-import { Plus, Calendar, MapPin, Users, AlertCircle, Star } from 'lucide-react';
+import { Plus, Calendar, MapPin, Users, AlertCircle, Star, TrendingUp } from 'lucide-react';
 import type { Event } from '@/types/database';
 
 interface AdminClientProps {
@@ -112,6 +112,12 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold">イベント管理</h1>
           <div className="flex gap-2">
+            <Link href="/admin/kpi">
+              <Button variant="outline">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                KPI
+              </Button>
+            </Link>
             <Link href="/admin/reviews">
               <Button variant="outline">
                 <Star className="w-4 h-4 mr-2" />
