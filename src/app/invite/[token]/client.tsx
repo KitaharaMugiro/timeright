@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
-import { Calendar, MapPin, UserPlus, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, UserPlus, MessageSquare, ArrowLeft, Gift } from 'lucide-react';
 import type { Participation, Event, ParticipationMood } from '@/types/database';
 
 interface InviteClientProps {
@@ -14,6 +14,7 @@ interface InviteClientProps {
   participation: Participation & { events: Event };
   inviterName: string;
   isLoggedIn: boolean;
+  isEligibleForCoupon: boolean;
 }
 
 type ViewMode = 'invite' | 'mood';
@@ -44,6 +45,7 @@ export function InviteClient({
   participation,
   inviterName,
   isLoggedIn,
+  isEligibleForCoupon,
 }: InviteClientProps) {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('invite');
@@ -118,9 +120,22 @@ export function InviteClient({
               <h1 className="text-2xl font-bold mb-2">
                 {inviterName}さんからの招待
               </h1>
-              <p className="text-neutral-600 mb-6">
+              <p className="text-neutral-600 mb-4">
                 一緒にディナーに参加しませんか？
               </p>
+
+              {/* First month free banner */}
+              {!isLoggedIn && isEligibleForCoupon && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
+                  <div className="flex items-center gap-2 text-amber-700">
+                    <Gift className="w-5 h-5" />
+                    <span className="font-semibold">初月無料</span>
+                  </div>
+                  <p className="text-sm text-amber-600 mt-1">
+                    招待からの登録で、初月の会費が無料になります
+                  </p>
+                </div>
+              )}
 
               <div className="bg-neutral-50 rounded-lg p-4 mb-6 text-left">
                 <div className="flex items-center gap-4 text-sm text-neutral-600 mb-2">
@@ -146,7 +161,9 @@ export function InviteClient({
 
               {!isLoggedIn && (
                 <p className="text-xs text-neutral-500 mt-4">
-                  unplanned メンバー（月額1,980円）への登録が必要です
+                  {isEligibleForCoupon
+                    ? 'unplanned メンバーへの登録が必要です（初月無料・翌月から月額1,980円）'
+                    : 'unplanned メンバー（月額1,980円）への登録が必要です'}
                 </p>
               )}
             </CardContent>

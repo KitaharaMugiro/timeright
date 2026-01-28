@@ -88,14 +88,27 @@ export default async function InvitePage({ params }: InvitePageProps) {
     // Check subscription
     const { data: userData } = await supabase
       .from('users')
-      .select('subscription_status')
+      .select('subscription_status, has_used_invite_coupon')
       .eq('id', userId)
       .single();
 
-    const user = userData as Pick<User, 'subscription_status'> | null;
+    const user = userData as Pick<User, 'subscription_status' | 'has_used_invite_coupon'> | null;
     if (user?.subscription_status !== 'active') {
       redirect('/onboarding/subscribe');
     }
+  }
+
+  // Determine if user is eligible for invite coupon
+  // - Not logged in users are potentially eligible (will be checked at checkout)
+  // - Logged in users who haven't used the coupon yet are eligible
+  let isEligibleForCoupon = true;
+  if (userId) {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('has_used_invite_coupon')
+      .eq('id', userId)
+      .single();
+    isEligibleForCoupon = !(userData as { has_used_invite_coupon: boolean } | null)?.has_used_invite_coupon;
   }
 
   const inviterName = participation.users?.display_name || '友達';
@@ -106,6 +119,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
       participation={participation}
       inviterName={inviterName}
       isLoggedIn={!!userId}
+      isEligibleForCoupon={isEligibleForCoupon}
     />
   );
 }

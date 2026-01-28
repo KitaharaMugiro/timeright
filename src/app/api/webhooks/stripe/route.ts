@@ -62,7 +62,18 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', userId);
 
-          // Mark referral as completed if user was referred
+          // Mark invite coupon as used if this checkout used the invite coupon
+          const isInviteCoupon = session.metadata?.is_invite_coupon === 'true';
+          if (isInviteCoupon) {
+            await (supabase.from('users') as any)
+              .update({
+                has_used_invite_coupon: true,
+                pending_invite_token: null,
+              })
+              .eq('id', userId);
+          }
+
+          // Mark referral as completed if user was referred (legacy support)
           const { data: userData } = await supabase
             .from('users')
             .select('referred_by')

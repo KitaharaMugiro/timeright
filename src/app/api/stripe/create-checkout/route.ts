@@ -81,13 +81,23 @@ export async function POST(request: NextRequest) {
       metadata,
     };
 
-    // Apply referral coupon if user was referred
-    if (user.referred_by && process.env.STRIPE_REFERRAL_COUPON_ID) {
+    // Apply invite coupon if user has pending invite and hasn't used coupon yet
+    const isEligibleForInviteCoupon =
+      user.pending_invite_token &&
+      !user.has_used_invite_coupon &&
+      process.env.STRIPE_REFERRAL_COUPON_ID;
+
+    if (isEligibleForInviteCoupon) {
       sessionParams.discounts = [
         {
           coupon: process.env.STRIPE_REFERRAL_COUPON_ID,
         },
       ];
+      // Add flag to metadata for webhook processing
+      sessionParams.metadata = {
+        ...sessionParams.metadata,
+        is_invite_coupon: 'true',
+      };
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);

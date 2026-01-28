@@ -202,6 +202,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Check for pending invite token and save to user for coupon application at checkout
+    const pendingInviteToken = request.cookies.get('pending_invite')?.value;
+    if (pendingInviteToken) {
+      // Verify the invite token is valid
+      const { data: inviteParticipation } = await supabase
+        .from('participations')
+        .select('id')
+        .eq('invite_token', pendingInviteToken)
+        .single();
+
+      if (inviteParticipation) {
+        // Save pending invite token to user (will be used at checkout for coupon)
+        await (supabase.from('users') as any)
+          .update({ pending_invite_token: pendingInviteToken })
+          .eq('id', userId);
+      }
+    }
+
     // Determine redirect URL
     const redirectUrl = needsOnboarding ? '/onboarding' : '/dashboard';
     const finalResponse = NextResponse.redirect(new URL(redirectUrl, request.url));
@@ -210,6 +228,7 @@ export async function GET(request: NextRequest) {
     finalResponse.cookies.delete('line_state');
     finalResponse.cookies.delete('line_nonce');
     finalResponse.cookies.delete('referral_code');
+    finalResponse.cookies.delete('pending_invite');
 
     // Set session cookies
     finalResponse.cookies.set('user_id', userId, {

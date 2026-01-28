@@ -119,6 +119,27 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
     });
 
+    // Check for pending invite token and save to user for coupon application at checkout
+    const pendingInviteToken = cookieStore.get('pending_invite')?.value;
+    if (pendingInviteToken) {
+      // Verify the invite token is valid
+      const { data: inviteParticipation } = await supabase
+        .from('participations')
+        .select('id')
+        .eq('invite_token', pendingInviteToken)
+        .single();
+
+      if (inviteParticipation) {
+        // Save pending invite token to user (will be used at checkout for coupon)
+        await (supabase.from('users') as any)
+          .update({ pending_invite_token: pendingInviteToken })
+          .eq('id', userId);
+      }
+
+      // Clear the cookie
+      cookieStore.delete('pending_invite');
+    }
+
     // Determine redirect URL
     let redirectUrl = '/dashboard';
     if (needsOnboarding) {

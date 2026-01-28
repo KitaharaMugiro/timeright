@@ -22,6 +22,8 @@ export interface User {
   line_user_id: string | null;
   is_admin: boolean;
   referred_by: string | null;
+  has_used_invite_coupon: boolean;
+  pending_invite_token: string | null;
   created_at: string;
 }
 
