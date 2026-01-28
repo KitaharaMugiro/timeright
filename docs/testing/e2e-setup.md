@@ -43,7 +43,6 @@ service_role key: eyJhbGc...
 ```bash
 # Supabaseローカル環境
 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc... # 上記で表示されたanon key
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGc... # 上記で表示されたservice_role key
 
 # Stripe（テストモード）
@@ -107,7 +106,6 @@ npm run test:e2e:ui
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-test-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-test-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-test-service-role-key
 
 # Stripe テストモード

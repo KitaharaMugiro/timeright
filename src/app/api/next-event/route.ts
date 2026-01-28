@@ -14,7 +14,8 @@ export async function GET() {
     .eq('status', 'open')
     .gte('event_date', cutoffDate.toISOString())
     .order('event_date', { ascending: true })
-    .limit(1);
+    .limit(1)
+    .returns<{ area: string; event_date: string }[]>();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

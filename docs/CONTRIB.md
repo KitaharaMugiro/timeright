@@ -50,7 +50,6 @@
 | Variable | Type | Description |
 |----------|------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Public | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public | Supabase anonymous/public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Secret | Supabase service role key for server-side operations |
 
 #### LINE LIFF

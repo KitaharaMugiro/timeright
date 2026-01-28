@@ -12,12 +12,10 @@ async function globalSetup() {
 
   // 環境変数のチェック
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl) {
     console.error('❌ Missing required environment variables:');
     console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓' : '✗');
-    console.error('   NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✓' : '✗');
     console.error('\n📝 Please set up your test environment:');
     console.error('   1. Copy .env.example to .env.test.local');
     console.error('   2. Start local Supabase: npm run supabase:start');

@@ -121,29 +121,14 @@ export default function LandingPage() {
 
   useEffect(() => {
     const fetchNextEvent = async () => {
-      const supabase = createClient();
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() + 2);
-      cutoffDate.setHours(0, 0, 0, 0);
-      const { data } = await supabase
-        .from('events')
-        .select('area, event_date')
-        .eq('status', 'open' as const)
-        .gte('event_date', cutoffDate.toISOString())
-        .order('event_date', { ascending: true })
-        .limit(1)
-        .returns<{ area: string; event_date: string }[]>();
-
-      if (data && data.length > 0) {
-        const event = data[0];
-        const eventDate = new Date(event.event_date);
-        const month = eventDate.getMonth() + 1;
-        const day = eventDate.getDate();
-        const weekday = ['日', '月', '火', '水', '木', '金', '土'][eventDate.getDay()];
-        setNextEvent({
-          area: event.area,
-          date: `${month}/${day}(${weekday})`,
-        });
+      try {
+        const res = await fetch('/api/next-event');
+        const { nextEvent } = await res.json();
+        if (nextEvent) {
+          setNextEvent(nextEvent);
+        }
+      } catch {
+        // Ignore fetch errors
       }
     };
     fetchNextEvent();

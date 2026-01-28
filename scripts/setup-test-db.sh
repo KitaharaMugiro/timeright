@@ -117,7 +117,6 @@ if [ -f "$ENV_FILE" ]; then
 
 # Supabase Configuration (Local)
 NEXT_PUBLIC_SUPABASE_URL=$API_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
 
 # Stripe Configuration (Test Mode)
@@ -139,7 +138,6 @@ else
 
 # Supabase Configuration (Local)
 NEXT_PUBLIC_SUPABASE_URL=$API_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
 
 # Stripe Configuration (Test Mode)

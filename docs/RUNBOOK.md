@@ -33,7 +33,6 @@ Ensure all production environment variables are set:
 | Variable | Where Used | Critical |
 |----------|-----------|----------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Client & Server | Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client & Server | Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Yes |
 | `NEXT_PUBLIC_LIFF_ID` | Client | Yes |
 | `LINE_CHANNEL_ID` | Server | Yes |

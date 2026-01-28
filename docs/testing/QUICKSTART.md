@@ -49,7 +49,6 @@ cp .env.test.local.example .env.test.local
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...  # 上記で表示されたanon key
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...     # 上記で表示されたservice_role key
 ```
 
