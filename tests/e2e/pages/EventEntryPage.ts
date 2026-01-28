@@ -70,17 +70,17 @@ export class EventEntryPage {
 
     // Entry type selection
     this.entryTypeTitle = page.getByText('参加方法を選択');
-    this.soloCard = page.locator('div').filter({ hasText: /^1人で参加/ }).first();
-    this.pairCard = page.locator('div').filter({ hasText: /^友達と参加（ペア）/ }).first();
+    this.soloCard = page.getByRole('heading', { name: '1人で参加' }).locator('xpath=ancestor::div[contains(@class, "cursor-pointer") or contains(@class, "Card")]');
+    this.pairCard = page.getByRole('heading', { name: '友達と参加（ペア）' }).locator('xpath=ancestor::div[contains(@class, "cursor-pointer") or contains(@class, "Card")]');
     this.pairDisabledNote = page.getByText('開催2日前を過ぎたため選択できません');
 
     // Mood selection
     this.moodTitle = page.getByText('今日はどんな気分？');
     this.moodDescription = page.getByText(/当日の雰囲気を教えてください/);
-    this.livelyyMoodCard = page.locator('div').filter({ hasText: /^ワイワイ飲み/ }).first();
-    this.relaxedMoodCard = page.locator('div').filter({ hasText: /^まったりトーク/ }).first();
-    this.inspireMoodCard = page.locator('div').filter({ hasText: /^インスパイア/ }).first();
-    this.otherMoodCard = page.getByText('その他').locator('xpath=ancestor::div[contains(@class, "cursor-pointer")]').first();
+    this.livelyyMoodCard = page.getByRole('heading', { name: 'ワイワイ飲み' }).locator('xpath=ancestor::div[contains(@class, "cursor-pointer") or contains(@class, "Card")]');
+    this.relaxedMoodCard = page.getByRole('heading', { name: 'まったりトーク' }).locator('xpath=ancestor::div[contains(@class, "cursor-pointer") or contains(@class, "Card")]');
+    this.inspireMoodCard = page.getByRole('heading', { name: 'インスパイア' }).locator('xpath=ancestor::div[contains(@class, "cursor-pointer") or contains(@class, "Card")]');
+    this.otherMoodCard = page.getByRole('heading', { name: 'その他' }).locator('xpath=ancestor::div[contains(@class, "cursor-pointer") or contains(@class, "Card")]');
     this.otherMoodInput = page.locator('input[placeholder*="仕事の話"]').or(page.locator('input[placeholder*="例:"]'));
     this.otherMoodConfirmButton = page.getByRole('button', { name: '決定' });
     this.moodBackButton = page.getByRole('button', { name: '戻る' }).first();
