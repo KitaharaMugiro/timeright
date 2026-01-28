@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { formatDate, formatTime, getAreaLabel, isReviewAccessible, isWithin48Hours } from '@/lib/utils';
-import { Calendar, MapPin, LogOut, Star, ArrowRight, Settings, User as UserIcon, X, Ticket, Clock } from 'lucide-react';
+import { Calendar, MapPin, LogOut, Star, ArrowRight, Settings, User as UserIcon, X, Ticket, Clock, Copy, Check, Users } from 'lucide-react';
 import { useState } from 'react';
 import {
   ShimmerButton,
@@ -15,12 +15,19 @@ import {
 import { AvatarCircles } from '@/components/ui/avatar-circles';
 import type { User, Event, Participation, Match } from '@/types/database';
 
+interface PairPartner {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
 interface DashboardClientProps {
   user: User;
   events: Event[];
   participations: (Participation & { events: Event })[];
   matches: (Match & { events: Event })[];
   participantsMap: Record<string, { avatar_url: string | null; job: string }>;
+  pairPartnersMap: Record<string, PairPartner>;
 }
 
 export function DashboardClient({
@@ -29,9 +36,22 @@ export function DashboardClient({
   participations,
   matches,
   participantsMap,
+  pairPartnersMap,
 }: DashboardClientProps) {
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [localParticipations, setLocalParticipations] = useState(participations);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyInviteLink = async (inviteToken: string, participationId: string) => {
+    const inviteUrl = `${window.location.origin}/invite/${inviteToken}`;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopiedId(participationId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      alert('リンクのコピーに失敗しました');
+    }
+  };
 
   const userParticipationEventIds = localParticipations.map((p) => p.event_id);
 
@@ -81,7 +101,7 @@ export function DashboardClient({
       >
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="text-xl font-semibold text-white">
-            unplanned
+            dine tokyo
           </Link>
           <div className="flex items-center gap-1">
             <Link href="/profile">
@@ -237,6 +257,9 @@ export function DashboardClient({
                 .map((participation, index) => {
                   const canCancel = !isWithin48Hours(participation.events.event_date);
                   const isCanceling = cancelingId === participation.id;
+                  const isPair = participation.entry_type === 'pair';
+                  const pairPartner = isPair ? pairPartnersMap[participation.group_id] : null;
+                  const isCopied = copiedId === participation.id;
 
                   return (
                     <BlurFade key={participation.id} delay={index * 0.1}>
@@ -255,9 +278,7 @@ export function DashboardClient({
                                 </span>
                               </div>
                               <p className="mt-2 text-sm font-medium text-slate-400">
-                                {participation.entry_type === 'pair'
-                                  ? 'ペアで参加'
-                                  : 'ソロで参加'}
+                                {isPair ? 'ペアで参加' : 'ソロで参加'}
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -282,6 +303,61 @@ export function DashboardClient({
                               )}
                             </div>
                           </div>
+
+                          {/* Pair participation section */}
+                          {isPair && (
+                            <div className="mt-4 pt-4 border-t border-slate-700/50">
+                              {pairPartner ? (
+                                // Partner has joined
+                                <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <Users className="w-4 h-4 text-emerald-500" />
+                                    <span className="text-sm text-emerald-400">ペア確定</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 ml-2">
+                                    <img
+                                      src={pairPartner.avatar_url || '/default-avatar.png'}
+                                      alt={pairPartner.display_name}
+                                      className="w-6 h-6 rounded-full object-cover"
+                                    />
+                                    <span className="text-sm text-slate-300">
+                                      {pairPartner.display_name}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                // Waiting for partner - show invite link
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2 text-slate-400">
+                                    <Users className="w-4 h-4" />
+                                    <span className="text-sm">ペア待ち</span>
+                                  </div>
+                                  <motion.button
+                                    onClick={() => handleCopyInviteLink(participation.invite_token, participation.id)}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                      isCopied
+                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                        : 'bg-amber-500/10 text-amber-500 border border-amber-500/30 hover:bg-amber-500/20'
+                                    }`}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                  >
+                                    {isCopied ? (
+                                      <>
+                                        <Check className="w-4 h-4" />
+                                        コピーしました
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="w-4 h-4" />
+                                        招待リンクをコピー
+                                      </>
+                                    )}
+                                  </motion.button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </GlassCard>
                     </BlurFade>

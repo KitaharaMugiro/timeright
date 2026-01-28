@@ -102,7 +102,7 @@ export function AdminReviewsClient({ initialReviews }: AdminReviewsClientProps) 
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-xl font-bold text-white">
-              unplanned
+              dine tokyo
             </Link>
             <span className="text-sm text-slate-400 bg-slate-800 px-2 py-1 rounded" data-testid="admin-badge">
               Admin

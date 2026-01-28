@@ -3,7 +3,7 @@ import { Page, Locator, expect } from '@playwright/test';
 /**
  * Page Object Model for the Landing Page (/)
  *
- * The landing page is the main entry point for the unplanned app.
+ * The landing page is the main entry point for the dine tokyo app.
  * Updated for the new dark mode design with:
  * - Glassmorphism header and components
  * - Hero section with AnimatedGradientText and particles
@@ -57,7 +57,7 @@ export class LandingPage {
     this.logo = page.locator('header a[href="/"]');
     this.loginButton = page.locator('header button', { hasText: /ログイン/ });
 
-    // Hero section - new design with "Life is unplanned"
+    // Hero section - new design with "dine tokyo"
     this.heroSection = page.locator('section').first();
     this.heroTitle = page.locator('h1');
     this.heroSubtitle = page.locator('text=人生は、予測不能な「点」でできている。');
@@ -69,7 +69,7 @@ export class LandingPage {
     this.steps = page.locator('text=/STEP \\d/');
 
     // Features section
-    this.featuresSection = page.locator('section', { hasText: 'unplanned の特徴' });
+    this.featuresSection = page.locator('section', { hasText: 'dine tokyo の特徴' });
     this.featureCards = this.featuresSection.locator('text=/安心の会員制|シンプルな料金|手間いらず/');
 
     // Testimonials section
@@ -98,7 +98,7 @@ export class LandingPage {
    * Verify page title contains expected text
    */
   async verifyPageTitle() {
-    await expect(this.page).toHaveTitle(/unplanned/i);
+    await expect(this.page).toHaveTitle(/dine tokyo/i);
   }
 
   /**
@@ -112,12 +112,12 @@ export class LandingPage {
 
   /**
    * Verify hero section content - updated for new design
-   * Hero now shows "Life is unplanned" with animated gradient text
+   * Hero now shows "dine tokyo" with animated gradient text
    */
   async verifyHeroSection() {
     await expect(this.heroTitle).toBeVisible();
-    // New hero title: "Life is unplanned."
-    await expect(this.heroTitle).toContainText(/unplanned/i);
+    // New hero title: "dine tokyo"
+    await expect(this.heroTitle).toContainText(/dine tokyo/i);
     await expect(this.heroCTAButton).toBeVisible();
     await expect(this.nextEventBadge).toBeVisible();
   }

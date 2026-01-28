@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       const { data: newUserData, error: insertError } = await (supabase
         .from('users') as any)
         .insert({
-          email: `${profile.userId}@line.unplanned.app`,
+          email: `${profile.userId}@line.dinetokyo.app`,
           display_name: profile.displayName,
           avatar_url: profile.pictureUrl || null,
           line_user_id: profile.userId,

@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
       needsOnboarding = !existingUser.personality_type;
     } else {
       // Create new user with minimal data - rest will be filled in onboarding
-      const email = idTokenPayload.email || `${profile.userId}@line.unplanned.app`;
+      const email = idTokenPayload.email || `${profile.userId}@line.dinetokyo.app`;
 
       // Check for referral code
       const referralCodeFromCookie = request.cookies.get('referral_code')?.value;
@@ -221,7 +221,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine redirect URL
-    const redirectUrl = needsOnboarding ? '/onboarding' : '/dashboard';
+    const authRedirect = request.cookies.get('auth_redirect')?.value;
+    let redirectUrl: string;
+    if (needsOnboarding) {
+      redirectUrl = '/onboarding';
+    } else if (authRedirect) {
+      redirectUrl = authRedirect;
+    } else {
+      redirectUrl = '/dashboard';
+    }
     const finalResponse = NextResponse.redirect(new URL(redirectUrl, request.url));
 
     // Clear auth cookies
@@ -229,6 +237,7 @@ export async function GET(request: NextRequest) {
     finalResponse.cookies.delete('line_nonce');
     finalResponse.cookies.delete('referral_code');
     finalResponse.cookies.delete('pending_invite');
+    finalResponse.cookies.delete('auth_redirect');
 
     // Set session cookies
     finalResponse.cookies.set('user_id', userId, {

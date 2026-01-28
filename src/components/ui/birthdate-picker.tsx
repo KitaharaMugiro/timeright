@@ -131,9 +131,9 @@ export function BirthdatePicker({
   }, [selectedYear, selectedMonth, onChange]);
 
   const selectClassName = cn(
-    'flex-1 min-w-0 px-3 py-3 rounded-xl border border-neutral-200',
-    'focus:border-[#FF6B6B] focus:ring-2 focus:ring-[#FF6B6B]/20 outline-none',
-    'transition-all bg-white text-neutral-900',
+    'flex-1 min-w-0 px-3 py-3 rounded-xl border border-slate-600',
+    'focus:border-white/50 focus:ring-2 focus:ring-white/20 outline-none',
+    'transition-all bg-slate-800 text-white',
     'appearance-none cursor-pointer'
   );
 

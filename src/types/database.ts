@@ -5,6 +5,7 @@ export type EntryType = 'solo' | 'pair';
 export type ParticipationStatus = 'pending' | 'matched' | 'canceled';
 export type PersonalityType = 'Leader' | 'Supporter' | 'Analyst' | 'Entertainer';
 export type ParticipationMood = 'lively' | 'relaxed' | 'inspire' | 'other';
+export type BudgetLevel = 1 | 2 | 3;
 export type ReferralStatus = 'pending' | 'completed' | 'expired';
 
 export interface User {
@@ -53,6 +54,7 @@ export interface Participation {
   invite_token: string;
   mood: ParticipationMood;
   mood_text: string | null;
+  budget_level: BudgetLevel;
   status: ParticipationStatus;
   created_at: string;
 }
@@ -128,6 +130,7 @@ export interface Database {
           entry_type: EntryType;
           invite_token: string;
           mood: ParticipationMood;
+          budget_level: BudgetLevel;
         };
         Update: Partial<Participation>;
         Relationships: [];
@@ -172,6 +175,7 @@ export interface Database {
       participation_status: ParticipationStatus;
       personality_type: PersonalityType;
       participation_mood: ParticipationMood;
+      budget_level: BudgetLevel;
       referral_status: ReferralStatus;
     };
     CompositeTypes: Record<string, never>;

@@ -3,13 +3,14 @@ import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { generateInviteToken, isWithin48Hours } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
-import type { EntryType, User, Event, ParticipationMood, Participation } from '@/types/database';
+import type { EntryType, User, Event, ParticipationMood, Participation, BudgetLevel } from '@/types/database';
 
 interface EntryRequest {
   event_id: string;
   entry_type: EntryType;
   mood: ParticipationMood;
   mood_text?: string | null;
+  budget_level: BudgetLevel;
 }
 
 export async function POST(request: NextRequest) {
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { event_id, entry_type, mood, mood_text }: EntryRequest = await request.json();
+    const { event_id, entry_type, mood, mood_text, budget_level }: EntryRequest = await request.json();
 
     // Get event
     const { data: eventData } = await supabase
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
           entry_type,
           mood,
           mood_text: mood_text || null,
+          budget_level,
           invite_token: inviteToken,
           status: 'pending',
         })
@@ -116,6 +118,7 @@ export async function POST(request: NextRequest) {
         entry_type,
         mood,
         mood_text: mood_text || null,
+        budget_level,
         invite_token: inviteToken,
         status: 'pending',
       });

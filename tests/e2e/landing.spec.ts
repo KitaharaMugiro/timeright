@@ -20,14 +20,14 @@ test.describe('Landing Page', () => {
     });
 
     test('should display correct page title', async ({ page }) => {
-      // Page should have some title (may be unplanned or app name)
+      // Page should have some title (may be dine tokyo or app name)
       const title = await page.title();
       expect(title).toBeTruthy();
     });
 
     test('should display header with logo and login button', async () => {
       await landingPage.verifyHeader();
-      await expect(landingPage.logo).toContainText(/unplanned/i);
+      await expect(landingPage.logo).toContainText(/dine tokyo/i);
       await expect(landingPage.loginButton).toContainText('ログイン');
     });
   });
@@ -35,8 +35,8 @@ test.describe('Landing Page', () => {
   test.describe('Hero Section', () => {
     test('should display hero title', async () => {
       await expect(landingPage.heroTitle).toBeVisible();
-      // New design: "Life is unplanned."
-      await expect(landingPage.heroTitle).toContainText(/unplanned/i);
+      // New design: "dine tokyo"
+      await expect(landingPage.heroTitle).toContainText(/dine tokyo/i);
     });
 
     test('should display next event badge', async () => {
@@ -117,7 +117,7 @@ test.describe('Landing Page', () => {
     });
 
     test('should display copyright notice', async ({ page }) => {
-      await expect(page.locator('text=2024 unplanned')).toBeVisible();
+      await expect(page.locator('text=2024 dine tokyo')).toBeVisible();
     });
   });
 

@@ -266,7 +266,7 @@ export default function OnboardingPage() {
                   transition={{ delay: 0.1 }}
                 >
                   <p className="text-slate-300 text-sm">
-                    はじめまして！unplannedへようこそ。
+                    はじめまして！dine tokyoへようこそ。
                     まずはあなたのことを教えてください。
                   </p>
                 </motion.div>

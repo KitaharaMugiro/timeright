@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/server';
-import type { User, EntryType, ParticipationMood } from '@/types/database';
+import type { User, EntryType, ParticipationMood, BudgetLevel } from '@/types/database';
 import Stripe from 'stripe';
 
 interface CheckoutRequest {
@@ -10,6 +10,7 @@ interface CheckoutRequest {
   entry_type?: EntryType;
   mood?: ParticipationMood;
   mood_text?: string | null;
+  budget_level?: BudgetLevel;
 }
 
 export async function POST(request: NextRequest) {
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
       if (body.mood_text) {
         metadata.mood_text = body.mood_text;
       }
+      metadata.budget_level = String(body.budget_level || 2);
     }
 
     // Set success/cancel URLs based on whether event info is provided

@@ -173,6 +173,8 @@ body {
 /* Smooth scroll */
 html {
   scroll-behavior: smooth;
+  /* Prevent browser auto dark mode conversion */
+  color-scheme: light only;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

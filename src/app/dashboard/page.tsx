@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
 import { DashboardClient } from './client';
-import type { Match, Event } from '@/types/database';
+import type { Match, Event, Participation } from '@/types/database';
 
 interface DashboardPageProps {
   searchParams: Promise<{ success?: string }>;
@@ -58,7 +58,39 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     .from('participations')
     .select('*, events(*)')
     .eq('user_id', user.id)
-    .neq('status', 'canceled');
+    .neq('status', 'canceled') as { data: (Participation & { events: Event })[] | null };
+
+  // Get pair partners for user's pair participations
+  type PairPartner = {
+    id: string;
+    display_name: string;
+    avatar_url: string | null;
+  };
+  const pairPartnersMap: Record<string, PairPartner> = {};
+
+  const pairParticipations = (participations || []).filter((p) => p.entry_type === 'pair');
+  if (pairParticipations.length > 0) {
+    const groupIds = pairParticipations.map((p) => p.group_id);
+
+    // Fetch pair partners (other users in the same groups)
+    const { data: pairPartners } = await supabase
+      .from('participations')
+      .select('group_id, user_id, users!participations_user_id_fkey(id, display_name, avatar_url)')
+      .in('group_id', groupIds)
+      .neq('user_id', user.id)
+      .neq('status', 'canceled') as { data: { group_id: string; user_id: string; users: PairPartner | null }[] | null };
+
+    // Create a map of group_id -> partner info
+    (pairPartners || []).forEach((p) => {
+      if (p.users) {
+        pairPartnersMap[p.group_id] = {
+          id: p.users.id,
+          display_name: p.users.display_name,
+          avatar_url: p.users.avatar_url,
+        };
+      }
+    });
+  }
 
   // Get user's matches
   // Note: table_members is a JSONB array, so we need to stringify the array for contains filter
@@ -91,6 +123,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       participations={participations || []}
       matches={matches || []}
       participantsMap={participantsMap}
+      pairPartnersMap={pairPartnersMap}
     />
   );
 }

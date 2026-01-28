@@ -7,7 +7,11 @@ import type { KPIData } from '@/types/kpi';
 export default async function AdminKPIPage() {
   const user = await getCurrentUser();
 
-  if (!user || !user.is_admin) {
+  if (!user) {
+    redirect('/api/auth/line?redirect=/admin/kpi');
+  }
+
+  if (!user.is_admin) {
     redirect('/');
   }
 

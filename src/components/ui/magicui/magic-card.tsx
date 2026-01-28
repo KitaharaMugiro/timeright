@@ -59,7 +59,7 @@ export function MagicCard({
     <motion.div
       ref={cardRef}
       className={cn(
-        'group relative overflow-hidden rounded-xl border border-neutral-200 bg-white',
+        'group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-800/50 text-white',
         'transition-shadow duration-300 hover:shadow-lg',
         className
       )}

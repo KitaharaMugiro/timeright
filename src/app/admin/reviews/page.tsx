@@ -15,7 +15,11 @@ export type ReviewWithRelations = Review & {
 export default async function AdminReviewsPage() {
   const user = await getCurrentUser();
 
-  if (!user || !user.is_admin) {
+  if (!user) {
+    redirect('/api/auth/line?redirect=/admin/reviews');
+  }
+
+  if (!user.is_admin) {
     redirect('/');
   }
 

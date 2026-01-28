@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
-import { Calendar, MapPin, UserPlus, MessageSquare, ArrowLeft, Gift } from 'lucide-react';
-import type { Participation, Event, ParticipationMood } from '@/types/database';
+import { Calendar, MapPin, UserPlus, MessageSquare, ArrowLeft, Gift, Users } from 'lucide-react';
+import type { Participation, Event, ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface InviteClientProps {
   token: string;
@@ -15,9 +15,11 @@ interface InviteClientProps {
   inviterName: string;
   isLoggedIn: boolean;
   isEligibleForCoupon: boolean;
+  groupMemberCount: number;
+  maxGroupSize: number;
 }
 
-type ViewMode = 'invite' | 'mood';
+type ViewMode = 'invite' | 'mood' | 'budget';
 
 const moodOptions: { value: ParticipationMood; label: string; description: string; emoji: string }[] = [
   {
@@ -40,15 +42,39 @@ const moodOptions: { value: ParticipationMood; label: string; description: strin
   },
 ];
 
+const budgetOptions: { value: BudgetLevel; label: string; description: string; stars: string }[] = [
+  {
+    value: 1,
+    label: 'リーズナブル',
+    description: '気軽に楽しめるお店',
+    stars: '⭐',
+  },
+  {
+    value: 2,
+    label: 'スタンダード',
+    description: 'バランスの良いお店',
+    stars: '⭐⭐',
+  },
+  {
+    value: 3,
+    label: 'プレミアム',
+    description: '特別な雰囲気のお店',
+    stars: '⭐⭐⭐',
+  },
+];
+
 export function InviteClient({
   token,
   participation,
   inviterName,
   isLoggedIn,
   isEligibleForCoupon,
+  groupMemberCount,
+  maxGroupSize,
 }: InviteClientProps) {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('invite');
+  const [mood, setMood] = useState<ParticipationMood>('lively');
   const [moodText, setMoodText] = useState('');
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -63,23 +89,31 @@ export function InviteClient({
     setViewMode('mood');
   };
 
-  const handleSelectMood = async (selectedMood: ParticipationMood) => {
+  const handleSelectMood = (selectedMood: ParticipationMood) => {
     if (selectedMood === 'other') {
       setShowOtherInput(true);
       return;
     }
-    await submitInvite(selectedMood, null);
+    setMood(selectedMood);
+    setMoodText('');
+    setViewMode('budget');
   };
 
-  const handleOtherMoodConfirm = async () => {
+  const handleOtherMoodConfirm = () => {
     if (!moodText.trim()) {
       alert('気分を入力してください');
       return;
     }
-    await submitInvite('other', moodText);
+    setMood('other');
+    setShowOtherInput(false);
+    setViewMode('budget');
   };
 
-  const submitInvite = async (selectedMood: ParticipationMood, selectedMoodText: string | null) => {
+  const handleSelectBudget = async (budgetLevel: BudgetLevel) => {
+    await submitInvite(budgetLevel);
+  };
+
+  const submitInvite = async (budgetLevel: BudgetLevel) => {
     setLoading(true);
     try {
       const response = await fetch('/api/invite/accept', {
@@ -87,8 +121,9 @@ export function InviteClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           token,
-          mood: selectedMood,
-          mood_text: selectedMoodText,
+          mood,
+          mood_text: mood === 'other' ? moodText : null,
+          budget_level: budgetLevel,
         }),
       });
 
@@ -108,51 +143,59 @@ export function InviteClient({
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-12 px-4">
+    <div className="min-h-screen bg-slate-900 py-12 px-4">
       <div className="max-w-md mx-auto">
         {viewMode === 'invite' && (
-          <Card>
+          <Card className="bg-white/5 border-white/10">
             <CardContent className="p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-6">
                 <UserPlus className="w-8 h-8" />
               </div>
 
-              <h1 className="text-2xl font-bold mb-2">
+              <h1 className="text-2xl font-bold mb-2 text-white">
                 {inviterName}さんからの招待
               </h1>
-              <p className="text-neutral-600 mb-4">
+              <p className="text-slate-400 mb-4">
                 一緒にディナーに参加しませんか？
               </p>
 
               {/* First month free banner */}
               {!isLoggedIn && isEligibleForCoupon && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
-                  <div className="flex items-center gap-2 text-amber-700">
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-6">
+                  <div className="flex items-center gap-2 text-amber-400">
                     <Gift className="w-5 h-5" />
                     <span className="font-semibold">初月無料</span>
                   </div>
-                  <p className="text-sm text-amber-600 mt-1">
+                  <p className="text-sm text-amber-400/80 mt-1">
                     招待からの登録で、初月の会費が無料になります
                   </p>
                 </div>
               )}
 
-              <div className="bg-neutral-50 rounded-lg p-4 mb-6 text-left">
-                <div className="flex items-center gap-4 text-sm text-neutral-600 mb-2">
+              <div className="bg-white/5 rounded-lg p-4 mb-6 text-left">
+                <div className="flex items-center gap-4 text-sm text-slate-400 mb-2">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
                     {formatDate(participation.events.event_date)}
                   </span>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-neutral-600 mb-2">
+                <div className="flex items-center gap-4 text-sm text-slate-400 mb-2">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
                     {getAreaLabel(participation.events.area)}
                   </span>
                 </div>
-                <p className="text-sm text-neutral-600">
+                <p className="text-sm text-slate-400">
                   {formatTime(participation.events.event_date)}〜
                 </p>
+              </div>
+
+              {/* Group member count */}
+              <div className="bg-white/5 rounded-lg p-3 mb-6 flex items-center justify-center gap-2 text-sm text-slate-400">
+                <Users className="w-4 h-4" />
+                <span>
+                  現在{groupMemberCount}人参加中（残り{maxGroupSize - groupMemberCount}枠）
+                </span>
               </div>
 
               <Button onClick={handleProceedToMood} className="w-full" size="lg">
@@ -160,10 +203,10 @@ export function InviteClient({
               </Button>
 
               {!isLoggedIn && (
-                <p className="text-xs text-neutral-500 mt-4">
+                <p className="text-xs text-slate-500 mt-4">
                   {isEligibleForCoupon
-                    ? 'unplanned メンバーへの登録が必要です（初月無料・翌月から月額1,980円）'
-                    : 'unplanned メンバー（月額1,980円）への登録が必要です'}
+                    ? 'dine tokyo メンバーへの登録が必要です（初月無料・翌月から月額1,980円）'
+                    : 'dine tokyo メンバー（月額1,980円）への登録が必要です'}
                 </p>
               )}
             </CardContent>
@@ -178,14 +221,14 @@ export function InviteClient({
                 setShowOtherInput(false);
                 setMoodText('');
               }}
-              className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900"
+              className="inline-flex items-center gap-2 text-slate-400 hover:text-white"
             >
               <ArrowLeft className="w-4 h-4" />
               戻る
             </button>
 
-            <h2 className="text-lg font-semibold">今日はどんな気分？</h2>
-            <p className="text-sm text-neutral-600">
+            <h2 className="text-lg font-semibold text-white">今日はどんな気分？</h2>
+            <p className="text-sm text-slate-400">
               当日の雰囲気を教えてください。同じ気分の人とマッチングしやすくなります。
             </p>
 
@@ -194,17 +237,17 @@ export function InviteClient({
                 {moodOptions.map((option) => (
                   <Card
                     key={option.value}
-                    className="cursor-pointer hover:border-neutral-400 transition-colors"
+                    className="cursor-pointer bg-white/5 border-white/10 hover:border-white/20 transition-colors"
                     onClick={() => !loading && handleSelectMood(option.value)}
                   >
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-2xl">
+                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-2xl">
                           {option.emoji}
                         </div>
                         <div>
-                          <h3 className="font-semibold mb-1">{option.label}</h3>
-                          <p className="text-sm text-neutral-600">
+                          <h3 className="font-semibold mb-1 text-white">{option.label}</h3>
+                          <p className="text-sm text-slate-400">
                             {option.description}
                           </p>
                         </div>
@@ -215,17 +258,17 @@ export function InviteClient({
 
                 {/* Other option */}
                 <Card
-                  className="cursor-pointer hover:border-neutral-400 transition-colors"
+                  className="cursor-pointer bg-white/5 border-white/10 hover:border-white/20 transition-colors"
                   onClick={() => !loading && handleSelectMood('other')}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-2xl">
-                        <MessageSquare className="w-6 h-6 text-neutral-600" />
+                      <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-2xl">
+                        <MessageSquare className="w-6 h-6 text-slate-400" />
                       </div>
                       <div>
-                        <h3 className="font-semibold mb-1">その他</h3>
-                        <p className="text-sm text-neutral-600">
+                        <h3 className="font-semibold mb-1 text-white">その他</h3>
+                        <p className="text-sm text-slate-400">
                           自由に気分を入力してください
                         </p>
                       </div>
@@ -234,20 +277,21 @@ export function InviteClient({
                 </Card>
 
                 {loading && (
-                  <p className="text-sm text-neutral-500 text-center">処理中...</p>
+                  <p className="text-sm text-slate-500 text-center">処理中...</p>
                 )}
               </>
             ) : (
-              <Card>
+              <Card className="bg-white/5 border-white/10">
                 <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold">今日の気分を教えてください</h3>
+                  <h3 className="font-semibold text-white">今日の気分を教えてください</h3>
                   <Input
                     placeholder="例: 仕事の話をしたい、趣味の合う人と話したい..."
                     value={moodText}
                     onChange={(e) => setMoodText(e.target.value)}
                     maxLength={100}
+                    className="bg-white/5 border-white/20 text-white placeholder:text-slate-500"
                   />
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs text-slate-500">
                     {moodText.length}/100文字
                   </p>
                   <div className="flex gap-2">
@@ -260,13 +304,59 @@ export function InviteClient({
                         setShowOtherInput(false);
                         setMoodText('');
                       }}
-                      className="flex-1"
+                      className="flex-1 text-slate-400 hover:text-white"
                     >
                       戻る
                     </Button>
                   </div>
                 </CardContent>
               </Card>
+            )}
+          </div>
+        )}
+
+        {viewMode === 'budget' && (
+          <div className="space-y-4">
+            <button
+              onClick={() => {
+                setViewMode('mood');
+                setShowOtherInput(false);
+              }}
+              className="inline-flex items-center gap-2 text-slate-400 hover:text-white"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              戻る
+            </button>
+
+            <h2 className="text-lg font-semibold text-white">お店の価格帯は？</h2>
+            <p className="text-sm text-slate-400">
+              希望の価格帯を教えてください。同じ価格帯を希望する人とマッチングしやすくなります。
+            </p>
+
+            {budgetOptions.map((option) => (
+              <Card
+                key={option.value}
+                className="cursor-pointer bg-white/5 border-white/10 hover:border-white/20 transition-colors"
+                onClick={() => !loading && handleSelectBudget(option.value)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-xl">
+                      {option.stars}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1 text-white">{option.label}</h3>
+                      <p className="text-sm text-slate-400">
+                        {option.description}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            {loading && (
+              <p className="text-sm text-slate-500 text-center">処理中...</p>
             )}
           </div>
         )}

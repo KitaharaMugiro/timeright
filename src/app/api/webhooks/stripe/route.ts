@@ -5,7 +5,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { generateInviteToken } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import Stripe from 'stripe';
-import type { User, EntryType, ParticipationMood } from '@/types/database';
+import type { User, EntryType, ParticipationMood, BudgetLevel } from '@/types/database';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
             const entryType = (session.metadata?.entry_type || 'solo') as EntryType;
             const mood = (session.metadata?.mood || 'lively') as ParticipationMood;
             const moodText = session.metadata?.mood_text || null;
+            const budgetLevel = (parseInt(session.metadata?.budget_level || '2', 10) || 2) as BudgetLevel;
 
             // 重複チェック
             const { data: existingParticipation } = await supabase
@@ -117,6 +118,7 @@ export async function POST(request: NextRequest) {
                 entry_type: entryType,
                 mood,
                 mood_text: moodText,
+                budget_level: budgetLevel,
                 invite_token: inviteToken,
                 status: 'pending',
               });

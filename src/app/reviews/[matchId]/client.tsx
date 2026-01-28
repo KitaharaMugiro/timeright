@@ -73,32 +73,32 @@ export function ReviewClient({
   const allReviewed = unreviewedMembers.length === 0;
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-8 px-4" data-testid="review-page">
+    <div className="min-h-screen bg-slate-900 py-8 px-4" data-testid="review-page">
       <div className="max-w-md mx-auto">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-6"
+          className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6"
           data-testid="back-to-dashboard"
         >
           <ArrowLeft className="w-4 h-4" />
           ダッシュボードへ
         </Link>
 
-        <h1 className="text-2xl font-bold mb-2" data-testid="review-title">レビュー</h1>
-        <p className="text-neutral-600 mb-6" data-testid="review-description">
+        <h1 className="text-2xl font-bold mb-2 text-white" data-testid="review-title">レビュー</h1>
+        <p className="text-slate-400 mb-6" data-testid="review-description">
           {match.restaurant_name} でのディナーはいかがでしたか？
         </p>
 
         {allReviewed ? (
-          <Card data-testid="review-completion-card">
+          <Card data-testid="review-completion-card" className="bg-white/5 border-white/10">
             <CardContent className="p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4" data-testid="completion-icon">
+              <div className="w-16 h-16 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center mx-auto mb-4" data-testid="completion-icon">
                 <Check className="w-8 h-8" />
               </div>
-              <h2 className="text-lg font-semibold mb-2" data-testid="completion-title">
+              <h2 className="text-lg font-semibold mb-2 text-white" data-testid="completion-title">
                 レビュー完了
               </h2>
-              <p className="text-neutral-600 mb-6" data-testid="completion-message">
+              <p className="text-slate-400 mb-6" data-testid="completion-message">
                 全員へのレビューが完了しました。
                 <br />
                 ご参加ありがとうございました！
@@ -109,9 +109,9 @@ export function ReviewClient({
             </CardContent>
           </Card>
         ) : currentMember ? (
-          <Card data-testid="review-form-card">
+          <Card data-testid="review-form-card" className="bg-white/5 border-white/10">
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-3" data-testid="review-target-name">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-3 text-white" data-testid="review-target-name">
                 <UserAvatar
                   displayName={currentMember.display_name}
                   avatarUrl={currentMember.avatar_url}
@@ -123,7 +123,7 @@ export function ReviewClient({
 
               {/* Rating */}
               <div className="mb-6" data-testid="rating-section">
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   評価
                 </label>
                 <div className="flex gap-2" data-testid="star-buttons">
@@ -136,7 +136,7 @@ export function ReviewClient({
                         'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
                         value <= rating
                           ? 'bg-yellow-400 text-white'
-                          : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200'
+                          : 'bg-white/10 text-slate-500 hover:bg-white/20'
                       )}
                     >
                       <Star className="w-5 h-5" fill={value <= rating ? 'currentColor' : 'none'} />
@@ -147,13 +147,13 @@ export function ReviewClient({
 
               {/* Comment */}
               <div className="mb-6" data-testid="comment-section">
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   コメント（任意）
                 </label>
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  className="w-full h-24 px-4 py-3 rounded-lg border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-500 resize-none"
+                  className="w-full h-24 px-4 py-3 rounded-lg border border-white/20 bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
                   placeholder="良かった点など..."
                   data-testid="comment-textarea"
                 />
@@ -166,10 +166,10 @@ export function ReviewClient({
                     type="checkbox"
                     checked={blockFlag}
                     onChange={(e) => setBlockFlag(e.target.checked)}
-                    className="w-5 h-5 rounded border-neutral-300 text-red-600 focus:ring-red-500"
+                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-red-500 focus:ring-red-500"
                     data-testid="block-checkbox"
                   />
-                  <span className="text-sm text-neutral-600">
+                  <span className="text-sm text-slate-400">
                     この方とは今後マッチングしたくない
                   </span>
                 </label>
@@ -189,6 +189,7 @@ export function ReviewClient({
                   variant="ghost"
                   onClick={() => setCurrentMember(null)}
                   data-testid="back-to-list-btn"
+                  className="text-slate-400 hover:text-white"
                 >
                   戻る
                 </Button>
@@ -197,7 +198,7 @@ export function ReviewClient({
           </Card>
         ) : (
           <div className="space-y-4" data-testid="participant-list">
-            <p className="text-sm text-neutral-600 mb-4" data-testid="participant-instructions">
+            <p className="text-sm text-slate-400 mb-4" data-testid="participant-instructions">
               レビューするメンバーを選んでください
             </p>
 
@@ -209,10 +210,10 @@ export function ReviewClient({
                   key={member.id}
                   data-testid={`participant-card-${member.id}`}
                   className={cn(
-                    'transition-colors',
+                    'transition-colors bg-white/5 border-white/10',
                     isReviewed
                       ? 'opacity-50'
-                      : 'cursor-pointer hover:border-neutral-400'
+                      : 'cursor-pointer hover:border-white/20'
                   )}
                   onClick={() => !isReviewed && handleSelectMember(member)}
                 >
@@ -226,19 +227,19 @@ export function ReviewClient({
                           size="lg"
                         />
                         <div>
-                          <div className="font-medium text-base">{member.display_name}</div>
-                          <div className="text-sm text-neutral-600">
+                          <div className="font-medium text-base text-white">{member.display_name}</div>
+                          <div className="text-sm text-slate-400">
                             {member.job || '-'}
                           </div>
                           {member.personality_type && (
-                            <div className="text-xs text-neutral-500">
+                            <div className="text-xs text-slate-500">
                               {member.personality_type}
                             </div>
                           )}
                         </div>
                       </div>
                       {isReviewed && (
-                        <span className="text-xs text-green-600 flex items-center gap-1" data-testid={`reviewed-badge-${member.id}`}>
+                        <span className="text-xs text-green-400 flex items-center gap-1" data-testid={`reviewed-badge-${member.id}`}>
                           <Check className="w-4 h-4" />
                           完了
                         </span>

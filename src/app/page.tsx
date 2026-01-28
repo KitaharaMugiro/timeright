@@ -149,7 +149,7 @@ export default function LandingPage() {
       >
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="text-xl font-semibold tracking-tight text-white">
-            unplanned
+            dine tokyo
           </Link>
           <motion.button
             onClick={handleLineOA}
@@ -206,11 +206,9 @@ export default function LandingPage() {
 
           <BlurFade delay={0.3}>
             <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white leading-tight mb-6">
-              Life is{' '}
               <AnimatedGradientText className="font-serif text-4xl md:text-6xl lg:text-7xl">
-                unplanned
+                dine tokyo
               </AnimatedGradientText>
-              .
             </h1>
           </BlurFade>
 
@@ -300,10 +298,10 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <BlurFade>
             <p className="text-amber-500 font-medium tracking-widest text-sm text-center mb-4">
-              WHY UNPLANNED
+              WHY DINE TOKYO
             </p>
             <h2 className="font-serif text-3xl md:text-4xl text-white text-center mb-16">
-              unplanned の特徴
+              dine tokyo の特徴
             </h2>
           </BlurFade>
 
@@ -350,7 +348,7 @@ export default function LandingPage() {
                   すべて「予定になかった」ものでした。
                 </p>
                 <p className="text-slate-400">
-                  unplannedは、そんな「偶然の出会い」を、
+                  dine tokyoは、そんな「偶然の出会い」を、
                   安心して楽しめる場所として作りました。
                   恋愛目的ではなく、純粋に「新しい人と話す」楽しさを
                   もう一度思い出してほしい。
@@ -360,7 +358,7 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="mt-8 pt-6 border-t border-slate-700">
-                <p className="text-slate-500 text-sm">Founder, unplanned</p>
+                <p className="text-slate-500 text-sm">Founder, dine tokyo</p>
               </div>
             </GlassCard>
           </BlurFade>
@@ -479,7 +477,7 @@ export default function LandingPage() {
       <footer className="py-10 px-4 border-t border-slate-800 bg-slate-950">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span className="text-xl font-semibold text-white">
-            unplanned
+            dine tokyo
           </span>
           <div className="flex gap-6 text-sm text-slate-500">
             <Link href="/terms" className="hover:text-slate-300 transition-colors">
@@ -490,7 +488,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <div className="text-sm text-slate-600">
-            © 2024 unplanned
+            © 2024 dine tokyo
           </div>
         </div>
       </footer>

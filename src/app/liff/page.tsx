@@ -76,20 +76,20 @@ export default function LiffPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="min-h-screen flex items-center justify-center bg-slate-900">
       <div className="text-center">
         {status !== 'error' ? (
           <>
-            <Loader2 className="w-8 h-8 animate-spin text-[#FF6B6B] mx-auto mb-4" />
-            <p className="text-neutral-600">{statusMessages[status]}</p>
+            <Loader2 className="w-8 h-8 animate-spin text-white mx-auto mb-4" />
+            <p className="text-slate-400">{statusMessages[status]}</p>
           </>
         ) : (
           <div className="space-y-4">
-            <p className="text-red-500">{statusMessages[status]}</p>
-            <p className="text-sm text-neutral-500">{error}</p>
+            <p className="text-red-400">{statusMessages[status]}</p>
+            <p className="text-sm text-slate-500">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-[#FF6B6B] text-white rounded-lg hover:bg-[#FF5252] transition-colors"
+              className="px-4 py-2 bg-white text-slate-900 rounded-lg hover:bg-slate-200 transition-colors"
             >
               再試行
             </button>

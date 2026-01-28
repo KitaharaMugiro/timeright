@@ -6,7 +6,11 @@ import { AdminClient } from './client';
 export default async function AdminPage() {
   const user = await getCurrentUser();
 
-  if (!user || !user.is_admin) {
+  if (!user) {
+    redirect('/api/auth/line?redirect=/admin');
+  }
+
+  if (!user.is_admin) {
     redirect('/');
   }
 

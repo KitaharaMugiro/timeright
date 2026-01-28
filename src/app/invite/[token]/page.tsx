@@ -28,13 +28,38 @@ export default async function InvitePage({ params }: InvitePageProps) {
     notFound();
   }
 
+  // Get current group member count
+  const { count: groupMemberCount } = await supabase
+    .from('participations')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', participation.group_id)
+    .eq('event_id', participation.event_id)
+    .neq('status', 'canceled');
+
+  const currentGroupSize = groupMemberCount || 1;
+  const maxGroupSize = 3;
+
+  // Check if group is full
+  if (currentGroupSize >= maxGroupSize) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4 text-white">グループが満員です</h1>
+          <p className="text-slate-400">
+            この招待リンクは既に使用されています（グループ上限: 3人）
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Check if event is still open
   if (participation.events.status !== 'open') {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">このイベントは終了しました</h1>
-          <p className="text-neutral-600">
+          <h1 className="text-2xl font-bold mb-4 text-white">このイベントは終了しました</h1>
+          <p className="text-slate-400">
             招待リンクの有効期限が切れています。
           </p>
         </div>
@@ -45,10 +70,10 @@ export default async function InvitePage({ params }: InvitePageProps) {
   // Check if within 48 hours
   if (isWithin48Hours(participation.events.event_date)) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">招待の受付が終了しました</h1>
-          <p className="text-neutral-600">
+          <h1 className="text-2xl font-bold mb-4 text-white">招待の受付が終了しました</h1>
+          <p className="text-slate-400">
             開催2日前を過ぎたため、このイベントへの招待参加はできません。
           </p>
         </div>
@@ -74,10 +99,10 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
     if (existingParticipation) {
       return (
-        <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">既にエントリー済みです</h1>
-            <p className="text-neutral-600">
+            <h1 className="text-2xl font-bold mb-4 text-white">既にエントリー済みです</h1>
+            <p className="text-slate-400">
               このイベントには既にエントリーしています。
             </p>
           </div>
@@ -120,6 +145,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
       inviterName={inviterName}
       isLoggedIn={!!userId}
       isEligibleForCoupon={isEligibleForCoupon}
+      groupMemberCount={currentGroupSize}
+      maxGroupSize={maxGroupSize}
     />
   );
 }

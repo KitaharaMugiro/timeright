@@ -42,13 +42,13 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
     const reviewAccessTime = new Date(eventDate.getTime() + 2 * 60 * 60 * 1000);
 
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">レビューはまだできません</h1>
-          <p className="text-neutral-600">
+          <h1 className="text-2xl font-bold mb-4 text-white">レビューはまだできません</h1>
+          <p className="text-slate-400">
             イベント開始から2時間後にレビューできます。
           </p>
-          <p className="text-sm text-neutral-500 mt-2">
+          <p className="text-sm text-slate-500 mt-2">
             レビュー可能時刻: {formatDate(reviewAccessTime.toISOString())} {formatTime(reviewAccessTime.toISOString())}
           </p>
         </div>

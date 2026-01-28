@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/select';
 import { UserAvatar } from '@/components/UserAvatar';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
 import { ArrowLeft, Plus, X, Users, Store, Check, Trash2, UserPlus } from 'lucide-react';
-import type { Event, Participation, User, Match, Guest, Gender, ParticipationMood } from '@/types/database';
+import type { Event, Participation, User, Match, Guest, Gender, ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface EventDetailClientProps {
   event: Event;
@@ -59,6 +59,13 @@ const moodLabels: Record<ParticipationMood, { label: string; emoji: string; shor
   'relaxed': { label: 'まったりトーク', emoji: '☕', short: 'まったり' },
   'inspire': { label: 'インスパイア', emoji: '💡', short: 'インスパイア' },
   'other': { label: 'その他', emoji: '✏️', short: 'その他' },
+};
+
+// Budget labels
+const budgetLabels: Record<BudgetLevel, { label: string; stars: string; short: string }> = {
+  1: { label: 'リーズナブル', stars: '⭐', short: '⭐' },
+  2: { label: 'スタンダード', stars: '⭐⭐', short: '⭐⭐' },
+  3: { label: 'プレミアム', stars: '⭐⭐⭐', short: '⭐⭐⭐' },
 };
 
 export function EventDetailClient({
@@ -310,7 +317,7 @@ export function EventDetailClient({
       if (uniqueTables.length > 1) {
         // Pair is split across tables
         const names = members.map(m => m.users.display_name).join('と');
-        errors.push(`${names}はペアなので同じテーブルに割り当ててください`);
+        errors.push(`${names}はグループなので同じテーブルに割り当ててください`);
       }
     }
 
@@ -329,7 +336,7 @@ export function EventDetailClient({
       const uniqueTables = [...new Set(memberTables.filter(t => t !== null))];
       if (uniqueTables.length > 1) {
         const names = members.map(g => g.display_name).join('と');
-        errors.push(`${names}はペアなので同じテーブルに割り当ててください`);
+        errors.push(`${names}はグループなので同じテーブルに割り当ててください`);
       }
     }
 
@@ -396,7 +403,8 @@ export function EventDetailClient({
   // Render participant card (compact version for tables)
   const renderParticipantCompact = (p: ParticipantInfo, tableId: string) => {
     const age = calculateAge(p.users.birth_date);
-    const isPair = (groupedParticipations[p.group_id]?.length || 0) > 1;
+    const groupSize = groupedParticipations[p.group_id]?.length || 1;
+    const groupLabel = groupSize === 2 ? 'ペア' : groupSize >= 3 ? 'グループ' : null;
 
     return (
       <div
@@ -415,9 +423,9 @@ export function EventDetailClient({
             {age}歳 / {p.users.job || '-'}
           </div>
         </div>
-        {isPair && (
+        {groupLabel && (
           <span className="text-xs bg-accent/10 text-accent px-1 py-0.5 rounded flex-shrink-0">
-            ペア
+            {groupLabel}
           </span>
         )}
         <button
@@ -436,11 +444,13 @@ export function EventDetailClient({
   // Render participant card (full version for unassigned list)
   const renderParticipant = (p: ParticipantInfo, tableId?: string) => {
     const isSelected = selectedParticipant === p.user_id;
-    const isPair = (groupedParticipations[p.group_id]?.length || 0) > 1;
+    const groupSize = groupedParticipations[p.group_id]?.length || 1;
+    const groupLabel = groupSize === 2 ? 'ペア' : groupSize >= 3 ? 'グループ' : null;
     const age = calculateAge(p.users.birth_date);
     const personalityLabel = p.users.personality_type ? personalityLabels[p.users.personality_type] || p.users.personality_type : null;
     const isSubscribed = p.users.subscription_status === 'active';
     const moodInfo = p.mood ? moodLabels[p.mood] : null;
+    const budgetInfo = p.budget_level ? budgetLabels[p.budget_level] : null;
 
     // If in a table, use compact version
     if (tableId) {
@@ -472,9 +482,14 @@ export function EventDetailClient({
                   {moodInfo.emoji} {p.mood === 'other' && p.mood_text ? p.mood_text : moodInfo.short}
                 </span>
               )}
-              {isPair && (
+              {budgetInfo && (
+                <span className="text-xs bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded" title={budgetInfo.label}>
+                  {budgetInfo.short}
+                </span>
+              )}
+              {groupLabel && (
                 <span className="text-xs bg-accent/10 text-accent px-1.5 py-0.5 rounded">
-                  ペア
+                  {groupLabel}
                 </span>
               )}
               {isSubscribed && (
@@ -510,7 +525,8 @@ export function EventDetailClient({
   // Render guest card (compact version for tables)
   const renderGuestCompact = (g: Guest, tableId: string) => {
     const guestFullId = toGuestId(g.id);
-    const isPair = (groupedGuests[g.group_id]?.length || 0) > 1;
+    const groupSize = groupedGuests[g.group_id]?.length || 1;
+    const groupLabel = groupSize === 2 ? 'ペア' : groupSize >= 3 ? 'グループ' : null;
 
     return (
       <div
@@ -529,9 +545,9 @@ export function EventDetailClient({
         <span className="text-xs bg-warning/10 text-warning px-1 py-0.5 rounded flex-shrink-0">
           外部
         </span>
-        {isPair && (
+        {groupLabel && (
           <span className="text-xs bg-accent/10 text-accent px-1 py-0.5 rounded flex-shrink-0">
-            ペア
+            {groupLabel}
           </span>
         )}
         <button
@@ -551,7 +567,8 @@ export function EventDetailClient({
   const renderGuest = (g: Guest, tableId?: string, showDelete = false) => {
     const guestFullId = toGuestId(g.id);
     const isSelected = selectedParticipant === guestFullId;
-    const isPair = (groupedGuests[g.group_id]?.length || 0) > 1;
+    const groupSize = groupedGuests[g.group_id]?.length || 1;
+    const groupLabel = groupSize === 2 ? 'ペア' : groupSize >= 3 ? 'グループ' : null;
 
     // If in a table, use compact version
     if (tableId) {
@@ -580,9 +597,9 @@ export function EventDetailClient({
               <span className="text-xs bg-warning/10 text-warning px-1.5 py-0.5 rounded">
                 外部ゲスト
               </span>
-              {isPair && (
+              {groupLabel && (
                 <span className="text-xs bg-accent/10 text-accent px-1.5 py-0.5 rounded">
-                  ペア
+                  {groupLabel}
                 </span>
               )}
             </div>
@@ -712,7 +729,7 @@ export function EventDetailClient({
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/admin" className="text-xl font-bold text-white">
-              unplanned
+              dine tokyo
             </Link>
             <span className="text-sm text-slate-400 bg-slate-800 px-2 py-1 rounded">
               Admin
@@ -853,7 +870,7 @@ export function EventDetailClient({
         {/* Split pair errors */}
         {splitPairs.length > 0 && (
           <div className="mb-6 bg-error/10 border border-error/30 rounded-lg p-4">
-            <h3 className="font-semibold text-error mb-2">ペア分割エラー</h3>
+            <h3 className="font-semibold text-error mb-2">グループ分割エラー</h3>
             <ul className="text-sm text-error space-y-1">
               {splitPairs.map((error, idx) => (
                 <li key={idx}>• {error}</li>
@@ -1071,7 +1088,7 @@ export function EventDetailClient({
             <h3 className="font-semibold mb-2 text-white">使い方</h3>
             <ul className="text-sm text-slate-400 space-y-1">
               <li>• 参加者をクリックして選択し、テーブルをクリックして割り当てます</li>
-              <li>• ペアで参加している人は一緒に移動します</li>
+              <li>• グループで参加している人は一緒に移動します</li>
               <li>• 「ゲスト追加」で登録していない外部参加者を追加できます</li>
               <li>• 各テーブルは3〜8人で構成してください（推奨4〜6人）</li>
               <li>• お店の名前は必須です</li>

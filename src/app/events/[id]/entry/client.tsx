@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
 import { Calendar, MapPin, UserPlus, User, Copy, Check, ArrowLeft, MessageSquare } from 'lucide-react';
-import type { Event, ParticipationMood } from '@/types/database';
+import type { Event, ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface EntryClientProps {
   event: Event;
@@ -16,7 +16,7 @@ interface EntryClientProps {
   subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'none';
 }
 
-type EntryMode = 'select' | 'mood' | 'confirm' | 'invite';
+type EntryMode = 'select' | 'mood' | 'budget' | 'confirm' | 'invite';
 type EntryType = 'solo' | 'pair';
 
 const moodOptions: { value: ParticipationMood; label: string; description: string; emoji: string }[] = [
@@ -40,6 +40,27 @@ const moodOptions: { value: ParticipationMood; label: string; description: strin
   },
 ];
 
+const budgetOptions: { value: BudgetLevel; label: string; description: string; stars: string }[] = [
+  {
+    value: 1,
+    label: 'リーズナブル',
+    description: '気軽に楽しめるお店',
+    stars: '⭐',
+  },
+  {
+    value: 2,
+    label: 'スタンダード',
+    description: 'バランスの良いお店',
+    stars: '⭐⭐',
+  },
+  {
+    value: 3,
+    label: 'プレミアム',
+    description: '特別な雰囲気のお店',
+    stars: '⭐⭐⭐',
+  },
+];
+
 export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<EntryMode>('select');
@@ -47,6 +68,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
   const [mood, setMood] = useState<ParticipationMood>('lively');
   const [moodText, setMoodText] = useState<string>('');
   const [showOtherInput, setShowOtherInput] = useState(false);
+  const [budgetLevel, setBudgetLevel] = useState<BudgetLevel>(2);
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -67,7 +89,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
       setMood(selectedMood);
       setMoodText('');
       setShowOtherInput(false);
-      setMode('confirm');
+      setMode('budget');
     }
   };
 
@@ -78,6 +100,11 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
     }
     setMood('other');
     setShowOtherInput(false);
+    setMode('budget');
+  };
+
+  const handleSelectBudget = (level: BudgetLevel) => {
+    setBudgetLevel(level);
     setMode('confirm');
   };
 
@@ -94,6 +121,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
             entry_type: entryType,
             mood,
             mood_text: mood === 'other' ? moodText : null,
+            budget_level: budgetLevel,
           }),
         });
 
@@ -118,6 +146,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
           entry_type: entryType,
           mood,
           mood_text: mood === 'other' ? moodText : null,
+          budget_level: budgetLevel,
         }),
       });
 
@@ -154,21 +183,21 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-8 px-4">
+    <div className="min-h-screen bg-slate-900 py-8 px-4">
       <div className="max-w-md mx-auto">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-6"
+          className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           戻る
         </Link>
 
         {/* Event info */}
-        <Card className="mb-6">
+        <Card className="mb-6 bg-white/5 border-white/10">
           <CardContent className="p-6">
-            <h1 className="text-xl font-bold mb-4">イベントに参加</h1>
-            <div className="flex items-center gap-4 text-sm text-neutral-600">
+            <h1 className="text-xl font-bold mb-4 text-white">イベントに参加</h1>
+            <div className="flex items-center gap-4 text-sm text-slate-400">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
                 {formatDate(event.event_date)}
@@ -178,7 +207,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                 {getAreaLabel(event.area)}
               </span>
             </div>
-            <p className="mt-2 text-sm text-neutral-600">
+            <p className="mt-2 text-sm text-slate-400">
               {formatTime(event.event_date)}〜
             </p>
           </CardContent>
@@ -187,20 +216,20 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
         {/* Mode select */}
         {mode === 'select' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold">参加方法を選択</h2>
+            <h2 className="text-lg font-semibold text-white">参加方法を選択</h2>
 
             <Card
-              className="cursor-pointer hover:border-neutral-400 transition-colors"
+              className="cursor-pointer bg-white/5 border-white/10 hover:border-white/20 transition-colors"
               onClick={() => handleSelectType('solo')}
             >
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
-                    <User className="w-5 h-5" />
+                  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1">1人で参加</h3>
-                    <p className="text-sm text-neutral-600">
+                    <h3 className="font-semibold mb-1 text-white">1人で参加</h3>
+                    <p className="text-sm text-slate-400">
                       相性の良いメンバーとマッチングします
                     </p>
                   </div>
@@ -209,25 +238,25 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
             </Card>
 
             <Card
-              className={`cursor-pointer transition-colors ${
+              className={`cursor-pointer bg-white/5 border-white/10 transition-colors ${
                 canInvite
-                  ? 'hover:border-neutral-400'
+                  ? 'hover:border-white/20'
                   : 'opacity-50 cursor-not-allowed'
               }`}
               onClick={() => canInvite && handleSelectType('pair')}
             >
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center">
-                    <UserPlus className="w-5 h-5" />
+                  <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                    <UserPlus className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1">友達と参加（ペア）</h3>
-                    <p className="text-sm text-neutral-600">
+                    <h3 className="font-semibold mb-1 text-white">友達と参加（ペア）</h3>
+                    <p className="text-sm text-slate-400">
                       友達を招待して一緒に参加します
                     </p>
                     {!canInvite && (
-                      <p className="text-sm text-orange-600 mt-1">
+                      <p className="text-sm text-amber-400 mt-1">
                         ※ 開催2日前を過ぎたため選択できません
                       </p>
                     )}
@@ -241,8 +270,8 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
         {/* Mood select */}
         {mode === 'mood' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold">今日はどんな気分？</h2>
-            <p className="text-sm text-neutral-600">
+            <h2 className="text-lg font-semibold text-white">今日はどんな気分？</h2>
+            <p className="text-sm text-slate-400">
               当日の雰囲気を教えてください。同じ気分の人とマッチングしやすくなります。
             </p>
 
@@ -251,17 +280,17 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                 {moodOptions.map((option) => (
                   <Card
                     key={option.value}
-                    className="cursor-pointer hover:border-neutral-400 transition-colors"
+                    className="cursor-pointer bg-white/5 border-white/10 hover:border-white/20 transition-colors"
                     onClick={() => handleSelectMood(option.value)}
                   >
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-2xl">
+                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-2xl">
                           {option.emoji}
                         </div>
                         <div>
-                          <h3 className="font-semibold mb-1">{option.label}</h3>
-                          <p className="text-sm text-neutral-600">
+                          <h3 className="font-semibold mb-1 text-white">{option.label}</h3>
+                          <p className="text-sm text-slate-400">
                             {option.description}
                           </p>
                         </div>
@@ -272,17 +301,17 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
 
                 {/* Other option */}
                 <Card
-                  className="cursor-pointer hover:border-neutral-400 transition-colors"
+                  className="cursor-pointer bg-white/5 border-white/10 hover:border-white/20 transition-colors"
                   onClick={() => handleSelectMood('other')}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-2xl">
-                        <MessageSquare className="w-6 h-6 text-neutral-600" />
+                      <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-2xl">
+                        <MessageSquare className="w-6 h-6 text-slate-400" />
                       </div>
                       <div>
-                        <h3 className="font-semibold mb-1">その他</h3>
-                        <p className="text-sm text-neutral-600">
+                        <h3 className="font-semibold mb-1 text-white">その他</h3>
+                        <p className="text-sm text-slate-400">
                           自由に気分を入力してください
                         </p>
                       </div>
@@ -293,22 +322,23 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                 <Button
                   variant="ghost"
                   onClick={() => setMode('select')}
-                  className="w-full"
+                  className="w-full text-slate-400 hover:text-white"
                 >
                   戻る
                 </Button>
               </>
             ) : (
-              <Card>
+              <Card className="bg-white/5 border-white/10">
                 <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold">今日の気分を教えてください</h3>
+                  <h3 className="font-semibold text-white">今日の気分を教えてください</h3>
                   <Input
                     placeholder="例: 仕事の話をしたい、趣味の合う人と話したい..."
                     value={moodText}
                     onChange={(e) => setMoodText(e.target.value)}
                     maxLength={100}
+                    className="bg-white/5 border-white/20 text-white placeholder:text-slate-500"
                   />
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs text-slate-500">
                     {moodText.length}/100文字
                   </p>
                   <div className="flex gap-2">
@@ -321,7 +351,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                         setShowOtherInput(false);
                         setMoodText('');
                       }}
-                      className="flex-1"
+                      className="flex-1 text-slate-400 hover:text-white"
                     >
                       戻る
                     </Button>
@@ -332,19 +362,59 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
           </div>
         )}
 
+        {/* Budget select */}
+        {mode === 'budget' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-white">お店の価格帯は？</h2>
+            <p className="text-sm text-slate-400">
+              希望の価格帯を教えてください。同じ価格帯を希望する人とマッチングしやすくなります。
+            </p>
+
+            {budgetOptions.map((option) => (
+              <Card
+                key={option.value}
+                className="cursor-pointer bg-white/5 border-white/10 hover:border-white/20 transition-colors"
+                onClick={() => handleSelectBudget(option.value)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-xl">
+                      {option.stars}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1 text-white">{option.label}</h3>
+                      <p className="text-sm text-slate-400">
+                        {option.description}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            <Button
+              variant="ghost"
+              onClick={() => setMode('mood')}
+              className="w-full text-slate-400 hover:text-white"
+            >
+              戻る
+            </Button>
+          </div>
+        )}
+
         {/* Confirm */}
         {mode === 'confirm' && (
-          <Card>
+          <Card className="bg-white/5 border-white/10">
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold mb-4">参加確認</h2>
+              <h2 className="text-lg font-semibold mb-4 text-white">参加確認</h2>
 
-              <div className="bg-neutral-50 rounded-lg p-4 mb-6 space-y-2">
-                <p className="text-sm">
-                  <span className="font-medium">参加方法：</span>
+              <div className="bg-white/5 rounded-lg p-4 mb-6 space-y-2">
+                <p className="text-sm text-slate-300">
+                  <span className="font-medium text-white">参加方法：</span>
                   {entryType === 'solo' ? '1人で参加' : '友達と参加（ペア）'}
                 </p>
-                <p className="text-sm">
-                  <span className="font-medium">気分：</span>
+                <p className="text-sm text-slate-300">
+                  <span className="font-medium text-white">気分：</span>
                   {mood === 'other' ? (
                     <>✏️ {moodText}</>
                   ) : (
@@ -354,11 +424,16 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                     </>
                   )}
                 </p>
+                <p className="text-sm text-slate-300">
+                  <span className="font-medium text-white">価格帯：</span>
+                  {budgetOptions.find(b => b.value === budgetLevel)?.stars}{' '}
+                  {budgetOptions.find(b => b.value === budgetLevel)?.label}
+                </p>
               </div>
 
               {subscriptionStatus !== 'active' && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-orange-800">
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-amber-400">
                     イベントに参加するには月額プラン（¥1,980/月）への登録が必要です。
                   </p>
                 </div>
@@ -374,8 +449,8 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                 </Button>
                 <Button
                   variant="ghost"
-                  onClick={() => setMode('mood')}
-                  className="w-full"
+                  onClick={() => setMode('budget')}
+                  className="w-full text-slate-400 hover:text-white"
                 >
                   戻る
                 </Button>
@@ -386,22 +461,22 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
 
         {/* Invite */}
         {mode === 'invite' && inviteLink && (
-          <Card>
+          <Card className="bg-white/5 border-white/10">
             <CardContent className="p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center mx-auto mb-4">
                 <Check className="w-8 h-8" />
               </div>
 
-              <h2 className="text-lg font-semibold mb-2">エントリー完了！</h2>
-              <p className="text-neutral-600 mb-6">
+              <h2 className="text-lg font-semibold mb-2 text-white">エントリー完了！</h2>
+              <p className="text-slate-400 mb-6">
                 友達に下記のリンクを共有してください
               </p>
 
-              <div className="bg-neutral-50 rounded-lg p-4 mb-4">
-                <p className="text-sm text-neutral-600 break-all">{inviteLink}</p>
+              <div className="bg-white/5 rounded-lg p-4 mb-4">
+                <p className="text-sm text-slate-400 break-all">{inviteLink}</p>
               </div>
 
-              <Button onClick={handleCopy} variant="outline" className="w-full mb-4">
+              <Button onClick={handleCopy} variant="outline" className="w-full mb-4 border-white/20 text-white hover:bg-white/10">
                 {copied ? (
                   <>
                     <Check className="w-4 h-4 mr-2" />
@@ -415,7 +490,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                 )}
               </Button>
 
-              <p className="text-xs text-neutral-500 mb-6">
+              <p className="text-xs text-slate-500 mb-6">
                 ※ 開催2日前までに友達が登録を完了してください
               </p>
 

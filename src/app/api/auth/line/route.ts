@@ -8,6 +8,9 @@ export async function GET(request: NextRequest) {
   // Get referral code from query parameter
   const referralCode = request.nextUrl.searchParams.get('ref');
 
+  // Get redirect URL from query parameter
+  const redirectTo = request.nextUrl.searchParams.get('redirect');
+
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: process.env.LINE_CHANNEL_ID!,
@@ -43,6 +46,16 @@ export async function GET(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+  }
+
+  // Store redirect URL in cookie
+  if (redirectTo) {
+    response.cookies.set('auth_redirect', redirectTo, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 10, // 10 minutes
     });
   }
 

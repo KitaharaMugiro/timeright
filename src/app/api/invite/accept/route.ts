@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { generateInviteToken, isWithin48Hours } from '@/lib/utils';
-import type { User, Participation, Event, ParticipationMood } from '@/types/database';
+import type { User, Participation, Event, ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface AcceptRequest {
   token: string;
   mood: ParticipationMood;
   mood_text?: string | null;
+  budget_level: BudgetLevel;
 }
 
 export async function POST(request: NextRequest) {
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { token, mood, mood_text }: AcceptRequest = await request.json();
+    const { token, mood, mood_text, budget_level }: AcceptRequest = await request.json();
 
     // Get the original participation
     const { data: participationData } = await supabase
@@ -96,6 +97,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check group size limit (max 3 members)
+    const { count: groupCount } = await supabase
+      .from('participations')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', originalParticipation.group_id)
+      .eq('event_id', originalParticipation.event_id)
+      .neq('status', 'canceled');
+
+    if (groupCount && groupCount >= 3) {
+      return NextResponse.json(
+        { error: 'この招待リンクは既に使用されています（グループ上限: 3人）' },
+        { status: 400 }
+      );
+    }
+
     // Create participation with same group_id
     const { error: insertError } = await (supabase.from('participations') as any).insert({
       user_id: userId,
@@ -104,6 +120,7 @@ export async function POST(request: NextRequest) {
       entry_type: 'pair',
       mood,
       mood_text: mood_text || null,
+      budget_level,
       invite_token: generateInviteToken(),
       status: 'pending',
     });

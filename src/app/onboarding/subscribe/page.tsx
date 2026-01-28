@@ -47,20 +47,20 @@ export default function SubscribePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50 py-12 px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-900 py-12 px-4 relative overflow-hidden">
       <Particles className="absolute inset-0" quantity={25} color="#FF6B6B" staticity={40} />
 
       <div className="max-w-md mx-auto relative">
         <BlurFade>
           <div className="text-center mb-8">
             <motion.div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-50 to-red-50 border border-orange-100 mb-4"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 mb-4"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
               <Sparkles className="w-4 h-4 text-[#FF6B6B]" />
-              <span className="text-sm font-medium text-orange-700">
+              <span className="text-sm font-medium text-orange-400">
                 最後のステップ
               </span>
             </motion.div>
@@ -68,10 +68,10 @@ export default function SubscribePage() {
             <h1 className="text-2xl font-bold mb-2">
               <AnimatedGradientText>メンバー登録</AnimatedGradientText>
             </h1>
-            <p className="text-neutral-600">
+            <p className="text-slate-400">
               サブスクリプションを開始して、
               <br />
-              unplanned の体験を始めましょう
+              dine tokyo の体験を始めましょう
             </p>
           </div>
         </BlurFade>
@@ -98,11 +98,11 @@ export default function SubscribePage() {
                     transition={{ delay: 0.4 }}
                   >
                     <AnimatedGradientText>¥1,980</AnimatedGradientText>
-                    <span className="text-base font-normal text-neutral-600">
+                    <span className="text-base font-normal text-slate-400">
                       /月
                     </span>
                   </motion.div>
-                  <p className="text-sm text-neutral-500 mt-1">税込</p>
+                  <p className="text-sm text-slate-500 mt-1">税込</p>
                 </div>
 
                 <ul className="space-y-4 mb-8">
@@ -120,7 +120,7 @@ export default function SubscribePage() {
                       >
                         <Check className="w-4 h-4" />
                       </motion.div>
-                      <span className="text-sm font-medium">{feature}</span>
+                      <span className="text-sm font-medium text-white">{feature}</span>
                     </motion.li>
                   ))}
                 </ul>
@@ -146,7 +146,7 @@ export default function SubscribePage() {
                   )}
                 </ShimmerButton>
 
-                <p className="text-xs text-center text-neutral-500 mt-4">
+                <p className="text-xs text-center text-slate-500 mt-4">
                   続行することで、
                   <a href="/terms" className="underline hover:text-[#FF6B6B] transition-colors">利用規約</a>
                   および
@@ -159,7 +159,7 @@ export default function SubscribePage() {
         </BlurFade>
 
         <BlurFade delay={0.3}>
-          <p className="text-sm text-center text-neutral-500 mt-6">
+          <p className="text-sm text-center text-slate-500 mt-6">
             お食事代は当日、現地でお支払いください。
           </p>
         </BlurFade>

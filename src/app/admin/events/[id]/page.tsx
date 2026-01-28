@@ -11,7 +11,11 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   const { id: eventId } = await params;
   const user = await getCurrentUser();
 
-  if (!user || !user.is_admin) {
+  if (!user) {
+    redirect(`/api/auth/line?redirect=/admin/events/${eventId}`);
+  }
+
+  if (!user.is_admin) {
     redirect('/');
   }
 
