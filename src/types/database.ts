@@ -19,6 +19,9 @@ export type IcebreakerGameType =
   | 'guess_favorite'
   | 'peer_intro';
 export type IcebreakerSessionStatus = 'waiting' | 'playing' | 'finished';
+export type IcebreakerQuestionCategory = 'casual' | 'fun' | 'deep';
+export type IcebreakerWordWolfCategory = 'food' | 'place' | 'animal' | 'season' | 'entertainment' | 'sports' | 'other';
+export type IcebreakerCommonThingsCategory = 'food' | 'hobby' | 'travel' | 'lifestyle' | 'personality' | 'experience' | 'other';
 
 export interface User {
   id: string;
@@ -149,6 +152,43 @@ export interface IcebreakerPlayer {
   player_data: Json;
   is_ready: boolean;
   joined_at: string;
+}
+
+export interface IcebreakerQuestion {
+  id: string;
+  question: string;
+  category: IcebreakerQuestionCategory;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IcebreakerWouldYouRather {
+  id: string;
+  option_a: string;
+  option_b: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IcebreakerWordWolf {
+  id: string;
+  majority_word: string;
+  minority_word: string;
+  category: IcebreakerWordWolfCategory;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IcebreakerCommonThings {
+  id: string;
+  prompt: string;
+  category: IcebreakerCommonThingsCategory;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export type Json =

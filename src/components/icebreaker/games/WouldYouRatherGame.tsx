@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, XCircle } from 'lucide-react';
-import { getRandomChoices } from '@/lib/icebreaker/data/would-you-rather';
 import type { IcebreakerSession, IcebreakerPlayer, GameData } from '@/lib/icebreaker/types';
-import type { User } from '@/types/database';
+import type { User, IcebreakerWouldYouRather } from '@/types/database';
 
 interface WouldYouRatherGameProps {
   session: IcebreakerSession;
@@ -25,25 +24,61 @@ export function WouldYouRatherGame({
   onEndGame,
 }: WouldYouRatherGameProps) {
   const gameData = session.game_data as GameData;
+  const [choicePool, setChoicePool] = useState<IcebreakerWouldYouRather[]>([]);
+  const [poolIndex, setPoolIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const initialLoadDone = useRef(false);
+
+  const fetchChoices = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/icebreaker/content/would-you-rather?limit=20&random=true');
+      if (response.ok) {
+        const { data } = await response.json();
+        setChoicePool(data);
+        setPoolIndex(0);
+        return data as IcebreakerWouldYouRather[];
+      }
+    } catch (error) {
+      console.error('Failed to fetch choices:', error);
+    } finally {
+      setIsLoading(false);
+    }
+    return [];
+  }, []);
 
   const handleNewChoice = async () => {
-    const choices = getRandomChoices(1);
-    if (choices.length > 0) {
+    let pool = choicePool;
+    let index = poolIndex;
+
+    // プールが空または使い切った場合は再取得
+    if (pool.length === 0 || index >= pool.length) {
+      pool = await fetchChoices();
+      index = 0;
+    }
+
+    if (pool.length > 0 && index < pool.length) {
       const newGameData: GameData = {
         ...gameData,
-        optionA: choices[0].optionA,
-        optionB: choices[0].optionB,
+        optionA: pool[index].option_a,
+        optionB: pool[index].option_b,
       };
       await onUpdateSession({
         game_data: newGameData as unknown as IcebreakerSession['game_data'],
         current_round: session.current_round + 1,
       });
+      setPoolIndex(index + 1);
     }
   };
 
   useEffect(() => {
-    if (isHost && !gameData.optionA) {
-      handleNewChoice();
+    if (isHost && !gameData.optionA && !initialLoadDone.current) {
+      initialLoadDone.current = true;
+      fetchChoices().then((pool) => {
+        if (pool.length > 0) {
+          handleNewChoice();
+        }
+      });
     }
   }, []);
 
@@ -73,7 +108,7 @@ export function WouldYouRatherGame({
             <div className="flex items-center gap-4">
               <span className="text-3xl font-bold text-blue-400">A</span>
               <p className="text-xl font-bold text-white flex-1">
-                {gameData.optionA || '読み込み中...'}
+                {isLoading ? '読み込み中...' : gameData.optionA || '読み込み中...'}
               </p>
             </div>
           </motion.div>
@@ -94,7 +129,7 @@ export function WouldYouRatherGame({
             <div className="flex items-center gap-4">
               <span className="text-3xl font-bold text-pink-400">B</span>
               <p className="text-xl font-bold text-white flex-1">
-                {gameData.optionB || '読み込み中...'}
+                {isLoading ? '読み込み中...' : gameData.optionB || '読み込み中...'}
               </p>
             </div>
           </motion.div>
@@ -111,9 +146,10 @@ export function WouldYouRatherGame({
         {isHost && (
           <button
             onClick={handleNewChoice}
-            className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors"
+            disabled={isLoading}
+            className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
             次のお題
           </button>
         )}

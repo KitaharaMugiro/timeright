@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, MessageCircle, XCircle } from 'lucide-react';
-import { getRandomQuestions } from '@/lib/icebreaker/data/questions';
 import type { IcebreakerSession, IcebreakerPlayer, GameData } from '@/lib/icebreaker/types';
-import type { User } from '@/types/database';
+import type { User, IcebreakerQuestion } from '@/types/database';
 
 interface QuestionsGameProps {
   session: IcebreakerSession;
@@ -25,27 +24,75 @@ export function QuestionsGame({
   onEndGame,
 }: QuestionsGameProps) {
   const [category, setCategory] = useState<'casual' | 'fun' | 'deep'>('casual');
+  const [questionPool, setQuestionPool] = useState<IcebreakerQuestion[]>([]);
+  const [poolIndex, setPoolIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const initialLoadDone = useRef(false);
+
   const gameData = session.game_data as GameData;
   const currentQuestion = gameData.currentQuestion;
 
+  const fetchQuestions = useCallback(async (cat: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `/api/icebreaker/content/questions?category=${cat}&limit=20&random=true`
+      );
+      if (response.ok) {
+        const { data } = await response.json();
+        setQuestionPool(data);
+        setPoolIndex(0);
+        return data as IcebreakerQuestion[];
+      }
+    } catch (error) {
+      console.error('Failed to fetch questions:', error);
+    } finally {
+      setIsLoading(false);
+    }
+    return [];
+  }, []);
+
   const handleNewQuestion = async () => {
-    const questions = getRandomQuestions(1, category);
-    if (questions.length > 0) {
+    let pool = questionPool;
+    let index = poolIndex;
+
+    // プールが空または使い切った場合は再取得
+    if (pool.length === 0 || index >= pool.length) {
+      pool = await fetchQuestions(category);
+      index = 0;
+    }
+
+    if (pool.length > 0 && index < pool.length) {
       const newGameData: GameData = {
         ...gameData,
-        currentQuestion: questions[0].question,
+        currentQuestion: pool[index].question,
         questionHistory: [
           ...(gameData.questionHistory || []),
           ...(currentQuestion ? [currentQuestion] : []),
         ],
       };
       await onUpdateSession({ game_data: newGameData as unknown as IcebreakerSession['game_data'] });
+      setPoolIndex(index + 1);
     }
   };
 
+  // カテゴリー変更時にプールをリセット
   useEffect(() => {
-    if (isHost && !currentQuestion) {
-      handleNewQuestion();
+    if (initialLoadDone.current) {
+      setQuestionPool([]);
+      setPoolIndex(0);
+    }
+  }, [category]);
+
+  // 初回ロード
+  useEffect(() => {
+    if (isHost && !currentQuestion && !initialLoadDone.current) {
+      initialLoadDone.current = true;
+      fetchQuestions(category).then((pool) => {
+        if (pool.length > 0) {
+          handleNewQuestion();
+        }
+      });
     }
   }, []);
 
@@ -85,7 +132,7 @@ export function QuestionsGame({
         >
           <MessageCircle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
           <p className="text-2xl font-bold text-white leading-relaxed">
-            {currentQuestion || '質問を読み込み中...'}
+            {isLoading ? '質問を読み込み中...' : currentQuestion || '質問を読み込み中...'}
           </p>
         </motion.div>
       </AnimatePresence>
@@ -100,9 +147,10 @@ export function QuestionsGame({
         {isHost && (
           <button
             onClick={handleNewQuestion}
-            className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors"
+            disabled={isLoading}
+            className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
             次の質問
           </button>
         )}

@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { XCircle, Eye, Timer, Vote, RefreshCw } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
-import { getRandomTopic } from '@/lib/icebreaker/data/word-wolf';
 import { selectWolf } from '@/lib/icebreaker/games';
 import type { IcebreakerSession, IcebreakerPlayer, GameData, PlayerData } from '@/lib/icebreaker/types';
-import type { User } from '@/types/database';
+import type { User, IcebreakerWordWolf } from '@/types/database';
 
 interface WordWolfGameProps {
   session: IcebreakerSession;
@@ -38,13 +37,37 @@ export function WordWolfGame({
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
   const [showWord, setShowWord] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
   };
 
+  const fetchTopic = useCallback(async (): Promise<IcebreakerWordWolf | null> => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/icebreaker/content/word-wolf?limit=1&random=true');
+      if (response.ok) {
+        const { data } = await response.json();
+        if (data.length > 0) {
+          return data[0];
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch topic:', error);
+    } finally {
+      setIsLoading(false);
+    }
+    return null;
+  }, []);
+
   const handleStartGame = async () => {
-    const topic = getRandomTopic();
+    const topic = await fetchTopic();
+    if (!topic) {
+      alert('お題の取得に失敗しました');
+      return;
+    }
+
     const playerIds = players.map((p) => p.user_id);
     const wolfId = selectWolf(playerIds);
 
@@ -53,8 +76,8 @@ export function WordWolfGame({
     const discussionEndTime = new Date(Date.now() + discussionMinutes * 60 * 1000).toISOString();
 
     const newGameData: GameData = {
-      majorityWord: topic.majorityWord,
-      minorityWord: topic.minorityWord,
+      majorityWord: topic.majority_word,
+      minorityWord: topic.minority_word,
       wolfId,
       discussionEndTime,
       votingPhase: false,
@@ -176,9 +199,10 @@ export function WordWolfGame({
           {isHost && (
             <button
               onClick={handleStartGame}
-              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50"
             >
-              ゲーム開始！
+              {isLoading ? '読み込み中...' : 'ゲーム開始！'}
             </button>
           )}
         </>

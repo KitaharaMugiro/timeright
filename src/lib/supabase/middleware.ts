@@ -22,7 +22,8 @@ export async function updateSession(request: NextRequest) {
 
   if (isProtectedPath && !userId) {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = '/api/auth/line';
+    url.searchParams.set('redirect', request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 

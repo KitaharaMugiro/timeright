@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Check, XCircle, Trophy } from 'lucide-react';
-import { getRandomPrompts } from '@/lib/icebreaker/data/common-things';
 import type { IcebreakerSession, IcebreakerPlayer, GameData } from '@/lib/icebreaker/types';
-import type { User } from '@/types/database';
+import type { User, IcebreakerCommonThings } from '@/types/database';
 
 interface CommonThingsGameProps {
   session: IcebreakerSession;
@@ -26,8 +25,28 @@ export function CommonThingsGame({
 }: CommonThingsGameProps) {
   const gameData = session.game_data as GameData;
   const [newItem, setNewItem] = useState('');
+  const [prompts, setPrompts] = useState<string[]>([]);
+  const [isLoadingPrompts, setIsLoadingPrompts] = useState(true);
   const foundItems = gameData.foundItems || [];
-  const prompts = getRandomPrompts(5);
+
+  const fetchPrompts = useCallback(async () => {
+    try {
+      setIsLoadingPrompts(true);
+      const response = await fetch('/api/icebreaker/content/common-things?limit=5&random=true');
+      if (response.ok) {
+        const { data } = await response.json();
+        setPrompts((data as IcebreakerCommonThings[]).map((item) => item.prompt));
+      }
+    } catch (error) {
+      console.error('Failed to fetch prompts:', error);
+    } finally {
+      setIsLoadingPrompts(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPrompts();
+  }, [fetchPrompts]);
 
   const handleAddItem = async () => {
     if (!newItem.trim()) return;
@@ -122,14 +141,18 @@ export function CommonThingsGame({
       <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-4">
         <p className="text-sm text-slate-400 mb-2">ヒント（こんな話題で探してみて）</p>
         <div className="flex flex-wrap gap-2">
-          {prompts.map((prompt, index) => (
-            <span
-              key={index}
-              className="px-3 py-1 bg-slate-700/50 text-slate-300 rounded-full text-sm"
-            >
-              {prompt}
-            </span>
-          ))}
+          {isLoadingPrompts ? (
+            <span className="text-slate-500 text-sm">読み込み中...</span>
+          ) : (
+            prompts.map((prompt, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 bg-slate-700/50 text-slate-300 rounded-full text-sm"
+              >
+                {prompt}
+              </span>
+            ))
+          )}
         </div>
       </div>
 

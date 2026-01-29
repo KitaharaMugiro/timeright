@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { UserAvatar } from '@/components/UserAvatar';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
 import { ArrowLeft, Plus, X, Users, Store, Check, Trash2, UserPlus, Ban } from 'lucide-react';
 import type { Event, Participation, User, Match, Guest, Gender, ParticipationMood, BudgetLevel } from '@/types/database';
@@ -753,39 +754,27 @@ export function EventDetailClient({
   };
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Header */}
-      <header className="glass border-b border-slate-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-xl font-bold text-white">
-              dine tokyo
-            </Link>
-            <span className="text-sm text-slate-400 bg-slate-800 px-2 py-1 rounded">
-              Admin
-            </span>
-          </div>
-          <Button
-            onClick={handleSave}
-            disabled={!isValid}
-            loading={saving}
-          >
-            <Check className="w-4 h-4 mr-2" />
-            マッチングを確定
-          </Button>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-6">
+    <AdminLayout>
+      {/* Action bar */}
+      <div className="flex items-center justify-between mb-6">
         <Link
           href="/admin"
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4"
+          className="inline-flex items-center gap-2 text-slate-400 hover:text-white"
         >
           <ArrowLeft className="w-4 h-4" />
           イベント一覧へ
         </Link>
+        <Button
+          onClick={handleSave}
+          disabled={!isValid}
+          loading={saving}
+        >
+          <Check className="w-4 h-4 mr-2" />
+          マッチングを確定
+        </Button>
+      </div>
 
-        {/* Event info */}
+      {/* Event info */}
         <Card className="mb-6 glass-card border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -1140,7 +1129,6 @@ export function EventDetailClient({
             </ul>
           </CardContent>
         </Card>
-      </main>
-    </div>
+    </AdminLayout>
   );
 }

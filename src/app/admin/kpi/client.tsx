@@ -1,10 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendChart, DistributionChart, BarChartComponent } from '@/components/ui/chart';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import {
-  ArrowLeft,
   Users,
   CreditCard,
   Calendar,
@@ -78,39 +77,16 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Header */}
-      <header className="glass border-b border-slate-700">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-xl font-bold text-white">
-              dine tokyo
-            </Link>
-            <span className="text-sm text-slate-400 bg-slate-800 px-2 py-1 rounded">
-              Admin
-            </span>
-          </div>
+    <AdminLayout>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold flex items-center gap-2 text-white">
+          <TrendingUp className="w-6 h-6 text-amber-500" />
+          KPIダッシュボード
+        </h1>
+        <div className="text-sm text-slate-400">
+          最終更新: {new Date(data.generatedAt).toLocaleString('ja-JP')}
         </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          管理画面へ戻る
-        </Link>
-
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold flex items-center gap-2 text-white">
-            <TrendingUp className="w-6 h-6 text-amber-500" />
-            KPIダッシュボード
-          </h1>
-          <div className="text-sm text-slate-400">
-            最終更新: {new Date(data.generatedAt).toLocaleString('ja-JP')}
-          </div>
-        </div>
+      </div>
 
         {/* User Metrics Section */}
         <section className="mb-8">
@@ -307,7 +283,6 @@ export function KPIDashboardClient({ data }: KPIDashboardClientProps) {
             />
           </div>
         </section>
-      </main>
-    </div>
+    </AdminLayout>
   );
 }

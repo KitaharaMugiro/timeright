@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
 import { UserAvatar } from '@/components/UserAvatar';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { formatDate, formatTime, getAreaLabel, cn } from '@/lib/utils';
-import { ArrowLeft, Star, Calendar, MapPin, MessageSquare, Ban, ArrowUpDown } from 'lucide-react';
+import { Star, Calendar, MapPin, MessageSquare, Ban, ArrowUpDown } from 'lucide-react';
 import type { ReviewWithRelations } from './page';
 import type { User } from '@/types/database';
 
@@ -96,31 +96,8 @@ export function AdminReviewsClient({ initialReviews }: AdminReviewsClientProps) 
   };
 
   return (
-    <div className="min-h-screen bg-slate-900" data-testid="admin-reviews-page">
-      {/* Header */}
-      <header className="glass border-b border-slate-700">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-xl font-bold text-white">
-              dine tokyo
-            </Link>
-            <span className="text-sm text-slate-400 bg-slate-800 px-2 py-1 rounded" data-testid="admin-badge">
-              Admin
-            </span>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4"
-          data-testid="back-to-admin"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          管理画面へ戻る
-        </Link>
-
+    <AdminLayout>
+      <div data-testid="admin-reviews-page">
         <h1 className="text-2xl font-bold mb-6 text-white" data-testid="page-title">レビュー管理</h1>
 
         {/* Statistics */}
@@ -307,7 +284,7 @@ export function AdminReviewsClient({ initialReviews }: AdminReviewsClientProps) 
             ))
           )}
         </div>
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
