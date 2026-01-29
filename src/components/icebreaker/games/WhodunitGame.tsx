@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { XCircle, Send, Eye, ChevronRight, ChevronLeft } from 'lucide-react';
+import { XCircle, Send, Eye, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { shuffleArray } from '@/lib/icebreaker/games';
 import type { IcebreakerSession, IcebreakerPlayer, GameData, PlayerData } from '@/lib/icebreaker/types';
@@ -37,39 +37,52 @@ export function WhodunitGame({
 
   const [phase, setPhase] = useState<Phase>('write');
   const [myStory, setMyStory] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
   };
 
   const handleSubmitStory = async () => {
-    if (!myStory.trim()) return;
-    await onUpdatePlayerData({ myStory: myStory.trim() });
+    if (!myStory.trim() || isLoading) return;
+    setIsLoading(true);
+    try {
+      await onUpdatePlayerData({ myStory: myStory.trim() });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStartGuessing = async () => {
-    // Collect all stories and shuffle
-    const stories = players
-      .map((p) => {
-        const data = p.player_data as PlayerData;
-        return data?.myStory ? { text: data.myStory, authorId: p.user_id } : null;
-      })
-      .filter((s): s is { text: string; authorId: string } => s !== null);
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      // Collect all stories and shuffle
+      const stories = players
+        .map((p) => {
+          const data = p.player_data as PlayerData;
+          return data?.myStory ? { text: data.myStory, authorId: p.user_id } : null;
+        })
+        .filter((s): s is { text: string; authorId: string } => s !== null);
 
-    const shuffledStories = shuffleArray(stories);
+      const shuffledStories = shuffleArray(stories);
 
-    const newGameData: GameData = {
-      ...gameData,
-      stories: shuffledStories,
-      currentStoryIndex: 0,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
-    setPhase('guess');
+      const newGameData: GameData = {
+        ...gameData,
+        stories: shuffledStories,
+        currentStoryIndex: 0,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+      setPhase('guess');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNextStory = async () => {
+    if (isLoading) return;
     const currentIndex = gameData.currentStoryIndex || 0;
     const stories = gameData.stories || [];
 
@@ -77,29 +90,40 @@ export function WhodunitGame({
       return;
     }
 
-    const newGameData: GameData = {
-      ...gameData,
-      currentStoryIndex: currentIndex + 1,
-      revealed: false,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
+    setIsLoading(true);
+    try {
+      const newGameData: GameData = {
+        ...gameData,
+        currentStoryIndex: currentIndex + 1,
+        revealed: false,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePrevStory = async () => {
+    if (isLoading) return;
     const currentIndex = gameData.currentStoryIndex || 0;
 
     if (currentIndex <= 0) return;
 
-    const newGameData: GameData = {
-      ...gameData,
-      currentStoryIndex: currentIndex - 1,
-      revealed: false,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
+    setIsLoading(true);
+    try {
+      const newGameData: GameData = {
+        ...gameData,
+        currentStoryIndex: currentIndex - 1,
+        revealed: false,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Sync phase with game data
@@ -144,11 +168,15 @@ export function WhodunitGame({
               />
               <button
                 onClick={handleSubmitStory}
-                disabled={!myStory.trim()}
+                disabled={!myStory.trim() || isLoading}
                 className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-amber-400 transition-colors"
               >
-                <Send className="w-5 h-5 inline mr-2" />
-                送信
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 inline mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5 inline mr-2" />
+                )}
+                {isLoading ? '送信中...' : '送信'}
               </button>
             </div>
           ) : (
@@ -183,9 +211,11 @@ export function WhodunitGame({
           {isHost && allSubmitted && (
             <button
               onClick={handleStartGuessing}
-              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50"
             >
-              推理スタート！
+              {isLoading ? <Loader2 className="w-5 h-5 inline mr-2 animate-spin" /> : null}
+              {isLoading ? '読み込み中...' : '推理スタート！'}
             </button>
           )}
         </>
@@ -220,18 +250,29 @@ export function WhodunitGame({
           {!gameData.revealed && (
             <button
               onClick={async () => {
-                const newGameData: GameData = {
-                  ...gameData,
-                  revealed: true,
-                };
-                await onUpdateSession({
-                  game_data: newGameData as unknown as IcebreakerSession['game_data'],
-                });
+                if (isLoading) return;
+                setIsLoading(true);
+                try {
+                  const newGameData: GameData = {
+                    ...gameData,
+                    revealed: true,
+                  };
+                  await onUpdateSession({
+                    game_data: newGameData as unknown as IcebreakerSession['game_data'],
+                  });
+                } finally {
+                  setIsLoading(false);
+                }
               }}
-              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50"
             >
-              <Eye className="w-5 h-5 inline mr-2" />
-              答えを見る
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 inline mr-2 animate-spin" />
+              ) : (
+                <Eye className="w-5 h-5 inline mr-2" />
+              )}
+              {isLoading ? '読み込み中...' : '答えを見る'}
             </button>
           )}
 
@@ -261,7 +302,7 @@ export function WhodunitGame({
           <div className="flex gap-3">
             <button
               onClick={handlePrevStory}
-              disabled={currentStoryIndex === 0}
+              disabled={currentStoryIndex === 0 || isLoading}
               className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -269,7 +310,7 @@ export function WhodunitGame({
             </button>
             <button
               onClick={handleNextStory}
-              disabled={currentStoryIndex + 1 >= stories.length}
+              disabled={currentStoryIndex + 1 >= stories.length || isLoading}
               className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
               次へ
@@ -283,7 +324,8 @@ export function WhodunitGame({
       {isHost && (
         <button
           onClick={onEndGame}
-          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
+          disabled={isLoading}
+          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors disabled:opacity-50"
         >
           <XCircle className="w-5 h-5" />
           ゲームを終了

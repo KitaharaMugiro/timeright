@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, XCircle, Users, Mic } from 'lucide-react';
+import { ArrowRight, XCircle, Users, Mic, Loader2 } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { createPairs } from '@/lib/icebreaker/games';
 import type { IcebreakerSession, IcebreakerPlayer, GameData } from '@/lib/icebreaker/types';
@@ -33,6 +33,7 @@ export function PeerIntroGame({
   const gameData = session.game_data as GameData;
   const [phase, setPhase] = useState<Phase>('pairing');
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
+  const [isLoading, setIsLoading] = useState(false);
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
@@ -81,6 +82,7 @@ export function PeerIntroGame({
   };
 
   const handleNextPair = async () => {
+    if (isLoading) return;
     const currentIndex = gameData.currentPairIndex2 || 0;
     const pairs = gameData.interviewPairs || [];
 
@@ -89,13 +91,18 @@ export function PeerIntroGame({
       return;
     }
 
-    const newGameData: GameData = {
-      ...gameData,
-      currentPairIndex2: currentIndex + 1,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
+    setIsLoading(true);
+    try {
+      const newGameData: GameData = {
+        ...gameData,
+        currentPairIndex2: currentIndex + 1,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const pairs = gameData.interviewPairs || [];
@@ -168,8 +175,10 @@ export function PeerIntroGame({
           {isHost && (
             <button
               onClick={handleStartInterview}
-              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50"
             >
+              {isLoading ? <Loader2 className="w-5 h-5 inline mr-2 animate-spin" /> : null}
               インタビュー開始（3分）
             </button>
           )}
@@ -223,8 +232,10 @@ export function PeerIntroGame({
           {isHost && timeLeft === 0 && (
             <button
               onClick={handleStartPresentation}
-              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50"
             >
+              {isLoading ? <Loader2 className="w-5 h-5 inline mr-2 animate-spin" /> : null}
               発表スタート！
             </button>
           )}
@@ -251,10 +262,11 @@ export function PeerIntroGame({
           {isHost && (
             <button
               onClick={handleNextPair}
-              disabled={currentPairIndex + 1 >= pairs.length}
+              disabled={currentPairIndex + 1 >= pairs.length || isLoading}
               className="w-full py-3 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
-              {currentPairIndex + 1 >= pairs.length ? '全員発表完了！' : '次のペアへ'}
+              {isLoading ? <Loader2 className="w-5 h-5 inline mr-2 animate-spin" /> : null}
+              {currentPairIndex + 1 >= pairs.length ? '全員発表完了！' : isLoading ? '読み込み中...' : '次のペアへ'}
             </button>
           )}
         </>
@@ -264,7 +276,8 @@ export function PeerIntroGame({
       {isHost && (
         <button
           onClick={onEndGame}
-          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
+          disabled={isLoading}
+          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors disabled:opacity-50"
         >
           <XCircle className="w-5 h-5" />
           ゲームを終了

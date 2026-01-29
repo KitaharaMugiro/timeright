@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Check, XCircle, Trophy } from 'lucide-react';
+import { Plus, Check, XCircle, Trophy, Loader2 } from 'lucide-react';
 import type { IcebreakerSession, IcebreakerPlayer, GameData } from '@/lib/icebreaker/types';
 import type { User, IcebreakerCommonThings } from '@/types/database';
 
@@ -27,6 +27,7 @@ export function CommonThingsGame({
   const [newItem, setNewItem] = useState('');
   const [prompts, setPrompts] = useState<string[]>([]);
   const [isLoadingPrompts, setIsLoadingPrompts] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const foundItems = gameData.foundItems || [];
 
   const fetchPrompts = useCallback(async () => {
@@ -49,16 +50,20 @@ export function CommonThingsGame({
   }, [fetchPrompts]);
 
   const handleAddItem = async () => {
-    if (!newItem.trim()) return;
-
-    const newGameData: GameData = {
-      ...gameData,
-      foundItems: [...foundItems, newItem.trim()],
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
-    setNewItem('');
+    if (!newItem.trim() || isLoading) return;
+    setIsLoading(true);
+    try {
+      const newGameData: GameData = {
+        ...gameData,
+        foundItems: [...foundItems, newItem.trim()],
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+      setNewItem('');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isComplete = foundItems.length >= 10;
@@ -129,10 +134,10 @@ export function CommonThingsGame({
           />
           <button
             onClick={handleAddItem}
-            disabled={!newItem.trim()}
+            disabled={!newItem.trim() || isLoading}
             className="px-4 py-3 bg-amber-500 text-slate-900 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-amber-400 transition-colors"
           >
-            <Plus className="w-5 h-5" />
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
           </button>
         </div>
       )}
@@ -160,7 +165,8 @@ export function CommonThingsGame({
       {isHost && (
         <button
           onClick={onEndGame}
-          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
+          disabled={isLoading}
+          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors disabled:opacity-50"
         >
           <XCircle className="w-5 h-5" />
           ゲームを終了

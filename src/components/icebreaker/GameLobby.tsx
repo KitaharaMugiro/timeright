@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Crown, Loader2, LogOut } from 'lucide-react';
 import { getGameDefinition } from '@/lib/icebreaker/games';
@@ -30,9 +31,40 @@ export function GameLobby({
   onLeaveSession,
   allPlayersReady,
 }: GameLobbyProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const game = getGameDefinition(session.game_type);
   const currentPlayer = players.find((p) => p.user_id === userId);
   const isReady = currentPlayer?.is_ready ?? false;
+
+  const handleSetReady = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      await onSetReady(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartGame = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      await onStartGame();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLeaveSession = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      await onLeaveSession();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
@@ -120,10 +152,14 @@ export function GameLobby({
       <div className="space-y-3">
         {!isReady && (
           <button
-            onClick={() => onSetReady(true)}
-            className="w-full py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-400 transition-colors"
+            onClick={handleSetReady}
+            disabled={isLoading}
+            className="w-full py-3 bg-green-500 text-white rounded-xl font-bold hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            準備OK！
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 inline mr-2 animate-spin" />
+            ) : null}
+            {isLoading ? '送信中...' : '準備OK！'}
           </button>
         )}
 
@@ -135,11 +171,16 @@ export function GameLobby({
 
         {isHost && (
           <button
-            onClick={onStartGame}
-            disabled={!allPlayersReady || players.length < game.minPlayers}
+            onClick={handleStartGame}
+            disabled={!allPlayersReady || players.length < game.minPlayers || isLoading}
             className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-amber-400 transition-colors"
           >
-            {players.length < game.minPlayers
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 inline mr-2 animate-spin" />
+            ) : null}
+            {isLoading
+              ? '読み込み中...'
+              : players.length < game.minPlayers
               ? `あと${game.minPlayers - players.length}人必要`
               : allPlayersReady
               ? 'ゲームを開始！'
@@ -149,10 +190,15 @@ export function GameLobby({
 
         {/* Leave session button */}
         <button
-          onClick={onLeaveSession}
-          className="w-full py-2 text-slate-400 text-sm flex items-center justify-center gap-2 hover:text-red-400 transition-colors"
+          onClick={handleLeaveSession}
+          disabled={isLoading}
+          className="w-full py-2 text-slate-400 text-sm flex items-center justify-center gap-2 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <LogOut className="w-4 h-4" />
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <LogOut className="w-4 h-4" />
+          )}
           このゲームを抜ける
         </button>
       </div>

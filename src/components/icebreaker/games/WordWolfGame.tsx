@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { XCircle, Eye, Timer, Vote, RefreshCw } from 'lucide-react';
+import { XCircle, Eye, Timer, Vote, RefreshCw, Loader2 } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { selectWolf } from '@/lib/icebreaker/games';
 import type { IcebreakerSession, IcebreakerPlayer, GameData, PlayerData } from '@/lib/icebreaker/types';
@@ -92,32 +92,56 @@ export function WordWolfGame({
   };
 
   const handleStartVoting = async () => {
-    const newGameData: GameData = {
-      ...gameData,
-      votingPhase: true,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
-    setPhase('voting');
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const newGameData: GameData = {
+        ...gameData,
+        votingPhase: true,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+      setPhase('voting');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleVote = async (targetId: string) => {
-    setSelectedVote(targetId);
-    await onUpdatePlayerData({ vote: targetId });
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      setSelectedVote(targetId);
+      await onUpdatePlayerData({ vote: targetId });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRevealResult = async () => {
-    setPhase('result');
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      setPhase('result');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNewRound = async () => {
-    setPhase('setup');
-    setSelectedVote(null);
-    setShowWord(false);
-    await onUpdateSession({
-      game_data: {} as unknown as IcebreakerSession['game_data'],
-    });
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      setPhase('setup');
+      setSelectedVote(null);
+      setShowWord(false);
+      await onUpdateSession({
+        game_data: {} as unknown as IcebreakerSession['game_data'],
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Timer for discussion phase
@@ -259,9 +283,11 @@ export function WordWolfGame({
           {isHost && (
             <button
               onClick={handleStartVoting}
-              className="w-full py-3 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
-              投票を開始
+              {isLoading ? <Loader2 className="w-5 h-5 inline mr-2 animate-spin" /> : null}
+              {isLoading ? '読み込み中...' : '投票を開始'}
             </button>
           )}
         </>
@@ -286,11 +312,11 @@ export function WordWolfGame({
                 <button
                   key={player.id}
                   onClick={() => handleVote(player.user_id)}
-                  disabled={player.user_id === userId || !!selectedVote}
+                  disabled={player.user_id === userId || !!selectedVote || isLoading}
                   className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
                     isSelected
                       ? 'bg-amber-500/20 border-2 border-amber-500'
-                      : player.user_id === userId
+                      : player.user_id === userId || isLoading
                       ? 'bg-slate-800/30 opacity-50'
                       : 'bg-slate-800/50 border border-slate-700 hover:bg-slate-700'
                   }`}
@@ -318,9 +344,11 @@ export function WordWolfGame({
           {isHost && allVoted && (
             <button
               onClick={handleRevealResult}
-              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50"
             >
-              結果発表！
+              {isLoading ? <Loader2 className="w-5 h-5 inline mr-2 animate-spin" /> : null}
+              {isLoading ? '読み込み中...' : '結果発表！'}
             </button>
           )}
         </>
@@ -375,10 +403,11 @@ export function WordWolfGame({
           {isHost && (
             <button
               onClick={handleNewRound}
-              className="w-full py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
-              <RefreshCw className="w-5 h-5" />
-              もう一回！
+              <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? '読み込み中...' : 'もう一回！'}
             </button>
           )}
         </>
@@ -388,7 +417,8 @@ export function WordWolfGame({
       {isHost && (
         <button
           onClick={onEndGame}
-          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
+          disabled={isLoading}
+          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors disabled:opacity-50"
         >
           <XCircle className="w-5 h-5" />
           ゲームを終了

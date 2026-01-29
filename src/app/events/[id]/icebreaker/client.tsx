@@ -125,7 +125,12 @@ export function IcebreakerClient({
   };
 
   const handleLeaveSession = async () => {
-    await leaveSession();
+    // ホストが抜ける場合は全員終了
+    if (isHost) {
+      await endSession();
+    } else {
+      await leaveSession();
+    }
     setViewMode('select');
   };
 

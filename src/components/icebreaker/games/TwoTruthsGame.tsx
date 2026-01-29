@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, XCircle, Send, Eye } from 'lucide-react';
+import { RefreshCw, XCircle, Send, Eye, Loader2 } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import type { IcebreakerSession, IcebreakerPlayer, GameData, PlayerData } from '@/lib/icebreaker/types';
 import type { User as UserType } from '@/types/database';
@@ -37,61 +37,99 @@ export function TwoTruthsGame({
   const [phase, setPhase] = useState<Phase>('setup');
   const [statements, setStatements] = useState(['', '', '']);
   const [lieIndex, setLieIndex] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
   };
 
   const handleSubmitStatements = async () => {
-    if (statements.some((s) => !s.trim())) return;
-
-    await onUpdatePlayerData({
-      myStatements: statements,
-      myLieIndex: lieIndex,
-    });
+    if (statements.some((s) => !s.trim()) || isLoading) return;
+    setIsLoading(true);
+    try {
+      await onUpdatePlayerData({
+        myStatements: statements,
+        myLieIndex: lieIndex,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSelectPresenter = async (presenterId: string) => {
+    if (isLoading) return;
     const presenter = players.find((p) => p.user_id === presenterId);
     if (!presenter) return;
 
-    const presenterData = presenter.player_data as PlayerData;
-    const newGameData: GameData = {
-      ...gameData,
-      currentPlayerId: presenterId,
-      statements: presenterData.myStatements,
-      lieIndex: presenterData.myLieIndex,
-      revealed: false,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-      current_round: session.current_round + 1,
-    });
-    setPhase('playing');
+    setIsLoading(true);
+    try {
+      const presenterData = presenter.player_data as PlayerData;
+      const originalStatements = presenterData.myStatements || [];
+      const originalLieIndex = presenterData.myLieIndex ?? 0;
+
+      // シャッフル用のインデックス配列を作成
+      const indices = [0, 1, 2];
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+
+      // シャッフルされた順番で並び替え
+      const shuffledStatements = indices.map((i) => originalStatements[i]);
+      // 新しい嘘の位置を計算
+      const newLieIndex = indices.indexOf(originalLieIndex);
+
+      const newGameData: GameData = {
+        ...gameData,
+        currentPlayerId: presenterId,
+        statements: shuffledStatements,
+        lieIndex: newLieIndex,
+        revealed: false,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+        current_round: session.current_round + 1,
+      });
+      setPhase('playing');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReveal = async () => {
-    const newGameData: GameData = {
-      ...gameData,
-      revealed: true,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
-    setPhase('reveal');
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const newGameData: GameData = {
+        ...gameData,
+        revealed: true,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+      setPhase('reveal');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNextRound = async () => {
-    const newGameData: GameData = {
-      currentPlayerId: undefined,
-      statements: undefined,
-      lieIndex: undefined,
-      revealed: false,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
-    setPhase('setup');
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const newGameData: GameData = {
+        currentPlayerId: undefined,
+        statements: undefined,
+        lieIndex: undefined,
+        revealed: false,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+      setPhase('setup');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Sync phase with game data
@@ -153,11 +191,15 @@ export function TwoTruthsGame({
               ))}
               <button
                 onClick={handleSubmitStatements}
-                disabled={statements.some((s) => !s.trim())}
+                disabled={statements.some((s) => !s.trim()) || isLoading}
                 className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-amber-400 transition-colors"
               >
-                <Send className="w-5 h-5 inline mr-2" />
-                送信
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 inline mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5 inline mr-2" />
+                )}
+                {isLoading ? '送信中...' : '送信'}
               </button>
             </div>
           )}
@@ -182,9 +224,9 @@ export function TwoTruthsGame({
                     <button
                       key={player.id}
                       onClick={() => handleSelectPresenter(player.user_id)}
-                      disabled={!ready}
+                      disabled={!ready || isLoading}
                       className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
-                        ready
+                        ready && !isLoading
                           ? 'bg-slate-700/50 hover:bg-slate-700'
                           : 'bg-slate-800/30 opacity-50'
                       }`}
@@ -251,10 +293,15 @@ export function TwoTruthsGame({
           {isHost && (
             <button
               onClick={handleReveal}
-              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50"
             >
-              <Eye className="w-5 h-5 inline mr-2" />
-              正解を発表！
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 inline mr-2 animate-spin" />
+              ) : (
+                <Eye className="w-5 h-5 inline mr-2" />
+              )}
+              {isLoading ? '読み込み中...' : '正解を発表！'}
             </button>
           )}
         </>
@@ -308,10 +355,11 @@ export function TwoTruthsGame({
           {isHost && (
             <button
               onClick={handleNextRound}
-              className="w-full py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
-              <RefreshCw className="w-5 h-5" />
-              次の人へ
+              <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? '読み込み中...' : '次の人へ'}
             </button>
           )}
         </>
@@ -321,7 +369,8 @@ export function TwoTruthsGame({
       {isHost && (
         <button
           onClick={onEndGame}
-          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
+          disabled={isLoading}
+          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors disabled:opacity-50"
         >
           <XCircle className="w-5 h-5" />
           ゲームを終了

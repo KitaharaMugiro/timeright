@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, XCircle } from 'lucide-react';
-import type { IcebreakerSession, IcebreakerPlayer, GameData } from '@/lib/icebreaker/types';
+import type { IcebreakerSession, IcebreakerPlayer, GameData, PlayerData } from '@/lib/icebreaker/types';
 import type { User, IcebreakerWouldYouRather } from '@/types/database';
 
 interface WouldYouRatherGameProps {
@@ -19,8 +19,12 @@ interface WouldYouRatherGameProps {
 
 export function WouldYouRatherGame({
   session,
+  players,
+  members,
+  userId,
   isHost,
   onUpdateSession,
+  onUpdatePlayerData,
   onEndGame,
 }: WouldYouRatherGameProps) {
   const gameData = session.game_data as GameData;
@@ -28,6 +32,31 @@ export function WouldYouRatherGame({
   const [poolIndex, setPoolIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const initialLoadDone = useRef(false);
+
+  // 現在のラウンド用の投票キー（ラウンドごとにリセット）
+  const voteKey = `vote_${session.current_round}`;
+
+  // プレイヤーの投票を取得
+  const getPlayerVote = (player: IcebreakerPlayer): 'A' | 'B' | null => {
+    const playerData = player.player_data as PlayerData & { [key: string]: string };
+    return playerData[voteKey] as 'A' | 'B' | null;
+  };
+
+  // 自分がすでに投票済みかチェック
+  const currentPlayer = players.find((p) => p.user_id === userId);
+  const hasVoted = currentPlayer ? !!getPlayerVote(currentPlayer) : false;
+
+  // 投票したプレイヤーをフィルタ
+  const votesA = players.filter((p) => getPlayerVote(p) === 'A');
+  const votesB = players.filter((p) => getPlayerVote(p) === 'B');
+
+  // メンバー情報を取得するヘルパー
+  const getMember = (odUserId: string) => members.find((m) => m.id === odUserId);
+
+  const handleVote = async (option: 'A' | 'B') => {
+    if (hasVoted) return; // 既に投票済み
+    await onUpdatePlayerData({ [voteKey]: option });
+  };
 
   const fetchChoices = useCallback(async () => {
     try {
@@ -101,15 +130,52 @@ export function WouldYouRatherGame({
         >
           {/* Option A */}
           <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-gradient-to-r from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-2xl p-6 cursor-pointer"
+            whileHover={!hasVoted ? { scale: 1.02 } : {}}
+            whileTap={!hasVoted ? { scale: 0.98 } : {}}
+            onClick={() => handleVote('A')}
+            className={`bg-gradient-to-r from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-2xl p-6 relative overflow-hidden ${
+              hasVoted ? 'cursor-default' : 'cursor-pointer'
+            }`}
           >
             <div className="flex items-center gap-4">
               <span className="text-3xl font-bold text-blue-400">A</span>
               <p className="text-xl font-bold text-white flex-1">
                 {isLoading ? '読み込み中...' : gameData.optionA || '読み込み中...'}
               </p>
+            </div>
+            {/* 投票アイコンのスタック */}
+            <div className="flex flex-wrap gap-1.5 mt-3 min-h-[32px]">
+              <AnimatePresence>
+                {votesA.map((player, index) => {
+                  const member = getMember(player.user_id);
+                  return (
+                    <motion.div
+                      key={player.id}
+                      initial={{ opacity: 0, x: 50, scale: 0.5 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 500,
+                        damping: 25,
+                        delay: index * 0.05,
+                      }}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm overflow-hidden ring-2 ring-blue-400"
+                    >
+                      {member?.avatar_url ? (
+                        <img
+                          src={member.avatar_url}
+                          alt={member.display_name || ''}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-blue-500 flex items-center justify-center">
+                          {member?.display_name?.[0] || '?'}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </div>
           </motion.div>
 
@@ -122,9 +188,12 @@ export function WouldYouRatherGame({
 
           {/* Option B */}
           <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-gradient-to-r from-pink-500/20 to-pink-600/20 border border-pink-500/30 rounded-2xl p-6 cursor-pointer"
+            whileHover={!hasVoted ? { scale: 1.02 } : {}}
+            whileTap={!hasVoted ? { scale: 0.98 } : {}}
+            onClick={() => handleVote('B')}
+            className={`bg-gradient-to-r from-pink-500/20 to-pink-600/20 border border-pink-500/30 rounded-2xl p-6 relative overflow-hidden ${
+              hasVoted ? 'cursor-default' : 'cursor-pointer'
+            }`}
           >
             <div className="flex items-center gap-4">
               <span className="text-3xl font-bold text-pink-400">B</span>
@@ -132,13 +201,47 @@ export function WouldYouRatherGame({
                 {isLoading ? '読み込み中...' : gameData.optionB || '読み込み中...'}
               </p>
             </div>
+            {/* 投票アイコンのスタック */}
+            <div className="flex flex-wrap gap-1.5 mt-3 min-h-[32px]">
+              <AnimatePresence>
+                {votesB.map((player, index) => {
+                  const member = getMember(player.user_id);
+                  return (
+                    <motion.div
+                      key={player.id}
+                      initial={{ opacity: 0, x: 50, scale: 0.5 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 500,
+                        damping: 25,
+                        delay: index * 0.05,
+                      }}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm overflow-hidden ring-2 ring-pink-400"
+                    >
+                      {member?.avatar_url ? (
+                        <img
+                          src={member.avatar_url}
+                          alt={member.display_name || ''}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-pink-500 flex items-center justify-center">
+                          {member?.display_name?.[0] || '?'}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
           </motion.div>
         </motion.div>
       </AnimatePresence>
 
       {/* Instructions */}
       <div className="text-center text-slate-400 text-sm">
-        指で選んで、その理由を話してみましょう！
+        {hasVoted ? '投票済み！理由を話し合いましょう' : 'タップして投票しよう（1回だけ）'}
       </div>
 
       {/* Action buttons */}

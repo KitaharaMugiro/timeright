@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, XCircle, Eye, EyeOff, Send, HelpCircle } from 'lucide-react';
+import { RefreshCw, XCircle, Eye, EyeOff, Send, HelpCircle, Loader2 } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { shuffleArray } from '@/lib/icebreaker/games';
 import type { IcebreakerSession, IcebreakerPlayer, GameData, PlayerData } from '@/lib/icebreaker/types';
@@ -42,6 +42,7 @@ export function GuessFavoriteGame({
 }: GuessFavoriteGameProps) {
   const gameData = session.game_data as GameData;
   const [myAnswer, setMyAnswer] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const currentPlayer = players.find((p) => p.user_id === userId);
   const myPlayerData = currentPlayer?.player_data as PlayerData;
 
@@ -50,56 +51,78 @@ export function GuessFavoriteGame({
   };
 
   const handleNewCategory = async () => {
-    const randomCategory = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
-    const newGameData: GameData = {
-      category: randomCategory,
-      answers: [],
-      guessingPhase: false,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-      current_round: session.current_round + 1,
-    });
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const randomCategory = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+      const newGameData: GameData = {
+        category: randomCategory,
+        answers: [],
+        guessingPhase: false,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+        current_round: session.current_round + 1,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmitAnswer = async () => {
-    if (!myAnswer.trim()) return;
+    if (!myAnswer.trim() || isLoading) return;
+    setIsLoading(true);
+    try {
+      await onUpdatePlayerData({ myFavorite: myAnswer.trim() });
 
-    await onUpdatePlayerData({ myFavorite: myAnswer.trim() });
-
-    const currentAnswers = gameData.answers || [];
-    const newGameData: GameData = {
-      ...gameData,
-      answers: [...currentAnswers, { userId, answer: myAnswer.trim() }],
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
-    setMyAnswer('');
+      const currentAnswers = gameData.answers || [];
+      const newGameData: GameData = {
+        ...gameData,
+        answers: [...currentAnswers, { userId, answer: myAnswer.trim() }],
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+      setMyAnswer('');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStartGuessing = async () => {
-    // Shuffle answers so players can't guess by order
-    const shuffledAnswers = shuffleArray([...(gameData.answers || [])]);
-    const newGameData: GameData = {
-      ...gameData,
-      answers: shuffledAnswers,
-      guessingPhase: true,
-      revealed: false,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      // Shuffle answers so players can't guess by order
+      const shuffledAnswers = shuffleArray([...(gameData.answers || [])]);
+      const newGameData: GameData = {
+        ...gameData,
+        answers: shuffledAnswers,
+        guessingPhase: true,
+        revealed: false,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRevealAnswers = async () => {
-    const newGameData: GameData = {
-      ...gameData,
-      revealed: true,
-    };
-    await onUpdateSession({
-      game_data: newGameData as unknown as IcebreakerSession['game_data'],
-    });
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const newGameData: GameData = {
+        ...gameData,
+        revealed: true,
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -147,10 +170,10 @@ export function GuessFavoriteGame({
                 />
                 <button
                   onClick={handleSubmitAnswer}
-                  disabled={!myAnswer.trim()}
+                  disabled={!myAnswer.trim() || isLoading}
                   className="px-4 py-3 bg-pink-500 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-pink-400 transition-colors"
                 >
-                  <Send className="w-5 h-5" />
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -189,9 +212,11 @@ export function GuessFavoriteGame({
           {isHost && allSubmitted && (
             <button
               onClick={handleStartGuessing}
-              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50"
             >
-              推理スタート！
+              {isLoading ? <Loader2 className="w-5 h-5 inline mr-2 animate-spin" /> : null}
+              {isLoading ? '読み込み中...' : '推理スタート！'}
             </button>
           )}
         </>
@@ -242,10 +267,15 @@ export function GuessFavoriteGame({
           {!gameData.revealed && (
             <button
               onClick={handleRevealAnswers}
-              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50"
             >
-              <Eye className="w-5 h-5 inline mr-2" />
-              答え合わせ
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 inline mr-2 animate-spin" />
+              ) : (
+                <Eye className="w-5 h-5 inline mr-2" />
+              )}
+              {isLoading ? '読み込み中...' : '答え合わせ'}
             </button>
           )}
         </div>
@@ -256,16 +286,18 @@ export function GuessFavoriteGame({
         {isHost && gameData.guessingPhase && gameData.revealed && (
           <button
             onClick={handleNewCategory}
-            className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors"
+            disabled={isLoading}
+            className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className="w-5 h-5" />
-            次のお題
+            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? '読み込み中...' : '次のお題'}
           </button>
         )}
         {isHost && (
           <button
             onClick={onEndGame}
-            className="py-3 px-6 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
+            disabled={isLoading}
+            className="py-3 px-6 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors disabled:opacity-50"
           >
             <XCircle className="w-5 h-5" />
             終了
