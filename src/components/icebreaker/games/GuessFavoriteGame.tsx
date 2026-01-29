@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, XCircle, Eye, EyeOff, Send } from 'lucide-react';
+import { RefreshCw, XCircle, Eye, EyeOff, Send, HelpCircle } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
+import { shuffleArray } from '@/lib/icebreaker/games';
 import type { IcebreakerSession, IcebreakerPlayer, GameData, PlayerData } from '@/lib/icebreaker/types';
 import type { User } from '@/types/database';
 
@@ -77,10 +78,24 @@ export function GuessFavoriteGame({
     setMyAnswer('');
   };
 
+  const handleStartGuessing = async () => {
+    // Shuffle answers so players can't guess by order
+    const shuffledAnswers = shuffleArray([...(gameData.answers || [])]);
+    const newGameData: GameData = {
+      ...gameData,
+      answers: shuffledAnswers,
+      guessingPhase: true,
+      revealed: false,
+    };
+    await onUpdateSession({
+      game_data: newGameData as unknown as IcebreakerSession['game_data'],
+    });
+  };
+
   const handleRevealAnswers = async () => {
     const newGameData: GameData = {
       ...gameData,
-      guessingPhase: true,
+      revealed: true,
     };
     await onUpdateSession({
       game_data: newGameData as unknown as IcebreakerSession['game_data'],
@@ -170,13 +185,13 @@ export function GuessFavoriteGame({
             </div>
           </div>
 
-          {/* Reveal button */}
+          {/* Start guessing button */}
           {isHost && allSubmitted && (
             <button
-              onClick={handleRevealAnswers}
+              onClick={handleStartGuessing}
               className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
             >
-              回答を公開！
+              推理スタート！
             </button>
           )}
         </>
@@ -186,7 +201,7 @@ export function GuessFavoriteGame({
       {gameData.guessingPhase && (
         <div className="space-y-4">
           <p className="text-center text-amber-400 font-medium">
-            誰の回答か当ててみましょう！
+            {gameData.revealed ? '答え合わせ！' : '誰の回答か当ててみましょう！'}
           </p>
           <div className="space-y-3">
             {gameData.answers?.map((answer, index) => {
@@ -196,31 +211,49 @@ export function GuessFavoriteGame({
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.2 }}
+                  transition={{ delay: index * 0.1 }}
                   className="bg-slate-800/50 border border-slate-700 rounded-xl p-4"
                 >
                   <div className="flex items-center justify-between">
                     <p className="text-lg text-white font-medium">{answer.answer}</p>
-                    <div className="flex items-center gap-2">
-                      <UserAvatar
-                        displayName={member?.display_name || ''}
-                        avatarUrl={member?.avatar_url}
-                        gender={member?.gender || 'male'}
-                        size="sm"
-                      />
-                      <span className="text-slate-400 text-sm">{member?.display_name}</span>
-                    </div>
+                    {gameData.revealed ? (
+                      <div className="flex items-center gap-2">
+                        <UserAvatar
+                          displayName={member?.display_name || ''}
+                          avatarUrl={member?.avatar_url}
+                          gender={member?.gender || 'male'}
+                          size="sm"
+                        />
+                        <span className="text-slate-400 text-sm">{member?.display_name}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <HelpCircle className="w-5 h-5" />
+                        <span className="text-sm">???</span>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               );
             })}
           </div>
+
+          {/* Reveal answers button */}
+          {!gameData.revealed && (
+            <button
+              onClick={handleRevealAnswers}
+              className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
+            >
+              <Eye className="w-5 h-5 inline mr-2" />
+              答え合わせ
+            </button>
+          )}
         </div>
       )}
 
       {/* Action buttons */}
       <div className="flex gap-3">
-        {isHost && gameData.guessingPhase && (
+        {isHost && gameData.guessingPhase && gameData.revealed && (
           <button
             onClick={handleNewCategory}
             className="flex-1 py-3 bg-slate-800 text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors"

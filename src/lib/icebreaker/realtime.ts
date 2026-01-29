@@ -17,6 +17,7 @@ interface UseIcebreakerRealtimeReturn {
   error: string | null;
   createSession: (gameType: string) => Promise<IcebreakerSession | null>;
   joinSession: (sessionId: string) => Promise<void>;
+  leaveSession: () => Promise<void>;
   updateSession: (updates: Partial<IcebreakerSession>) => Promise<void>;
   updatePlayerData: (data: Partial<PlayerData>) => Promise<void>;
   setReady: (ready: boolean) => Promise<void>;
@@ -218,6 +219,27 @@ export function useIcebreakerRealtime({
     [fetchData]
   );
 
+  // Leave current session (via API)
+  const leaveSession = useCallback(async (): Promise<void> => {
+    if (!session) return;
+
+    try {
+      const res = await fetch(`/api/icebreaker/player?session_id=${session.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || '退出に失敗しました');
+      }
+
+      // Clear local state - user is no longer in the session
+      setPlayers((prev) => prev.filter((p) => p.user_id !== userId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '退出に失敗しました');
+    }
+  }, [session, userId]);
+
   // Update session data (via API)
   const updateSession = useCallback(
     async (updates: Partial<IcebreakerSession>): Promise<void> => {
@@ -321,6 +343,7 @@ export function useIcebreakerRealtime({
     error,
     createSession,
     joinSession,
+    leaveSession,
     updateSession,
     updatePlayerData,
     setReady,

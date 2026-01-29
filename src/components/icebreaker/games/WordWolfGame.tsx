@@ -33,8 +33,6 @@ export function WordWolfGame({
   onEndGame,
 }: WordWolfGameProps) {
   const gameData = session.game_data as GameData;
-  const currentPlayer = players.find((p) => p.user_id === userId);
-  const myPlayerData = currentPlayer?.player_data as PlayerData;
 
   const [phase, setPhase] = useState<Phase>('setup');
   const [timeLeft, setTimeLeft] = useState(0);
@@ -150,6 +148,9 @@ export function WordWolfGame({
   const mostVotedId = Object.entries(voteCount).sort((a, b) => b[1] - a[1])[0]?.[0];
   const wolfCaught = mostVotedId === gameData.wolfId;
 
+  // Determine my word based on whether I'm the wolf
+  const myWord = gameData.wolfId === userId ? gameData.minorityWord : gameData.majorityWord;
+
   return (
     <div className="space-y-6">
       {/* Title */}
@@ -212,7 +213,7 @@ export function WordWolfGame({
                 animate={{ opacity: 1 }}
                 className="text-2xl font-bold text-white"
               >
-                {myPlayerData?.myWord}
+                {myWord}
               </motion.p>
             ) : (
               <button

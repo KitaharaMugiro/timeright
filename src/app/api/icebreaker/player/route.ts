@@ -80,3 +80,52 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// DELETE: Leave session (remove player from session)
+export async function DELETE(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const sessionId = url.searchParams.get('session_id');
+
+    if (!sessionId) {
+      return NextResponse.json({ error: 'session_id is required' }, { status: 400 });
+    }
+
+    const supabase = await getUntypedClient();
+
+    // Check if user is in this session
+    const { data: player } = await supabase
+      .from('icebreaker_players')
+      .select('id')
+      .eq('session_id', sessionId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!player) {
+      return NextResponse.json({ error: 'Player not found in session' }, { status: 404 });
+    }
+
+    // Delete player from session
+    const { error: deleteError } = await supabase
+      .from('icebreaker_players')
+      .delete()
+      .eq('id', player.id);
+
+    if (deleteError) {
+      console.error('Error deleting player:', deleteError);
+      return NextResponse.json({ error: 'Failed to leave session' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error in DELETE /api/icebreaker/player:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

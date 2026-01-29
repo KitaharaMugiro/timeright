@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { formatDate, formatTime, getAreaLabel, isReviewAccessible, isWithin48Hours, isWithinEventWindow } from '@/lib/utils';
+import { formatDate, formatTime, getAreaLabel, isReviewAccessible, isToday, isWithin48Hours, isWithinEventWindow } from '@/lib/utils';
 import { Calendar, MapPin, LogOut, Star, ArrowRight, Settings, User as UserIcon, X, Ticket, Clock, Copy, Check, Users, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -54,6 +54,10 @@ export function DashboardClient({
   };
 
   const userParticipationEventIds = localParticipations.map((p) => p.event_id);
+
+  // 今日のディナーとそれ以外を分離
+  const todayDinner = matches.find((match) => isToday(match.events.event_date));
+  const otherMatches = matches.filter((match) => !isToday(match.events.event_date));
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -145,6 +149,124 @@ export function DashboardClient({
       </motion.header>
 
       <main className="max-w-4xl mx-auto px-4 py-8 relative">
+        {/* Today's Dinner - Hero Section */}
+        {todayDinner && (
+          <BlurFade>
+            <section className="mb-10">
+              <motion.div
+                className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-slate-900 border border-amber-500/30"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
+                {/* Animated background glow */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <motion.div
+                    className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-amber-500/30 to-transparent rounded-full blur-3xl"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.3, 0.5, 0.3],
+                    }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                  />
+                </div>
+
+                <div className="relative p-8">
+                  {/* Badge */}
+                  <motion.div
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/40 mb-6"
+                    animate={{ scale: [1, 1.02, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span className="text-amber-400 text-sm font-semibold tracking-wider">本日開催</span>
+                  </motion.div>
+
+                  {/* Restaurant name - Large */}
+                  <h2 className="font-serif text-3xl md:text-4xl text-white mb-6">
+                    {todayDinner.restaurant_name}
+                  </h2>
+
+                  {/* Event details */}
+                  <div className="flex flex-wrap items-center gap-6 mb-8">
+                    <div className="flex items-center gap-2 text-white">
+                      <Calendar className="w-5 h-5 text-amber-400" />
+                      <span className="text-lg">{formatDate(todayDinner.events.event_date)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-white">
+                      <Clock className="w-5 h-5 text-amber-400" />
+                      <span className="text-lg">{formatTime(todayDinner.events.event_date)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-white">
+                      <MapPin className="w-5 h-5 text-amber-400" />
+                      <span className="text-lg">{getAreaLabel(todayDinner.events.area)}</span>
+                    </div>
+                  </div>
+
+                  {/* Participants */}
+                  <div className="flex items-center gap-4 mb-8">
+                    <AvatarCircles
+                      avatarUrls={todayDinner.table_members
+                        .filter((id) => id !== user.id)
+                        .map((memberId) => ({
+                          imageUrl: participantsMap[memberId]?.avatar_url || '/default-avatar.png',
+                          job: participantsMap[memberId]?.job || '',
+                        }))}
+                      showJob
+                      className="scale-110"
+                    />
+                    <span className="text-slate-300">
+                      他{todayDinner.table_members.length - 1}人と食事
+                    </span>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    {todayDinner.restaurant_url && (
+                      <motion.a
+                        href={todayDinner.restaurant_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-colors"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <MapPin className="w-4 h-4" />
+                        お店を見る
+                        <ArrowRight className="w-4 h-4" />
+                      </motion.a>
+                    )}
+                    {isWithinEventWindow(todayDinner.events.event_date, 3) && (
+                      <Link href={`/events/${todayDinner.event_id}/icebreaker`}>
+                        <motion.button
+                          className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 hover:from-amber-400 hover:to-orange-400 transition-colors shadow-lg shadow-amber-500/25"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          Ice Breaker を始める
+                        </motion.button>
+                      </Link>
+                    )}
+                    {isReviewAccessible(todayDinner.events.event_date) && (
+                      <Link href={`/reviews/${todayDinner.id}`}>
+                        <motion.button
+                          className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-amber-400 border border-amber-500/40 hover:bg-amber-500/10 transition-colors"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Star className="w-4 h-4" />
+                          レビューを書く
+                        </motion.button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </section>
+          </BlurFade>
+        )}
+
         {/* User greeting */}
         <BlurFade>
           <div className="mb-8">
@@ -160,8 +282,8 @@ export function DashboardClient({
           </div>
         </BlurFade>
 
-        {/* Confirmed matches - Premium Ticket Style */}
-        {matches.length > 0 && (
+        {/* Confirmed matches - Premium Ticket Style (excluding today's dinner) */}
+        {otherMatches.length > 0 && (
           <section className="mb-8">
             <BlurFade>
               <div className="flex items-center gap-2 mb-4">
@@ -170,7 +292,7 @@ export function DashboardClient({
               </div>
             </BlurFade>
             <div className="space-y-4">
-              {matches.map((match, index) => (
+              {otherMatches.map((match, index) => (
                 <BlurFade key={match.id} delay={index * 0.1}>
                   <div className="ticket">
                     <div className="p-6">

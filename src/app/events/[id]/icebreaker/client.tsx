@@ -44,6 +44,7 @@ export function IcebreakerClient({
     error,
     createSession,
     joinSession,
+    leaveSession,
     updateSession,
     updatePlayerData,
     setReady,
@@ -92,8 +93,11 @@ export function IcebreakerClient({
         }
       }
       // If not a player, stay on 'select' to show join prompt
+    } else if (viewMode !== 'select') {
+      // Session ended or was deleted, return to game selection
+      setViewMode('select');
     }
-  }, [session?.status, isPlayerInSession]);
+  }, [session, isPlayerInSession, viewMode]);
 
   const handleSelectGame = async (gameType: IcebreakerGameType) => {
     const newSession = await createSession(gameType);
@@ -117,6 +121,11 @@ export function IcebreakerClient({
 
   const handleEndGame = async () => {
     await endSession();
+    setViewMode('select');
+  };
+
+  const handleLeaveSession = async () => {
+    await leaveSession();
     setViewMode('select');
   };
 
@@ -236,6 +245,7 @@ export function IcebreakerClient({
                 isHost={isHost}
                 onSetReady={setReady}
                 onStartGame={handleStartGame}
+                onLeaveSession={handleLeaveSession}
                 allPlayersReady={allPlayersReady}
               />
             </motion.div>

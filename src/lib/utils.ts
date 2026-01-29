@@ -59,6 +59,16 @@ export function isWithinEventWindow(dateString: string, windowHours: number = 3)
   return diffHours >= 0 && diffHours <= windowHours;
 }
 
+export function isToday(dateString: string): boolean {
+  const eventDate = new Date(dateString);
+  const now = new Date();
+  return (
+    eventDate.getFullYear() === now.getFullYear() &&
+    eventDate.getMonth() === now.getMonth() &&
+    eventDate.getDate() === now.getDate()
+  );
+}
+
 export function generateInviteToken(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let token = '';

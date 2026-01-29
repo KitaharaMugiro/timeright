@@ -37,7 +37,6 @@ export function WhodunitGame({
 
   const [phase, setPhase] = useState<Phase>('write');
   const [myStory, setMyStory] = useState('');
-  const [revealed, setRevealed] = useState(false);
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
@@ -78,10 +77,10 @@ export function WhodunitGame({
       return;
     }
 
-    setRevealed(false);
     const newGameData: GameData = {
       ...gameData,
       currentStoryIndex: currentIndex + 1,
+      revealed: false,
     };
     await onUpdateSession({
       game_data: newGameData as unknown as IcebreakerSession['game_data'],
@@ -93,10 +92,10 @@ export function WhodunitGame({
 
     if (currentIndex <= 0) return;
 
-    setRevealed(false);
     const newGameData: GameData = {
       ...gameData,
       currentStoryIndex: currentIndex - 1,
+      revealed: false,
     };
     await onUpdateSession({
       game_data: newGameData as unknown as IcebreakerSession['game_data'],
@@ -218,9 +217,17 @@ export function WhodunitGame({
           </p>
 
           {/* Reveal button */}
-          {!revealed && (
+          {!gameData.revealed && (
             <button
-              onClick={() => setRevealed(true)}
+              onClick={async () => {
+                const newGameData: GameData = {
+                  ...gameData,
+                  revealed: true,
+                };
+                await onUpdateSession({
+                  game_data: newGameData as unknown as IcebreakerSession['game_data'],
+                });
+              }}
               className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold hover:bg-amber-400 transition-colors"
             >
               <Eye className="w-5 h-5 inline mr-2" />
@@ -229,7 +236,7 @@ export function WhodunitGame({
           )}
 
           {/* Revealed answer */}
-          {revealed && authorMember && (
+          {gameData.revealed && authorMember && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

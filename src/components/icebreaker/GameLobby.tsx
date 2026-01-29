@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Check, Crown, Loader2 } from 'lucide-react';
+import { Check, Crown, Loader2, LogOut } from 'lucide-react';
 import { getGameDefinition } from '@/lib/icebreaker/games';
 import { UserAvatar } from '@/components/UserAvatar';
 import type { IcebreakerSession, IcebreakerPlayer } from '@/lib/icebreaker/types';
@@ -15,6 +15,7 @@ interface GameLobbyProps {
   isHost: boolean;
   onSetReady: (ready: boolean) => Promise<void>;
   onStartGame: () => Promise<void>;
+  onLeaveSession: () => Promise<void>;
   allPlayersReady: boolean;
 }
 
@@ -26,6 +27,7 @@ export function GameLobby({
   isHost,
   onSetReady,
   onStartGame,
+  onLeaveSession,
   allPlayersReady,
 }: GameLobbyProps) {
   const game = getGameDefinition(session.game_type);
@@ -144,6 +146,15 @@ export function GameLobby({
               : '全員の準備を待っています...'}
           </button>
         )}
+
+        {/* Leave session button */}
+        <button
+          onClick={onLeaveSession}
+          className="w-full py-2 text-slate-400 text-sm flex items-center justify-center gap-2 hover:text-red-400 transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          このゲームを抜ける
+        </button>
       </div>
     </div>
   );
