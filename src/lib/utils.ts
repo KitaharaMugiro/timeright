@@ -50,6 +50,15 @@ export function isReviewAccessible(dateString: string): boolean {
   return now > eventDate;
 }
 
+export function isWithinEventWindow(dateString: string, windowHours: number = 3): boolean {
+  const eventDate = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - eventDate.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  // イベント開始後、指定時間以内
+  return diffHours >= 0 && diffHours <= windowHours;
+}
+
 export function generateInviteToken(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let token = '';

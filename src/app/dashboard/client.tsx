@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { formatDate, formatTime, getAreaLabel, isReviewAccessible, isWithin48Hours } from '@/lib/utils';
-import { Calendar, MapPin, LogOut, Star, ArrowRight, Settings, User as UserIcon, X, Ticket, Clock, Copy, Check, Users } from 'lucide-react';
+import { formatDate, formatTime, getAreaLabel, isReviewAccessible, isWithin48Hours, isWithinEventWindow } from '@/lib/utils';
+import { Calendar, MapPin, LogOut, Star, ArrowRight, Settings, User as UserIcon, X, Ticket, Clock, Copy, Check, Users, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import {
   ShimmerButton,
@@ -233,19 +233,33 @@ export function DashboardClient({
                           </span>
                         </div>
 
-                        {isReviewAccessible(match.events.event_date) && (
-                          <Link href={`/reviews/${match.id}`} data-testid="review-link">
-                            <motion.button
-                              className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-amber-500 border border-amber-500/30 hover:bg-amber-500/10 transition-colors"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              data-testid="review-button"
-                            >
-                              <Star className="w-4 h-4" />
-                              レビュー
-                            </motion.button>
-                          </Link>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {isWithinEventWindow(match.events.event_date, 3) && (
+                            <Link href={`/events/${match.event_id}/icebreaker`}>
+                              <motion.button
+                                className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 hover:from-amber-400 hover:to-orange-400 transition-colors"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                <Sparkles className="w-4 h-4" />
+                                Ice Breaker
+                              </motion.button>
+                            </Link>
+                          )}
+                          {isReviewAccessible(match.events.event_date) && (
+                            <Link href={`/reviews/${match.id}`} data-testid="review-link">
+                              <motion.button
+                                className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-amber-500 border border-amber-500/30 hover:bg-amber-500/10 transition-colors"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                data-testid="review-button"
+                              >
+                                <Star className="w-4 h-4" />
+                                レビュー
+                              </motion.button>
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

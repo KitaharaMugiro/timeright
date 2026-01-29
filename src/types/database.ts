@@ -9,6 +9,16 @@ export type BudgetLevel = 1 | 2 | 3;
 export type ReferralStatus = 'pending' | 'completed' | 'expired';
 export type MemberStage = 'bronze' | 'silver' | 'gold' | 'platinum';
 export type StagePointReason = 'participation' | 'review_sent' | 'review_received' | 'cancel';
+export type IcebreakerGameType =
+  | 'questions'
+  | 'would_you_rather'
+  | 'two_truths'
+  | 'word_wolf'
+  | 'common_things'
+  | 'whodunit'
+  | 'guess_favorite'
+  | 'peer_intro';
+export type IcebreakerSessionStatus = 'waiting' | 'playing' | 'finished';
 
 export interface User {
   id: string;
@@ -121,6 +131,26 @@ export interface MemberStageInfo {
   message: string;
 }
 
+export interface IcebreakerSession {
+  id: string;
+  match_id: string;
+  game_type: IcebreakerGameType;
+  status: IcebreakerSessionStatus;
+  current_round: number;
+  game_data: Json;
+  host_user_id: string;
+  created_at: string;
+}
+
+export interface IcebreakerPlayer {
+  id: string;
+  session_id: string;
+  user_id: string;
+  player_data: Json;
+  is_ready: boolean;
+  joined_at: string;
+}
+
 export type Json =
   | string
   | number
@@ -197,6 +227,25 @@ export interface Database {
         Update: Partial<Referral>;
         Relationships: [];
       };
+      icebreaker_sessions: {
+        Row: IcebreakerSession;
+        Insert: Partial<IcebreakerSession> & {
+          match_id: string;
+          game_type: IcebreakerGameType;
+          host_user_id: string;
+        };
+        Update: Partial<IcebreakerSession>;
+        Relationships: [];
+      };
+      icebreaker_players: {
+        Row: IcebreakerPlayer;
+        Insert: Partial<IcebreakerPlayer> & {
+          session_id: string;
+          user_id: string;
+        };
+        Update: Partial<IcebreakerPlayer>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -212,6 +261,8 @@ export interface Database {
       referral_status: ReferralStatus;
       member_stage: MemberStage;
       stage_point_reason: StagePointReason;
+      icebreaker_game_type: IcebreakerGameType;
+      icebreaker_session_status: IcebreakerSessionStatus;
     };
     CompositeTypes: Record<string, never>;
   };
