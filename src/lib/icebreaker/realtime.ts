@@ -20,6 +20,7 @@ interface UseIcebreakerRealtimeReturn {
   updateSession: (updates: Partial<IcebreakerSession>) => Promise<void>;
   updatePlayerData: (data: Partial<PlayerData>) => Promise<void>;
   setReady: (ready: boolean) => Promise<void>;
+  endSession: () => Promise<void>;
 }
 
 // Helper to get untyped supabase client for new tables
@@ -38,7 +39,7 @@ export function useIcebreakerRealtime({
 
   const supabase = getClient();
 
-  // Fetch current session and players
+  // Fetch current session and players (SELECT is allowed by RLS)
   const fetchData = useCallback(async (sessionId: string) => {
     try {
       const [sessionResult, playersResult] = await Promise.all([
@@ -117,12 +118,11 @@ export function useIcebreakerRealtime({
     };
   }, [session?.id, supabase]);
 
-  // Initial fetch for active session
+  // Initial fetch for active session (SELECT is allowed by RLS)
   useEffect(() => {
     const fetchActiveSession = async () => {
       setIsLoading(true);
       try {
-        // Check for existing active session
         const { data: sessions, error: sessionsError } = await supabase
           .from('icebreaker_sessions')
           .select('*')
@@ -148,36 +148,23 @@ export function useIcebreakerRealtime({
     fetchActiveSession();
   }, [matchId, fetchData, supabase]);
 
-  // Create a new game session
+  // Create a new game session (via API)
   const createSession = useCallback(
     async (gameType: string): Promise<IcebreakerSession | null> => {
       try {
-        const { data, error: createError } = await supabase
-          .from('icebreaker_sessions')
-          .insert({
-            match_id: matchId,
-            game_type: gameType,
-            host_user_id: userId,
-            status: 'waiting',
-            current_round: 0,
-            game_data: {},
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-
-        const newSession = data as IcebreakerSession;
-        setSession(newSession);
-
-        // Auto-join as player
-        await supabase.from('icebreaker_players').insert({
-          session_id: newSession.id,
-          user_id: userId,
-          is_ready: true,
-          player_data: {},
+        const res = await fetch('/api/icebreaker/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ match_id: matchId, game_type: gameType }),
         });
 
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'セッション作成に失敗しました');
+        }
+
+        const { session: newSession } = await res.json();
+        setSession(newSession);
         await fetchData(newSession.id);
         return newSession;
       } catch (err) {
@@ -185,32 +172,22 @@ export function useIcebreakerRealtime({
         return null;
       }
     },
-    [matchId, userId, supabase, fetchData]
+    [matchId, fetchData]
   );
 
-  // Join an existing session
+  // Join an existing session (via API)
   const joinSession = useCallback(
     async (sessionId: string): Promise<void> => {
       try {
-        // Check if already joined
-        const { data: existing } = await supabase
-          .from('icebreaker_players')
-          .select('id')
-          .eq('session_id', sessionId)
-          .eq('user_id', userId)
-          .single();
+        const res = await fetch('/api/icebreaker/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId }),
+        });
 
-        if (!existing) {
-          const { error: joinError } = await supabase
-            .from('icebreaker_players')
-            .insert({
-              session_id: sessionId,
-              user_id: userId,
-              is_ready: false,
-              player_data: {},
-            });
-
-          if (joinError) throw joinError;
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || '参加に失敗しました');
         }
 
         await fetchData(sessionId);
@@ -218,77 +195,104 @@ export function useIcebreakerRealtime({
         setError(err instanceof Error ? err.message : '参加に失敗しました');
       }
     },
-    [userId, supabase, fetchData]
+    [fetchData]
   );
 
-  // Update session data (host only)
+  // Update session data (via API)
   const updateSession = useCallback(
     async (updates: Partial<IcebreakerSession>): Promise<void> => {
       if (!session) return;
 
       try {
-        const { error: updateError } = await supabase
-          .from('icebreaker_sessions')
-          .update(updates)
-          .eq('id', session.id);
+        const res = await fetch('/api/icebreaker/session', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: session.id, updates }),
+        });
 
-        if (updateError) throw updateError;
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || '更新に失敗しました');
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : '更新に失敗しました');
       }
     },
-    [session, supabase]
+    [session]
   );
 
-  // Update player data
+  // Update player data (via API)
   const updatePlayerData = useCallback(
     async (data: Partial<PlayerData>): Promise<void> => {
       if (!session) return;
 
       try {
-        const { data: player } = await supabase
-          .from('icebreaker_players')
-          .select('id, player_data')
-          .eq('session_id', session.id)
-          .eq('user_id', userId)
-          .single();
+        const res = await fetch('/api/icebreaker/player', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: session.id,
+            updates: { player_data: data },
+          }),
+        });
 
-        if (!player) return;
-
-        const newData = { ...(player.player_data as PlayerData), ...data };
-
-        const { error: updateError } = await supabase
-          .from('icebreaker_players')
-          .update({ player_data: newData })
-          .eq('id', player.id);
-
-        if (updateError) throw updateError;
+        if (!res.ok) {
+          const resData = await res.json();
+          throw new Error(resData.error || '更新に失敗しました');
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : '更新に失敗しました');
       }
     },
-    [session, userId, supabase]
+    [session]
   );
 
-  // Set ready status
+  // Set ready status (via API)
   const setReady = useCallback(
     async (ready: boolean): Promise<void> => {
       if (!session) return;
 
       try {
-        const { error: updateError } = await supabase
-          .from('icebreaker_players')
-          .update({ is_ready: ready })
-          .eq('session_id', session.id)
-          .eq('user_id', userId);
+        const res = await fetch('/api/icebreaker/player', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: session.id,
+            updates: { is_ready: ready },
+          }),
+        });
 
-        if (updateError) throw updateError;
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || '更新に失敗しました');
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : '更新に失敗しました');
       }
     },
-    [session, userId, supabase]
+    [session]
   );
+
+  // End session (via API)
+  const endSession = useCallback(async (): Promise<void> => {
+    if (!session) return;
+
+    try {
+      const res = await fetch(`/api/icebreaker/session?session_id=${session.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || '終了に失敗しました');
+      }
+
+      setSession(null);
+      setPlayers([]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '終了に失敗しました');
+    }
+  }, [session]);
 
   return {
     session,
@@ -300,5 +304,6 @@ export function useIcebreakerRealtime({
     updateSession,
     updatePlayerData,
     setReady,
+    endSession,
   };
 }

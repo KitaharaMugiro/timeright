@@ -47,6 +47,7 @@ export function IcebreakerClient({
     updateSession,
     updatePlayerData,
     setReady,
+    endSession,
   } = useIcebreakerRealtime({ matchId, userId });
 
   // Calculate remaining time
@@ -107,10 +108,8 @@ export function IcebreakerClient({
   };
 
   const handleEndGame = async () => {
-    if (session) {
-      await updateSession({ status: 'finished' });
-      setViewMode('select');
-    }
+    await endSession();
+    setViewMode('select');
   };
 
   const handleBack = () => {

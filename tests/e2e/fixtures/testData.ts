@@ -383,3 +383,122 @@ export function getFutureHours(hoursFromNow: number): string {
   date.setHours(date.getHours() + hoursFromNow);
   return date.toISOString();
 }
+
+// =============================================================================
+// Ice Breaker Feature Test Data
+// =============================================================================
+
+/**
+ * Ice Breaker game types and names (Japanese)
+ */
+export const icebreakerGames = {
+  questions: {
+    id: 'questions',
+    name: '質問タイム',
+    emoji: '💬',
+    minPlayers: 2,
+    maxPlayers: 10,
+  },
+  would_you_rather: {
+    id: 'would_you_rather',
+    name: 'どっちがいい？',
+    emoji: '🤔',
+    minPlayers: 2,
+    maxPlayers: 10,
+  },
+  two_truths: {
+    id: 'two_truths',
+    name: '2つの真実と1つの嘘',
+    emoji: '🎭',
+    minPlayers: 3,
+    maxPlayers: 8,
+  },
+  word_wolf: {
+    id: 'word_wolf',
+    name: 'ワードウルフ',
+    emoji: '🐺',
+    minPlayers: 4,
+    maxPlayers: 8,
+  },
+  common_things: {
+    id: 'common_things',
+    name: '10の共通点',
+    emoji: '🤝',
+    minPlayers: 2,
+    maxPlayers: 10,
+  },
+  whodunit: {
+    id: 'whodunit',
+    name: '犯人探し',
+    emoji: '🔍',
+    minPlayers: 4,
+    maxPlayers: 10,
+  },
+  guess_favorite: {
+    id: 'guess_favorite',
+    name: '好きなもの当て',
+    emoji: '❤️',
+    minPlayers: 3,
+    maxPlayers: 10,
+  },
+  peer_intro: {
+    id: 'peer_intro',
+    name: '他己紹介',
+    emoji: '🎤',
+    minPlayers: 4,
+    maxPlayers: 10,
+  },
+};
+
+/**
+ * All Ice Breaker game names for verification
+ */
+export const allIcebreakerGameNames = Object.values(icebreakerGames).map((g) => g.name);
+
+/**
+ * Ice Breaker session status labels (Japanese)
+ */
+export const icebreakerStatusLabels = {
+  waiting: '待機中',
+  playing: 'プレイ中',
+  finished: '終了',
+};
+
+/**
+ * Ice Breaker player ready status labels (Japanese)
+ */
+export const icebreakerReadyLabels = {
+  ready: '準備OK',
+  notReady: '準備中',
+};
+
+/**
+ * Question categories in QuestionsGame (Japanese)
+ */
+export const questionCategories = {
+  casual: 'カジュアル',
+  fun: 'おもしろ',
+  deep: '深い話',
+};
+
+/**
+ * Get a date within the 3-hour event window
+ * Returns a date that is 1 hour ago (middle of the window)
+ */
+export function getDateWithinEventWindow(): string {
+  return getPastHours(1);
+}
+
+/**
+ * Get a date before the event window (event hasn't started)
+ */
+export function getDateBeforeEventWindow(): string {
+  return getFutureHours(1);
+}
+
+/**
+ * Get a date after the event window (event window ended)
+ */
+export function getDateAfterEventWindow(): string {
+  return getPastHours(4);
+}
