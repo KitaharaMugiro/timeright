@@ -317,14 +317,16 @@ export function TwoTruthsGame({
         </>
       )}
 
-      {/* End button */}
-      <button
-        onClick={onEndGame}
-        className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
-      >
-        <XCircle className="w-5 h-5" />
-        ゲームを終了
-      </button>
+      {/* End button (host only) */}
+      {isHost && (
+        <button
+          onClick={onEndGame}
+          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
+        >
+          <XCircle className="w-5 h-5" />
+          ゲームを終了
+        </button>
+      )}
     </div>
   );
 }

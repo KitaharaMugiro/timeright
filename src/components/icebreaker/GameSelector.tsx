@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Users, Play } from 'lucide-react';
+import { Users, Play, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import type { GameDefinition, IcebreakerSession, IcebreakerGameType } from '@/lib/icebreaker/types';
 import { getGameName, getGameEmoji } from '@/lib/icebreaker/games';
 
@@ -18,35 +19,58 @@ export function GameSelector({
   activeSession,
   onJoinSession,
 }: GameSelectorProps) {
-  return (
-    <div className="space-y-6">
-      {/* Active session banner */}
-      {activeSession && activeSession.status !== 'finished' && (
+  const router = useRouter();
+  const hasActiveSession = activeSession && activeSession.status !== 'finished';
+
+  // If there's an active session, show join prompt instead of game selection
+  if (hasActiveSession) {
+    return (
+      <div className="space-y-6">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl p-6"
         >
-          <div className="flex items-center justify-between">
+          <div className="text-center space-y-4">
+            <div className="text-5xl">
+              {getGameEmoji(activeSession.game_type)}
+            </div>
             <div>
-              <p className="text-amber-400 font-medium">
-                {getGameEmoji(activeSession.game_type)} {getGameName(activeSession.game_type)}
-              </p>
-              <p className="text-sm text-slate-400">
-                {activeSession.status === 'waiting' ? '待機中' : 'プレイ中'}
+              <h2 className="text-xl font-bold text-white">
+                {getGameName(activeSession.game_type)}
+              </h2>
+              <p className="text-amber-400 text-sm mt-1">
+                {activeSession.status === 'waiting' ? 'メンバーを待っています...' : 'ゲーム進行中'}
               </p>
             </div>
-            <button
-              onClick={onJoinSession}
-              className="px-4 py-2 bg-amber-500 text-slate-900 rounded-lg font-medium flex items-center gap-2 hover:bg-amber-400 transition-colors"
-            >
-              <Play className="w-4 h-4" />
-              参加する
-            </button>
+            <p className="text-slate-400 text-sm">
+              他のメンバーがこのゲームを始めました
+            </p>
+            <div className="flex flex-col gap-3 pt-2">
+              <button
+                onClick={onJoinSession}
+                className="w-full py-3 bg-amber-500 text-slate-900 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-amber-400 transition-colors"
+              >
+                <Play className="w-5 h-5" />
+                参加する
+              </button>
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                参加しない
+              </button>
+            </div>
           </div>
         </motion.div>
-      )}
+      </div>
+    );
+  }
 
+  // No active session - show game selection
+  return (
+    <div className="space-y-6">
       {/* Section header */}
       <div>
         <h2 className="text-xl font-bold text-white mb-2">ゲームを選ぶ</h2>

@@ -75,18 +75,25 @@ export function IcebreakerClient({
     return () => clearInterval(interval);
   }, [eventDate]);
 
-  // Sync view mode with session status
+  // Check if current user is a player in the session
+  const isPlayerInSession = players.some((p) => p.user_id === userId);
+
+  // Sync view mode with session status (only if user is a player)
   useEffect(() => {
     if (session) {
-      if (session.status === 'playing') {
-        setViewMode('playing');
-      } else if (session.status === 'waiting') {
-        setViewMode('lobby');
-      } else if (session.status === 'finished') {
+      if (session.status === 'finished') {
         setViewMode('select');
+      } else if (isPlayerInSession) {
+        // Only change to lobby/playing if user has joined
+        if (session.status === 'playing') {
+          setViewMode('playing');
+        } else if (session.status === 'waiting') {
+          setViewMode('lobby');
+        }
       }
+      // If not a player, stay on 'select' to show join prompt
     }
-  }, [session?.status]);
+  }, [session?.status, isPlayerInSession]);
 
   const handleSelectGame = async (gameType: IcebreakerGameType) => {
     const newSession = await createSession(gameType);
@@ -98,6 +105,7 @@ export function IcebreakerClient({
   const handleJoinSession = async () => {
     if (session) {
       await joinSession(session.id);
+      setViewMode('lobby');
     }
   };
 

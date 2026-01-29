@@ -51,7 +51,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not a match participant' }, { status: 403 });
     }
 
-    // Create session
+    // Check for existing active session
+    const { data: existingSessions } = await supabase
+      .from('icebreaker_sessions')
+      .select('*')
+      .eq('match_id', match_id)
+      .in('status', ['waiting', 'playing'])
+      .limit(1);
+
+    if (existingSessions && existingSessions.length > 0) {
+      // Return existing session instead of creating new one
+      const existingSession = existingSessions[0] as IcebreakerSession;
+
+      // Auto-join if not already a player
+      const { data: existingPlayer } = await supabase
+        .from('icebreaker_players')
+        .select('id')
+        .eq('session_id', existingSession.id)
+        .eq('user_id', userId)
+        .single();
+
+      if (!existingPlayer) {
+        await supabase.from('icebreaker_players').insert({
+          session_id: existingSession.id,
+          user_id: userId,
+          is_ready: false,
+          player_data: {},
+        });
+      }
+
+      return NextResponse.json({ session: existingSession, joined_existing: true });
+    }
+
+    // Create new session
     const { data: sessionData, error: sessionError } = await supabase
       .from('icebreaker_sessions')
       .insert({
@@ -72,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     const session = sessionData as IcebreakerSession;
 
-    // Auto-join as player
+    // Auto-join as player (host)
     await supabase.from('icebreaker_players').insert({
       session_id: session.id,
       user_id: userId,
@@ -145,7 +177,7 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-// DELETE: End/delete session
+// DELETE: End/delete session (host only)
 export async function DELETE(request: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -161,6 +193,23 @@ export async function DELETE(request: NextRequest) {
 
     if (!sessionId) {
       return NextResponse.json({ error: 'session_id required' }, { status: 400 });
+    }
+
+    // Verify user is the host
+    const { data: sessionData } = await supabase
+      .from('icebreaker_sessions')
+      .select('host_user_id')
+      .eq('id', sessionId)
+      .single();
+
+    const session = sessionData as Pick<IcebreakerSession, 'host_user_id'> | null;
+
+    if (!session) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
+
+    if (session.host_user_id !== userId) {
+      return NextResponse.json({ error: 'Only the host can end the session' }, { status: 403 });
     }
 
     // Update session status to finished instead of deleting

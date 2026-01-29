@@ -80,7 +80,14 @@ export function useIcebreakerRealtime({
         },
         (payload) => {
           if (payload.eventType === 'UPDATE') {
-            setSession(payload.new as IcebreakerSession);
+            const updated = payload.new as IcebreakerSession;
+            // If session is finished, clear it so users can start a new game
+            if (updated.status === 'finished') {
+              setSession(null);
+              setPlayers([]);
+            } else {
+              setSession(updated);
+            }
           } else if (payload.eventType === 'DELETE') {
             setSession(null);
             setPlayers([]);
@@ -118,7 +125,7 @@ export function useIcebreakerRealtime({
     };
   }, [session?.id, supabase]);
 
-  // Initial fetch for active session (SELECT is allowed by RLS)
+  // Initial fetch for active session and auto-join (SELECT is allowed by RLS)
   useEffect(() => {
     const fetchActiveSession = async () => {
       setIsLoading(true);
@@ -136,7 +143,20 @@ export function useIcebreakerRealtime({
         if (sessions && sessions.length > 0) {
           const activeSession = sessions[0] as IcebreakerSession;
           setSession(activeSession);
-          await fetchData(activeSession.id);
+
+          // Check if user is already a player (joined previously)
+          const { data: existingPlayer } = await supabase
+            .from('icebreaker_players')
+            .select('id')
+            .eq('session_id', activeSession.id)
+            .eq('user_id', userId)
+            .single();
+
+          // Only fetch player data if already joined (no auto-join)
+          if (existingPlayer) {
+            await fetchData(activeSession.id);
+          }
+          // If not joined, just show the session info so user can choose to join
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'セッションの取得に失敗しました');
@@ -146,7 +166,7 @@ export function useIcebreakerRealtime({
     };
 
     fetchActiveSession();
-  }, [matchId, fetchData, supabase]);
+  }, [matchId, userId, fetchData, supabase]);
 
   // Create a new game session (via API)
   const createSession = useCallback(

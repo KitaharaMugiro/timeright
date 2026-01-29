@@ -62,22 +62,9 @@ export function WordWolfGame({
       votingPhase: false,
     };
 
-    // Update each player's data with their word
-    for (const player of players) {
-      const isWolf = player.user_id === wolfId;
-      // This needs to be done via server, simplified for now
-    }
-
     await onUpdateSession({
       game_data: newGameData as unknown as IcebreakerSession['game_data'],
       current_round: session.current_round + 1,
-    });
-
-    // Update own player data
-    const isWolf = wolfId === userId;
-    await onUpdatePlayerData({
-      isWolf,
-      myWord: isWolf ? topic.minorityWord : topic.majorityWord,
     });
 
     setPhase('discussion');
@@ -372,14 +359,16 @@ export function WordWolfGame({
         </>
       )}
 
-      {/* End button */}
-      <button
-        onClick={onEndGame}
-        className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
-      >
-        <XCircle className="w-5 h-5" />
-        ゲームを終了
-      </button>
+      {/* End button (host only) */}
+      {isHost && (
+        <button
+          onClick={onEndGame}
+          className="w-full py-3 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
+        >
+          <XCircle className="w-5 h-5" />
+          ゲームを終了
+        </button>
+      )}
     </div>
   );
 }

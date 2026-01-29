@@ -117,13 +117,15 @@ export function WouldYouRatherGame({
             次のお題
           </button>
         )}
-        <button
-          onClick={onEndGame}
-          className="py-3 px-6 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
-        >
-          <XCircle className="w-5 h-5" />
-          終了
-        </button>
+        {isHost && (
+          <button
+            onClick={onEndGame}
+            className="py-3 px-6 bg-slate-800 text-slate-400 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-slate-700 hover:text-white transition-colors"
+          >
+            <XCircle className="w-5 h-5" />
+            終了
+          </button>
+        )}
       </div>
 
       {/* Round count */}
