@@ -50,8 +50,7 @@ SELECT
   ) as cancellation_rate,
   COUNT(*) FILTER (WHERE mood = 'lively') as mood_lively,
   COUNT(*) FILTER (WHERE mood = 'relaxed') as mood_relaxed,
-  COUNT(*) FILTER (WHERE mood = 'inspire') as mood_inspire,
-  COUNT(*) FILTER (WHERE mood = 'other') as mood_other
+  COUNT(*) FILTER (WHERE mood = 'inspire') as mood_inspire
 FROM participations;
 
 -- Review metrics view
