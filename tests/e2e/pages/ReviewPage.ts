@@ -35,9 +35,15 @@ export class ReviewPage {
   readonly reviewTargetName: Locator;
   readonly starButtons: Locator;
   readonly commentTextarea: Locator;
+  readonly memoTextarea: Locator;
+  readonly memoSection: Locator;
   readonly blockCheckbox: Locator;
   readonly submitButton: Locator;
   readonly backButton: Locator;
+
+  // Rating description elements
+  readonly ratingSection: Locator;
+  readonly ratingDescription: Locator;
 
   // Completion elements
   readonly completionCard: Locator;
@@ -69,9 +75,15 @@ export class ReviewPage {
     this.reviewTargetName = page.locator('[data-testid="review-target-name"]');
     this.starButtons = page.locator('[data-testid^="star-button-"]');
     this.commentTextarea = page.locator('[data-testid="comment-textarea"]');
+    this.memoTextarea = page.locator('[data-testid="memo-textarea"]');
+    this.memoSection = page.locator('[data-testid="memo-section"]');
     this.blockCheckbox = page.locator('[data-testid="block-checkbox"]');
     this.submitButton = page.locator('[data-testid="submit-review-btn"]');
     this.backButton = page.locator('[data-testid="back-to-list-btn"]');
+
+    // Rating description
+    this.ratingSection = page.locator('[data-testid="rating-section"]');
+    this.ratingDescription = page.locator('[data-testid="rating-description"]');
 
     // Completion screen
     this.completionCard = page.locator('[data-testid="review-completion-card"]');
@@ -165,6 +177,88 @@ export class ReviewPage {
    */
   async setComment(comment: string) {
     await this.commentTextarea.fill(comment);
+  }
+
+  /**
+   * Add a memo to the review
+   */
+  async setMemo(memo: string) {
+    await this.memoTextarea.fill(memo);
+  }
+
+  /**
+   * Verify that memo input section is visible
+   */
+  async verifyMemoSectionVisible() {
+    await expect(this.memoSection).toBeVisible();
+    await expect(this.memoTextarea).toBeVisible();
+    // Check placeholder text
+    await expect(this.memoTextarea).toHaveAttribute(
+      'placeholder',
+      'どんな話をしたか、どんな人だったかなど...'
+    );
+  }
+
+  /**
+   * Verify that rating description is visible and contains expected text
+   */
+  async verifyRatingDescription(options: {
+    isBlock: boolean;
+    labelContains?: string;
+    descriptionContains?: string;
+  }) {
+    await expect(this.ratingDescription).toBeVisible();
+
+    // Check background color class for block/non-block
+    if (options.isBlock) {
+      // Block ratings have orange background
+      await expect(this.ratingDescription).toHaveClass(/bg-orange-500/);
+    } else {
+      // Non-block ratings have green background
+      await expect(this.ratingDescription).toHaveClass(/bg-green-500/);
+    }
+
+    // Check label text if provided
+    if (options.labelContains) {
+      await expect(this.ratingDescription).toContainText(options.labelContains);
+    }
+
+    // Check description text if provided
+    if (options.descriptionContains) {
+      await expect(this.ratingDescription).toContainText(options.descriptionContains);
+    }
+  }
+
+  /**
+   * Verify block warning message is displayed
+   */
+  async verifyBlockWarning() {
+    await expect(this.ratingDescription).toContainText('今後この方とマッチングしません');
+  }
+
+  /**
+   * Get the star button background color class
+   */
+  async getStarButtonColorClass(starNumber: number): Promise<string> {
+    const starButton = this.page.locator(`[data-testid="star-button-${starNumber}"]`);
+    const className = await starButton.getAttribute('class');
+    return className || '';
+  }
+
+  /**
+   * Verify star button color is orange (block rating)
+   */
+  async verifyStarIsOrange(starNumber: number) {
+    const className = await this.getStarButtonColorClass(starNumber);
+    expect(className).toContain('bg-orange-500');
+  }
+
+  /**
+   * Verify star button color is yellow (non-block rating)
+   */
+  async verifyStarIsYellow(starNumber: number) {
+    const className = await this.getStarButtonColorClass(starNumber);
+    expect(className).toContain('bg-yellow-400');
   }
 
   /**

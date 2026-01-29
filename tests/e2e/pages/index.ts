@@ -16,3 +16,4 @@ export { InvitePage } from './InvitePage';
 export { ReviewPage } from './ReviewPage';
 export { AdminReviewsPage } from './AdminReviewsPage';
 export { ProfilePage } from './ProfilePage';
+export { ConnectionsPage } from './ConnectionsPage';
