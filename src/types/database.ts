@@ -76,6 +76,7 @@ export interface Review {
   match_id: string;
   rating: number;
   comment: string | null;
+  memo: string | null;
   block_flag: boolean;
   created_at: string;
 }

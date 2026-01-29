@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { UserAvatar } from '@/components/UserAvatar';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
-import { ArrowLeft, Plus, X, Users, Store, Check, Trash2, UserPlus } from 'lucide-react';
+import { ArrowLeft, Plus, X, Users, Store, Check, Trash2, UserPlus, Ban } from 'lucide-react';
 import type { Event, Participation, User, Match, Guest, Gender, ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface EventDetailClientProps {
@@ -86,6 +86,7 @@ export function EventDetailClient({
   const [tables, setTables] = useState<TableGroup[]>(initialTables);
   const [guests, setGuests] = useState<Guest[]>(initialGuests);
   const [saving, setSaving] = useState(false);
+  const [canceling, setCanceling] = useState(false);
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
 
   // Guest form state
@@ -397,6 +398,35 @@ export function EventDetailClient({
       alert('保存に失敗しました: ' + (error as Error).message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Cancel event
+  const handleCancel = async () => {
+    if (!confirm('このイベントをキャンセルしますか？\n\n参加者全員に「既定の人数が集まらず、マッチングできませんでした」というLINE通知が送信されます。')) {
+      return;
+    }
+
+    setCanceling(true);
+    try {
+      const response = await fetch(`/api/admin/events/${event.id}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel event');
+      }
+
+      alert(`イベントをキャンセルしました。\n${data.canceled_participations}人の参加者にLINE通知を送信しました。`);
+      window.location.reload();
+    } catch (error) {
+      console.error('Cancel error:', error);
+      alert('キャンセルに失敗しました: ' + (error as Error).message);
+    } finally {
+      setCanceling(false);
     }
   };
 
@@ -765,21 +795,35 @@ export function EventDetailClient({
                 </h1>
                 <p className="text-slate-400 text-sm">{getAreaLabel(event.area)}</p>
               </div>
-              <span
-                className={`text-sm px-3 py-1 rounded ${
-                  event.status === 'open'
-                    ? 'bg-success/10 text-success'
+              <div className="flex items-center gap-3">
+                <span
+                  className={`text-sm px-3 py-1 rounded ${
+                    event.status === 'open'
+                      ? 'bg-success/10 text-success'
+                      : event.status === 'matched'
+                      ? 'bg-info/10 text-info'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {event.status === 'open'
+                    ? '受付中'
                     : event.status === 'matched'
-                    ? 'bg-info/10 text-info'
-                    : 'bg-slate-800 text-slate-400'
-                }`}
-              >
-                {event.status === 'open'
-                  ? '受付中'
-                  : event.status === 'matched'
-                  ? 'マッチング済'
-                  : '終了'}
-              </span>
+                    ? 'マッチング済'
+                    : '終了'}
+                </span>
+                {event.status === 'open' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancel}
+                    loading={canceling}
+                    className="border-error/50 text-error hover:bg-error/10"
+                  >
+                    <Ban className="w-4 h-4 mr-1" />
+                    イベントをキャンセル
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

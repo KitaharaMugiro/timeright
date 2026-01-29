@@ -104,6 +104,16 @@ export function DashboardClient({
             dine tokyo
           </Link>
           <div className="flex items-center gap-1">
+            <Link href="/connections">
+              <motion.div
+                className="p-2 text-slate-400 hover:text-white transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                title="出会った人たち"
+              >
+                <Users className="w-5 h-5" />
+              </motion.div>
+            </Link>
             <Link href="/profile">
               <motion.div
                 className="p-2 text-slate-400 hover:text-white transition-colors"

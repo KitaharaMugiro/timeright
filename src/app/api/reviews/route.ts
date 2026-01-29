@@ -8,7 +8,7 @@ interface ReviewRequest {
   match_id: string;
   target_user_id: string;
   rating: number;
-  comment: string | null;
+  memo: string | null;
   block_flag: boolean;
 }
 
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createServiceClient();
 
-    const { match_id, target_user_id, rating, comment, block_flag }: ReviewRequest =
+    const { match_id, target_user_id, rating, memo, block_flag }: ReviewRequest =
       await request.json();
 
     // Validate rating
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       target_user_id,
       match_id,
       rating,
-      comment,
+      memo,
       block_flag,
     });
 

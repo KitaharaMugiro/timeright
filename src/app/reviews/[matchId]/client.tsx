@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { UserAvatar } from '@/components/UserAvatar';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Star, Check } from 'lucide-react';
+import { ArrowLeft, Star, Check, AlertTriangle } from 'lucide-react';
 import type { Match, Event, User } from '@/types/database';
+import { RATING_DEFINITIONS, getRatingDefinition, isBlockRating } from '@/lib/review-ratings';
 
 interface ReviewClientProps {
   match: Match & { events: Event };
@@ -23,17 +24,17 @@ export function ReviewClient({
   const [reviewedUserIds, setReviewedUserIds] = useState(initialReviewedIds);
   const [currentMember, setCurrentMember] = useState<typeof members[0] | null>(null);
   const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [blockFlag, setBlockFlag] = useState(false);
+  const [memo, setMemo] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const selectedRatingDef = getRatingDefinition(rating);
 
   const unreviewedMembers = members.filter((m) => !reviewedUserIds.includes(m.id));
 
   const handleSelectMember = (member: typeof members[0]) => {
     setCurrentMember(member);
     setRating(0);
-    setComment('');
-    setBlockFlag(false);
+    setMemo('');
   };
 
   const handleSubmitReview = async () => {
@@ -48,8 +49,8 @@ export function ReviewClient({
           match_id: match.id,
           target_user_id: currentMember.id,
           rating,
-          comment: comment || null,
-          block_flag: blockFlag,
+          memo: memo || null,
+          block_flag: isBlockRating(rating),
         }),
       });
 
@@ -60,8 +61,7 @@ export function ReviewClient({
       setReviewedUserIds([...reviewedUserIds, currentMember.id]);
       setCurrentMember(null);
       setRating(0);
-      setComment('');
-      setBlockFlag(false);
+      setMemo('');
     } catch (error) {
       console.error('Review error:', error);
       alert('レビューの送信に失敗しました');
@@ -126,53 +126,70 @@ export function ReviewClient({
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   評価
                 </label>
-                <div className="flex gap-2" data-testid="star-buttons">
-                  {[1, 2, 3, 4, 5].map((value) => (
+                <div className="flex gap-2 mb-3" data-testid="star-buttons">
+                  {RATING_DEFINITIONS.map((def) => (
                     <button
-                      key={value}
-                      onClick={() => setRating(value)}
-                      data-testid={`star-button-${value}`}
+                      key={def.value}
+                      onClick={() => setRating(def.value)}
+                      data-testid={`star-button-${def.value}`}
                       className={cn(
                         'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
-                        value <= rating
-                          ? 'bg-yellow-400 text-white'
+                        def.value <= rating
+                          ? def.isBlock
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-yellow-400 text-white'
                           : 'bg-white/10 text-slate-500 hover:bg-white/20'
                       )}
                     >
-                      <Star className="w-5 h-5" fill={value <= rating ? 'currentColor' : 'none'} />
+                      <Star className="w-5 h-5" fill={def.value <= rating ? 'currentColor' : 'none'} />
                     </button>
                   ))}
                 </div>
+                {selectedRatingDef && (
+                  <div
+                    data-testid="rating-description"
+                    className={cn(
+                      'p-3 rounded-lg text-sm',
+                      selectedRatingDef.isBlock
+                        ? 'bg-orange-500/10 border border-orange-500/30'
+                        : 'bg-green-500/10 border border-green-500/30'
+                    )}
+                  >
+                    <div className="font-medium mb-1 flex items-center gap-2">
+                      {selectedRatingDef.isBlock && (
+                        <AlertTriangle className="w-4 h-4 text-orange-400" />
+                      )}
+                      <span className={selectedRatingDef.isBlock ? 'text-orange-400' : 'text-green-400'}>
+                        {selectedRatingDef.label}
+                      </span>
+                    </div>
+                    <div className="text-slate-400">
+                      {selectedRatingDef.description}
+                    </div>
+                    {selectedRatingDef.isBlock && (
+                      <div className="text-orange-400/80 text-xs mt-2">
+                        ※ この評価を選ぶと、今後この方とマッチングしません
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Comment */}
-              <div className="mb-6" data-testid="comment-section">
+              {/* Memo */}
+              <div className="mb-6" data-testid="memo-section">
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  コメント（任意）
+                  メモ（任意）
                 </label>
                 <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
                   className="w-full h-24 px-4 py-3 rounded-lg border border-white/20 bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
-                  placeholder="良かった点など..."
-                  data-testid="comment-textarea"
+                  placeholder="どんな話をしたか、どんな人だったかなど..."
+                  data-testid="memo-textarea"
                 />
-              </div>
-
-              {/* Block flag */}
-              <div className="mb-6" data-testid="block-flag-section">
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={blockFlag}
-                    onChange={(e) => setBlockFlag(e.target.checked)}
-                    className="w-5 h-5 rounded border-white/20 bg-white/5 text-red-500 focus:ring-red-500"
-                    data-testid="block-checkbox"
-                  />
-                  <span className="text-sm text-slate-400">
-                    この方とは今後マッチングしたくない
-                  </span>
-                </label>
+                <p className="text-xs text-slate-500 mt-1">
+                  あなただけが見れる個人メモです。後から編集できます。
+                </p>
               </div>
 
               <div className="flex gap-3">

@@ -135,3 +135,96 @@ export async function sendMatchNotificationsToMembers(
 
   return results;
 }
+
+export interface CancellationNotificationData {
+  eventDate: string;
+  area: string;
+}
+
+/**
+ * Send LINE push notification to a user about event cancellation
+ */
+export async function sendCancellationNotification(
+  lineUserId: string,
+  data: CancellationNotificationData
+): Promise<boolean> {
+  const client = getLineClient();
+
+  if (!client) {
+    console.log(`[LINE] Skipping cancellation notification for user ${lineUserId} - client not configured`);
+    return false;
+  }
+
+  try {
+    const eventDate = new Date(data.eventDate);
+    const dateStr = eventDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const areaLabels: Record<string, string> = {
+      shibuya: '渋谷',
+      ebisu: '恵比寿',
+      roppongi: '六本木',
+      ginza: '銀座',
+      shinjuku: '新宿',
+    };
+    const areaLabel = areaLabels[data.area] || data.area;
+
+    const message = `【イベントキャンセルのお知らせ】
+
+${dateStr}（${areaLabel}）のイベントについてお知らせいたします。
+
+既定の人数が集まらず、マッチングできませんでした。
+
+またのご参加をお待ちしております。`;
+
+    await client.pushMessage({
+      to: lineUserId,
+      messages: [
+        {
+          type: 'text',
+          text: message,
+        },
+      ],
+    });
+
+    console.log(`[LINE] Cancellation notification sent to user ${lineUserId}`);
+    return true;
+  } catch (error) {
+    console.error(`[LINE] Failed to send cancellation notification to user ${lineUserId}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Send cancellation notifications to all participants of an event
+ */
+export async function sendCancellationNotificationsToMembers(
+  members: Array<{ lineUserId: string | null }>,
+  eventDate: string,
+  area: string
+): Promise<{ sent: number; failed: number; skipped: number }> {
+  const results = { sent: 0, failed: 0, skipped: 0 };
+
+  for (const member of members) {
+    if (!member.lineUserId) {
+      results.skipped++;
+      continue;
+    }
+
+    const success = await sendCancellationNotification(member.lineUserId, {
+      eventDate,
+      area,
+    });
+
+    if (success) {
+      results.sent++;
+    } else {
+      results.failed++;
+    }
+  }
+
+  return results;
+}
