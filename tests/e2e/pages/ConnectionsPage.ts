@@ -36,7 +36,8 @@ export class ConnectionsPage {
     this.pageTitle = page.locator('h1', { hasText: '出会った人たち' });
     this.connectionCount = page.locator('p', { hasText: /\d+人の方と出会いました/ });
 
-    // Connection cards (using Card component structure)
+    // Connection cards (using Card component structure, wrapped in motion.div)
+    // The structure is: div.space-y-4 > motion.div > Card
     this.connectionCards = page.locator('div.space-y-4 > div');
     this.emptyState = page.locator('text=まだ出会いの記録がありません');
 
