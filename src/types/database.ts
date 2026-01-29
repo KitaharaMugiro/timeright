@@ -7,6 +7,8 @@ export type PersonalityType = 'Leader' | 'Supporter' | 'Analyst' | 'Entertainer'
 export type ParticipationMood = 'lively' | 'relaxed' | 'inspire' | 'other';
 export type BudgetLevel = 1 | 2 | 3;
 export type ReferralStatus = 'pending' | 'completed' | 'expired';
+export type MemberStage = 'bronze' | 'silver' | 'gold' | 'platinum';
+export type StagePointReason = 'participation' | 'review_sent' | 'review_received' | 'cancel';
 
 export interface User {
   id: string;
@@ -25,6 +27,9 @@ export interface User {
   referred_by: string | null;
   has_used_invite_coupon: boolean;
   pending_invite_token: string | null;
+  stage_points: number;
+  member_stage: MemberStage;
+  stage_updated_at: string;
   created_at: string;
 }
 
@@ -42,6 +47,7 @@ export interface Event {
   event_date: string;
   area: string;
   status: EventStatus;
+  required_stage: MemberStage;
   created_at: string;
 }
 
@@ -90,6 +96,31 @@ export interface Guest {
   created_at: string;
 }
 
+export interface StagePointLog {
+  id: string;
+  user_id: string;
+  points: number;
+  reason: StagePointReason;
+  reference_id: string | null;
+  created_at: string;
+}
+
+export interface MemberStageHistory {
+  id: string;
+  user_id: string;
+  old_stage: MemberStage | null;
+  new_stage: MemberStage;
+  points_at_change: number;
+  created_at: string;
+}
+
+export interface MemberStageInfo {
+  stage: MemberStage;
+  progressPercent: number;
+  nextStage: MemberStage | null;
+  message: string;
+}
+
 export type Json =
   | string
   | number
@@ -118,6 +149,7 @@ export interface Database {
         Insert: Partial<Event> & {
           event_date: string;
           area: string;
+          required_stage?: MemberStage;
         };
         Update: Partial<Event>;
         Relationships: [];
@@ -178,6 +210,8 @@ export interface Database {
       participation_mood: ParticipationMood;
       budget_level: BudgetLevel;
       referral_status: ReferralStatus;
+      member_stage: MemberStage;
+      stage_point_reason: StagePointReason;
     };
     CompositeTypes: Record<string, never>;
   };

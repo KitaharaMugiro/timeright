@@ -11,10 +11,12 @@ import {
   BlurFade,
   Particles,
 } from '@/components/ui/magicui';
-import type { User, Gender, PersonalityType } from '@/types/database';
+import { MemberStageCard } from '@/components/MemberStageCard';
+import type { User, Gender, PersonalityType, MemberStageInfo } from '@/types/database';
 
 interface ProfileClientProps {
   user: User;
+  stageInfo: MemberStageInfo;
 }
 
 const personalityLabels: Record<PersonalityType, { label: string; emoji: string; description: string }> = {
@@ -29,7 +31,7 @@ const genderLabels: Record<Gender, string> = {
   female: '女性',
 };
 
-export function ProfileClient({ user }: ProfileClientProps) {
+export function ProfileClient({ user, stageInfo }: ProfileClientProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -232,6 +234,13 @@ export function ProfileClient({ user }: ProfileClientProps) {
             </div>
             <h2 className="text-2xl font-serif text-white">{user.display_name}</h2>
             <p className="text-slate-400">{genderLabels[user.gender]} · {calculateAge(user.birth_date)}歳</p>
+          </div>
+        </BlurFade>
+
+        {/* Member Stage */}
+        <BlurFade delay={0.05}>
+          <div className="mb-6">
+            <MemberStageCard stageInfo={stageInfo} />
           </div>
         </BlurFade>
 

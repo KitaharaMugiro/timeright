@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { isReviewAccessible } from '@/lib/utils';
+import { addStagePoints, STAGE_POINTS, getReviewReceivedPoints } from '@/lib/member-stage';
 import type { Match, Event } from '@/types/database';
 
 interface ReviewRequest {
@@ -98,14 +99,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Create review
-    const { error: insertError } = await (supabase.from('reviews') as any).insert({
+    const { data: reviewData, error: insertError } = await (supabase.from('reviews') as any).insert({
       reviewer_id: userId,
       target_user_id,
       match_id,
       rating,
       memo,
       block_flag,
-    });
+    }).select('id').single();
 
     if (insertError) {
       console.error('Insert review error:', insertError);
@@ -113,6 +114,16 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create review' },
         { status: 500 }
       );
+    }
+
+    // ステージポイント付与（非同期で実行、エラーがあってもレビュー自体は成功）
+    try {
+      // レビューを送った人: +20pt
+      await addStagePoints(userId, STAGE_POINTS.REVIEW_SENT, 'review_sent', reviewData.id);
+      // レビューを受けた人: 評価に応じて +5〜25pt
+      await addStagePoints(target_user_id, getReviewReceivedPoints(rating), 'review_received', reviewData.id);
+    } catch (pointError) {
+      console.error('Failed to add stage points:', pointError);
     }
 
     return NextResponse.json({ success: true });

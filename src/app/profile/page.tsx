@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
+import { getMemberStageInfo } from '@/lib/member-stage';
 import { ProfileClient } from './client';
 
 export default async function ProfilePage() {
@@ -9,5 +10,7 @@ export default async function ProfilePage() {
     redirect('/');
   }
 
-  return <ProfileClient user={user} />;
+  const stageInfo = getMemberStageInfo(user.stage_points);
+
+  return <ProfileClient user={user} stageInfo={stageInfo} />;
 }
