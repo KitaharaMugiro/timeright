@@ -71,7 +71,7 @@ export default function SubscribePage() {
             <p className="text-slate-400">
               サブスクリプションを開始して、
               <br />
-              dine tokyo の体験を始めましょう
+              Dine Tokyo(ダイントーキョー) の体験を始めましょう
             </p>
           </div>
         </BlurFade>

@@ -138,7 +138,7 @@ export default function PrivacyPage() {
             <h1 className="text-2xl font-bold mb-2">プライバシーポリシー</h1>
             <p className="text-neutral-600">最終更新日: 2025年1月1日</p>
             <p className="mt-4 text-neutral-700">
-              dine tokyo（以下「当社」）は、本サービスにおけるユーザーの個人情報の取扱いについて、以下のとおりプライバシーポリシーを定めます。
+              Dine Tokyo(ダイントーキョー)（以下「当社」）は、本サービスにおけるユーザーの個人情報の取扱いについて、以下のとおりプライバシーポリシーを定めます。
             </p>
           </div>
         </BlurFade>

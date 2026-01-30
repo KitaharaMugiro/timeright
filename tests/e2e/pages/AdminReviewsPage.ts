@@ -46,7 +46,7 @@ export class AdminReviewsPage {
     this.page = page;
 
     // Header
-    this.headerTitle = page.locator('header').locator('a', { hasText: 'dine tokyo' });
+    this.headerTitle = page.locator('header').locator('a', { hasText: 'Dine Tokyo(ダイントーキョー)' });
     this.adminBadge = page.locator('[data-testid="admin-badge"]');
     this.backToAdminLink = page.locator('[data-testid="back-to-admin"]');
     this.pageTitle = page.locator('[data-testid="page-title"]');

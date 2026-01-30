@@ -105,7 +105,7 @@ export function DashboardClient({
       >
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="text-xl font-semibold text-white">
-            dine tokyo
+            Dine Tokyo(ダイントーキョー)
           </Link>
           <div className="flex items-center gap-1">
             <Link href="/connections">
@@ -480,11 +480,10 @@ export function DashboardClient({
                                   </div>
                                   <motion.button
                                     onClick={() => handleCopyInviteLink(participation.invite_token, participation.id)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                                      isCopied
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isCopied
                                         ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                                         : 'bg-amber-500/10 text-amber-500 border border-amber-500/30 hover:bg-amber-500/20'
-                                    }`}
+                                      }`}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                   >

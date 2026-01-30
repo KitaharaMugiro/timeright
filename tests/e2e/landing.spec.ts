@@ -20,14 +20,14 @@ test.describe('Landing Page', () => {
     });
 
     test('should display correct page title', async ({ page }) => {
-      // Page should have some title (may be dine tokyo or app name)
+      // Page should have some title (may be Dine Tokyo(ダイントーキョー) or app name)
       const title = await page.title();
       expect(title).toBeTruthy();
     });
 
     test('should display header with logo and login button', async () => {
       await landingPage.verifyHeader();
-      await expect(landingPage.logo).toContainText(/dine tokyo/i);
+      await expect(landingPage.logo).toContainText(/Dine Tokyo(ダイントーキョー)/i);
       await expect(landingPage.loginButton).toContainText('ログイン');
     });
   });
@@ -35,8 +35,8 @@ test.describe('Landing Page', () => {
   test.describe('Hero Section', () => {
     test('should display hero title', async () => {
       await expect(landingPage.heroTitle).toBeVisible();
-      // New design: "dine tokyo"
-      await expect(landingPage.heroTitle).toContainText(/dine tokyo/i);
+      // New design: "Dine Tokyo(ダイントーキョー)"
+      await expect(landingPage.heroTitle).toContainText(/Dine Tokyo(ダイントーキョー)/i);
     });
 
     test('should display next event badge', async () => {
@@ -117,7 +117,7 @@ test.describe('Landing Page', () => {
     });
 
     test('should display copyright notice', async ({ page }) => {
-      await expect(page.locator('text=2024 dine tokyo')).toBeVisible();
+      await expect(page.locator('text=2024 Dine Tokyo(ダイントーキョー)')).toBeVisible();
     });
   });
 
@@ -138,9 +138,9 @@ test.describe('Landing Page', () => {
       const url = page.url();
       expect(
         url.includes('/api/auth/line') ||
-          url.includes('line.me') ||
-          url.includes('access.line.me') ||
-          url === 'http://localhost:3000/'
+        url.includes('line.me') ||
+        url.includes('access.line.me') ||
+        url === 'http://localhost:3000/'
       ).toBeTruthy();
     });
 

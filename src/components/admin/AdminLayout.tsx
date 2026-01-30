@@ -33,7 +33,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <div className="h-16 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/dashboard" className="text-xl font-bold text-white">
-                dine tokyo
+                Dine Tokyo(ダイントーキョー)
               </Link>
               <span className="text-sm text-slate-400 bg-slate-800 px-2 py-1 rounded">
                 Admin
@@ -49,11 +49,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                    active
+                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${active
                       ? 'border-rose-500 text-white'
                       : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   {item.label}

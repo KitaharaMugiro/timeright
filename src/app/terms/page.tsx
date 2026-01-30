@@ -16,7 +16,7 @@ const sections = [
   },
   {
     title: '第2条（定義）',
-    content: `「本サービス」とは、当社が提供する「dine tokyo」という名称のマッチングディナーサービスをいいます。「ユーザー」とは、本サービスに登録し、利用する個人をいいます。`,
+    content: `「本サービス」とは、当社が提供する「Dine Tokyo(ダイントーキョー)」という名称のマッチングディナーサービスをいいます。「ユーザー」とは、本サービスに登録し、利用する個人をいいます。`,
   },
   {
     title: '第3条（登録）',
@@ -104,7 +104,7 @@ export default function TermsPage() {
       <main className="max-w-3xl mx-auto px-4 py-8 relative">
         <BlurFade>
           <div className="mb-8">
-            <h1 className="text-2xl font-bold mb-2">dine tokyo 利用規約</h1>
+            <h1 className="text-2xl font-bold mb-2">Dine Tokyo(ダイントーキョー) 利用規約</h1>
             <p className="text-neutral-600">最終更新日: 2025年1月1日</p>
           </div>
         </BlurFade>

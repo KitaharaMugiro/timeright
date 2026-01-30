@@ -266,7 +266,7 @@ export default function OnboardingPage() {
                   transition={{ delay: 0.1 }}
                 >
                   <p className="text-slate-300 text-sm">
-                    はじめまして！dine tokyoへようこそ。
+                    はじめまして！Dine Tokyo(ダイントーキョー)へようこそ。
                     まずはあなたのことを教えてください。
                   </p>
                 </motion.div>
@@ -446,8 +446,8 @@ export default function OnboardingPage() {
                         index < currentQuestion
                           ? 'bg-amber-500'
                           : index === currentQuestion
-                          ? 'bg-amber-400'
-                          : 'bg-slate-700'
+                            ? 'bg-amber-400'
+                            : 'bg-slate-700'
                       )}
                       animate={{
                         scale: index === currentQuestion ? 1.3 : 1,

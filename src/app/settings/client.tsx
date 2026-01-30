@@ -191,7 +191,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
         {/* Version */}
         <BlurFade delay={0.5}>
           <p className="text-center text-sm text-slate-500 mt-8">
-            dine tokyo v1.0.0
+            Dine Tokyo(ダイントーキョー) v1.0.0
           </p>
         </BlurFade>
       </main>
