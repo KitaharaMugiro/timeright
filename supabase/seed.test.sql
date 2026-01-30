@@ -223,7 +223,7 @@ INSERT INTO events (
     NOW() - INTERVAL '1 day'
   ),
 
-  -- 4. マッチング済みイベント（過去）
+  -- 4. マッチング済みイベント（過去）- レビュー用
   (
     'dddddddd-dddd-dddd-dddd-dddddddddddd',
     NOW() - INTERVAL '7 days',
@@ -232,7 +232,16 @@ INSERT INTO events (
     NOW() - INTERVAL '14 days'
   ),
 
-  -- 5. クローズ済みイベント（過去）
+  -- 5. マッチング済みイベント（将来）- 出欠管理テスト用
+  (
+    'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    NOW() + INTERVAL '3 days',
+    '六本木',
+    'matched',
+    NOW() - INTERVAL '5 days'
+  ),
+
+  -- 6. クローズ済みイベント（過去）
   (
     'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
     NOW() - INTERVAL '14 days',
@@ -299,6 +308,52 @@ INSERT INTO participations (
     'invite_token_matched_roppongi_001',
     'matched',
     NOW() - INTERVAL '10 days'
+  ),
+
+  -- マッチング済み参加（将来イベント）- 出欠管理テスト用
+  -- アクティブユーザー
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaab',
+    '11111111-1111-1111-1111-111111111111',
+    'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaac',
+    'solo',
+    'invite_token_future_matched_001',
+    'matched',
+    NOW() - INTERVAL '4 days'
+  ),
+  -- ペアユーザー1
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaad',
+    '77777777-7777-7777-7777-777777777777',
+    'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaae',
+    'solo',
+    'invite_token_future_matched_002',
+    'matched',
+    NOW() - INTERVAL '4 days'
+  ),
+  -- ペアユーザー2
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaf',
+    '88888888-8888-8888-8888-888888888888',
+    'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa10',
+    'solo',
+    'invite_token_future_matched_003',
+    'matched',
+    NOW() - INTERVAL '4 days'
+  ),
+  -- 解約済ユーザー（期限内）
+  (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa11',
+    '22222222-2222-2222-2222-222222222222',
+    'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa12',
+    'solo',
+    'invite_token_future_matched_004',
+    'matched',
+    NOW() - INTERVAL '4 days'
   )
 ON CONFLICT (id) DO UPDATE SET
   status = EXCLUDED.status;
@@ -312,7 +367,7 @@ INSERT INTO matches (
   table_members,
   created_at
 ) VALUES
-  -- 過去イベントのマッチ
+  -- 過去イベントのマッチ（レビュー用）
   (
     '11111111-1111-1111-1111-111111111114',
     'dddddddd-dddd-dddd-dddd-dddddddddddd',
@@ -320,6 +375,15 @@ INSERT INTO matches (
     'https://example.com/restaurant/roppongi-italian',
     '["11111111-1111-1111-1111-111111111111", "77777777-7777-7777-7777-777777777777", "88888888-8888-8888-8888-888888888888", "22222222-2222-2222-2222-222222222222"]'::jsonb,
     NOW() - INTERVAL '7 days'
+  ),
+  -- 将来イベントのマッチ（出欠管理テスト用）
+  (
+    'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    'イタリアン・ビストロ 六本木',
+    'https://example.com/restaurant/roppongi-italian-future',
+    '["11111111-1111-1111-1111-111111111111", "77777777-7777-7777-7777-777777777777", "88888888-8888-8888-8888-888888888888", "22222222-2222-2222-2222-222222222222"]'::jsonb,
+    NOW() - INTERVAL '3 days'
   )
 ON CONFLICT (id) DO UPDATE SET
   restaurant_name = EXCLUDED.restaurant_name;
@@ -366,7 +430,7 @@ ON CONFLICT (reviewer_id, target_user_id, match_id) DO UPDATE SET
 DO $$
 BEGIN
   RAISE NOTICE '✅ Test seed data inserted successfully!';
-  RAISE NOTICE '📊 Users: 9, Events: 5, Participations: 4, Matches: 1, Reviews: 2';
+  RAISE NOTICE '📊 Users: 9, Events: 6, Participations: 8, Matches: 2, Reviews: 2';
   RAISE NOTICE '🔐 Test user credentials:';
   RAISE NOTICE '   - active@test.com (Active subscription)';
   RAISE NOTICE '   - canceled-valid@test.com (Canceled but valid until % days)', (SELECT EXTRACT(DAY FROM subscription_period_end - NOW()) FROM users WHERE email = 'canceled-valid@test.com');

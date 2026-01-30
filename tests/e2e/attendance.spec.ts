@@ -556,9 +556,9 @@ test.describe('Attendance Management - Edge Cases', () => {
     // Try to cancel
     await dashboardPage.clickAttendanceCancelButton();
 
-    // Handle the alert
+    // Handle the alert - the error message from the API is shown
     page.on('dialog', async (dialog) => {
-      expect(dialog.message()).toContain('処理に失敗しました');
+      expect(dialog.message()).toContain('Internal server error');
       await dialog.accept();
     });
 

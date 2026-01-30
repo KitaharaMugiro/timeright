@@ -217,6 +217,8 @@ export const seededEventIds = {
   ikebukuroOpen: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
   roppongiMatched: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
   omotesandoClosed: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+  // Future matched event for attendance testing
+  roppongiMatchedFuture: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
 };
 
 /**
@@ -303,6 +305,8 @@ export const areaLabels: Record<string, string> = {
 export const seededMatchIds = {
   // Past event match (7 days ago) - reviews should be accessible
   pastEventMatch: '11111111-1111-1111-1111-111111111114',
+  // Future event match (3 days from now) - attendance management tests
+  futureEventMatch: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
 };
 
 /**

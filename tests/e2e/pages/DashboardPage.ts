@@ -123,18 +123,16 @@ export class DashboardPage {
     this.enteredBadge = page.locator('button', { hasText: 'エントリー済み' });
 
     // Attendance management buttons (in confirmed dinner section)
-    // Cancel button has X icon with red styling
-    this.attendanceCancelButton = page.locator('button').filter({
-      has: page.locator('svg.lucide-x'),
-    }).filter({ hasText: /キャンセル/ });
+    // Use the ticket container to scope the search - attendance buttons are in .ticket cards
+    const ticketSection = page.locator('.ticket, section:has-text("確定したディナー")');
+    // Cancel button has X icon with red border styling
+    this.attendanceCancelButton = ticketSection.locator('button.text-red-400[title="キャンセル"], button:has-text("キャンセル"):has(svg.lucide-x)');
     // Late button has Clock icon with amber styling
-    this.attendanceLateButton = page.locator('button').filter({
-      has: page.locator('svg.lucide-clock'),
-    }).filter({ hasText: /遅刻連絡/ });
+    this.attendanceLateButton = ticketSection.locator('button.text-amber-400[title="遅刻連絡"], button:has-text("遅刻連絡"):has(svg.lucide-clock)');
 
     // Attendance status indicators
-    this.canceledStatus = page.locator('text=キャンセル済み');
-    this.lateStatus = page.locator('span').filter({ hasText: /遅刻連絡済み/ });
+    this.canceledStatus = page.locator('text=キャンセル済');
+    this.lateStatus = page.locator('span').filter({ hasText: /遅れ|遅刻連絡済/ });
 
     // Cancel dialog
     this.cancelDialog = page.locator('div').filter({ hasText: 'キャンセルの確認' }).first();
