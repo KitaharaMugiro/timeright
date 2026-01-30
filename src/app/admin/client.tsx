@@ -8,21 +8,13 @@ import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { BorderBeam } from '@/components/ui/magicui';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { formatDate, formatTime, getAreaLabel, isWithin48Hours } from '@/lib/utils';
+import { formatDate, formatTime, getAreaLabel, isWithin48Hours, AREA_OPTIONS } from '@/lib/utils';
 import { Plus, Calendar, MapPin, Users, AlertCircle } from 'lucide-react';
 import type { Event } from '@/types/database';
 
 interface AdminClientProps {
   events: Event[];
 }
-
-const areaOptions = [
-  { value: 'shibuya', label: '渋谷' },
-  { value: 'ebisu', label: '恵比寿' },
-  { value: 'roppongi', label: '六本木' },
-  { value: 'ginza', label: '銀座' },
-  { value: 'shinjuku', label: '新宿' },
-];
 
 type EventTab = 'upcoming' | 'matched' | 'closed';
 
@@ -44,9 +36,14 @@ function sortEvents(events: Event[]): Event[] {
     if (!aUrgent && bUrgent) return 1;
     const dateA = new Date(a.event_date).getTime();
     const dateB = new Date(b.event_date).getTime();
+    // 緊急または受付中（open）の場合は開催日が近い順（昇順）
     if (aUrgent && bUrgent) {
       return dateA - dateB;
     }
+    if (a.status === 'open' && b.status === 'open') {
+      return dateA - dateB;
+    }
+    // その他（matched, closed）は新しい順（降順）
     return dateB - dateA;
   });
 }
@@ -162,7 +159,7 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
                   label="エリア"
                   value={newEvent.area}
                   onChange={(e) => setNewEvent({ ...newEvent, area: e.target.value })}
-                  options={areaOptions}
+                  options={AREA_OPTIONS}
                   required
                 />
               </div>

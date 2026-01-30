@@ -23,18 +23,27 @@ export function formatTime(dateString: string): string {
   });
 }
 
+// エリア定義（一元管理）
+export const AREAS = {
+  shibuya: '渋谷',
+  shinjuku: '新宿',
+  ginza: '銀座',
+  roppongi: '六本木',
+  ebisu: '恵比寿',
+  meguro: '目黒',
+  ikebukuro: '池袋',
+  takadanobaba: '高田馬場',
+} as const;
+
+export type AreaKey = keyof typeof AREAS;
+
+export const AREA_OPTIONS = Object.entries(AREAS).map(([value, label]) => ({
+  value,
+  label,
+}));
+
 export function getAreaLabel(area: string): string {
-  const areaLabels: Record<string, string> = {
-    shibuya: '渋谷',
-    shinjuku: '新宿',
-    ginza: '銀座',
-    roppongi: '六本木',
-    ebisu: '恵比寿',
-    meguro: '目黒',
-    ikebukuro: '池袋',
-    takadanobaba: '高田馬場',
-  };
-  return areaLabels[area] || area;
+  return AREAS[area as AreaKey] || area;
 }
 
 export function isWithin48Hours(dateString: string): boolean {
