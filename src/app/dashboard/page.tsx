@@ -92,12 +92,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     });
   }
 
-  // Get user's matches
+  // Get user's matches (today and future only)
   // Note: table_members is a JSONB array, so we need to stringify the array for contains filter
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const { data: matches } = await supabase
     .from('matches')
-    .select('*, events(*)')
-    .contains('table_members', JSON.stringify([user.id])) as { data: (Match & { events: Event })[] | null };
+    .select('*, events!inner(*)')
+    .contains('table_members', JSON.stringify([user.id]))
+    .gte('events.event_date', today.toISOString()) as { data: (Match & { events: Event })[] | null };
 
   // Get all unique member IDs from matches for participant info
   const allMemberIds = [...new Set((matches || []).flatMap((m) => m.table_members))];

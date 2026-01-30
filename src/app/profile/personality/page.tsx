@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -11,16 +12,8 @@ import {
   BlurFade,
   Particles,
 } from '@/components/ui/magicui';
-import { BirthdatePicker } from '@/components/ui/birthdate-picker';
-import type { PersonalityType, Gender } from '@/types/database';
-import { ArrowRight, Sparkles, User, Briefcase, Calendar } from 'lucide-react';
-
-interface ProfileData {
-  display_name: string;
-  gender: Gender;
-  birth_date: string;
-  job: string;
-}
+import type { PersonalityType } from '@/types/database';
+import { ArrowLeft, ArrowRight, Sparkles, RotateCcw } from 'lucide-react';
 
 interface QuestionAnswer {
   question: string;
@@ -229,30 +222,15 @@ const personalityDescriptions: Record<PersonalityType, { title: string; descript
   },
 };
 
-export default function OnboardingPage() {
+export default function PersonalityQuizPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-
-  const [profile, setProfile] = useState<ProfileData>({
-    display_name: '',
-    gender: 'male',
-    birth_date: '',
-    job: '',
-  });
-
   const [answers, setAnswers] = useState<string[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [personalityType, setPersonalityType] = useState<PersonalityType | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showResult, setShowResult] = useState(false);
 
-  const totalSteps = 3;
-  const quizProgress = step === 2 ? (currentQuestion + 1) / personalityQuestions.length : 0;
-  const overallProgress = step === 1 ? 0.33 : step === 2 ? 0.33 + (0.34 * quizProgress) : 1;
-
-  const handleProfileSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setStep(2);
-  };
+  const quizProgress = (currentQuestion + 1) / personalityQuestions.length;
 
   const handleAnswerSelect = (answer: string) => {
     const newAnswers = [...answers, answer];
@@ -263,31 +241,36 @@ export default function OnboardingPage() {
     } else {
       const type = calculatePersonalityType(newAnswers);
       setPersonalityType(type);
-      setStep(3);
+      setShowResult(true);
     }
   };
 
-  const handleCompleteOnboarding = async () => {
+  const handleRetry = () => {
+    setAnswers([]);
+    setCurrentQuestion(0);
+    setPersonalityType(null);
+    setShowResult(false);
+  };
+
+  const handleSave = async () => {
     if (!personalityType) return;
 
     setLoading(true);
     try {
-      const response = await fetch('/api/onboarding', {
-        method: 'POST',
+      const response = await fetch('/api/profile/personality', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...profile,
-          personality_type: personalityType,
-        }),
+        body: JSON.stringify({ personality_type: personalityType }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save profile');
+        throw new Error('Failed to save personality type');
       }
 
-      router.push('/dashboard');
+      router.push('/profile');
+      router.refresh();
     } catch (error) {
-      console.error('Onboarding error:', error);
+      console.error('Save error:', error);
       alert('エラーが発生しました。もう一度お試しください。');
     } finally {
       setLoading(false);
@@ -302,149 +285,44 @@ export default function OnboardingPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px]" />
 
       <div className="max-w-md mx-auto relative">
-        {/* Progress bar - thin amber */}
+        {/* Header */}
         <BlurFade>
           <div className="mb-8">
+            <Link
+              href="/profile"
+              className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              プロフィールに戻る
+            </Link>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium tracking-wider text-amber-500">
-                STEP {step} / {totalSteps}
+                性格診断
               </span>
-              <span className="text-xs text-slate-500">
-                {step === 1 && 'プロフィール'}
-                {step === 2 && '性格診断'}
-                {step === 3 && '結果'}
-              </span>
+              {!showResult && (
+                <span className="text-xs text-slate-500">
+                  Q{currentQuestion + 1} / {personalityQuestions.length}
+                </span>
+              )}
             </div>
-            <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-gradient-to-r from-amber-500 to-amber-400"
-                initial={{ width: 0 }}
-                animate={{ width: `${overallProgress * 100}%` }}
-                transition={{ duration: 0.5, ease: 'easeOut' }}
-              />
-            </div>
+            {!showResult && (
+              <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-amber-500 to-amber-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${quizProgress * 100}%` }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                />
+              </div>
+            )}
           </div>
         </BlurFade>
 
         <AnimatePresence mode="wait">
-          {/* Step 1: Profile - Chat-like cards */}
-          {step === 1 && (
+          {/* Quiz */}
+          {!showResult && (
             <motion.div
-              key="step1"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {/* Welcome message - chat bubble style */}
-              <div className="mb-6">
-                <motion.div
-                  className="glass-card rounded-2xl rounded-tl-sm p-4 max-w-[85%]"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <p className="text-slate-300 text-sm">
-                    はじめまして！Dine Tokyo(ダイントーキョー)へようこそ。
-                    まずはあなたのことを教えてください。
-                  </p>
-                </motion.div>
-              </div>
-
-              <GlassCard className="p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                    <User className="w-5 h-5 text-amber-500" />
-                  </div>
-                  <div>
-                    <h1 className="text-lg font-semibold text-white">プロフィール登録</h1>
-                    <p className="text-xs text-slate-500">基本情報を入力</p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleProfileSubmit} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">
-                      ニックネーム
-                    </label>
-                    <input
-                      type="text"
-                      value={profile.display_name}
-                      onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
-                      placeholder="食事中に呼ばれる名前"
-                      required
-                      className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-white placeholder-slate-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">
-                      性別
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { value: 'male', label: '男性' },
-                        { value: 'female', label: '女性' },
-                      ].map((option) => (
-                        <motion.button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setProfile({ ...profile, gender: option.value as Gender })}
-                          className={cn(
-                            'px-4 py-3 rounded-xl border transition-all',
-                            profile.gender === option.value
-                              ? 'border-amber-500 bg-amber-500/10 text-amber-500'
-                              : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600'
-                          )}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <span className="font-medium">{option.label}</span>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">
-                      <Calendar className="w-4 h-4 inline mr-1" />
-                      生年月日
-                    </label>
-                    <BirthdatePicker
-                      value={profile.birth_date}
-                      onChange={(value) => setProfile({ ...profile, birth_date: value })}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">
-                      <Briefcase className="w-4 h-4 inline mr-1" />
-                      職業
-                    </label>
-                    <input
-                      type="text"
-                      value={profile.job}
-                      onChange={(e) => setProfile({ ...profile, job: e.target.value })}
-                      placeholder="例: エンジニア、デザイナー"
-                      required
-                      className="w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-white placeholder-slate-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all"
-                    />
-                  </div>
-
-                  <ShimmerButton type="submit" variant="accent" className="w-full mt-6">
-                    次へ
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </ShimmerButton>
-                </form>
-              </GlassCard>
-            </motion.div>
-          )}
-
-          {/* Step 2: Personality Quiz - Magazine style */}
-          {step === 2 && (
-            <motion.div
-              key="step2"
+              key="quiz"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -538,10 +416,10 @@ export default function OnboardingPage() {
             </motion.div>
           )}
 
-          {/* Step 3: Result */}
-          {step === 3 && personalityType && (
+          {/* Result */}
+          {showResult && personalityType && (
             <motion.div
-              key="step3"
+              key="result"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -575,36 +453,37 @@ export default function OnboardingPage() {
                 </BlurFade>
 
                 <BlurFade delay={0.4}>
-                  <div className="glass rounded-xl p-4 mb-8">
-                    <p className="text-sm text-slate-400">
-                      この結果をもとに、相性の良いメンバーとマッチングします。
-                    </p>
+                  <div className="space-y-3">
+                    <ShimmerButton
+                      onClick={handleSave}
+                      disabled={loading}
+                      variant="accent"
+                      className="w-full"
+                    >
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <motion.span
+                            className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          />
+                          保存中...
+                        </span>
+                      ) : (
+                        <>
+                          この結果で更新する
+                          <ArrowRight className="w-5 h-5 ml-2" />
+                        </>
+                      )}
+                    </ShimmerButton>
+                    <button
+                      onClick={handleRetry}
+                      className="w-full py-3 text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-2"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      もう一度診断する
+                    </button>
                   </div>
-                </BlurFade>
-
-                <BlurFade delay={0.5}>
-                  <ShimmerButton
-                    onClick={handleCompleteOnboarding}
-                    disabled={loading}
-                    variant="accent"
-                    className="w-full"
-                  >
-                    {loading ? (
-                      <span className="flex items-center gap-2">
-                        <motion.span
-                          className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        />
-                        処理中...
-                      </span>
-                    ) : (
-                      <>
-                        始める
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                      </>
-                    )}
-                  </ShimmerButton>
                 </BlurFade>
               </GlassCard>
             </motion.div>

@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { User as UserIcon, ArrowLeft, Edit3, Save, X, Briefcase, Calendar, Sparkles, Check, ArrowRight, Camera, Loader2, Trash2 } from 'lucide-react';
+import { User as UserIcon, ArrowLeft, Edit3, Save, X, Briefcase, Calendar, Sparkles, Check, ArrowRight, Camera, Loader2, Trash2, RotateCcw } from 'lucide-react';
 import {
   GlassCard,
   AnimatedGradientText,
@@ -370,10 +370,19 @@ export function ProfileClient({ user, stageInfo }: ProfileClientProps) {
         {personality && (
           <BlurFade delay={0.2}>
             <GlassCard className="mt-6 p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
-                パーソナリティタイプ
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  パーソナリティタイプ
+                </h3>
+                <Link
+                  href="/profile/personality"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  再診断
+                </Link>
+              </div>
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl bg-amber-500/20 flex items-center justify-center">
                   <span className="text-3xl">{personality.emoji}</span>
