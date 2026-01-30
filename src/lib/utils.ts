@@ -32,6 +32,7 @@ export function getAreaLabel(area: string): string {
     ebisu: '恵比寿',
     meguro: '目黒',
     ikebukuro: '池袋',
+    takadanobaba: '高田馬場',
   };
   return areaLabels[area] || area;
 }
