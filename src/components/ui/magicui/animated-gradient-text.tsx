@@ -15,7 +15,7 @@ export function AnimatedGradientText({
   return (
     <motion.span
       className={cn(
-        'inline-flex animate-gradient bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 bg-[length:200%_auto] bg-clip-text text-transparent',
+        'inline-block animate-gradient bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 bg-[length:200%_auto] bg-clip-text text-transparent leading-normal pb-2',
         className
       )}
       initial={{ opacity: 0 }}

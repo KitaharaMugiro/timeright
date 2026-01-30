@@ -117,7 +117,7 @@ test.describe('Landing Page', () => {
     });
 
     test('should display copyright notice', async ({ page }) => {
-      await expect(page.locator('text=2024 Dine Tokyo(ダイントーキョー)')).toBeVisible();
+      await expect(page.locator('text=2026 Dine Tokyo(ダイントーキョー)')).toBeVisible();
     });
   });
 

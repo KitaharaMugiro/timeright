@@ -49,11 +49,7 @@ const steps = [
 const faqs = [
   {
     question: '安全性は大丈夫ですか？',
-    answer: '全員が本人確認済みの会員制サービスです。また、イベント後の相互評価システムにより、マナーの良いコミュニティを維持しています。',
-  },
-  {
-    question: '料金はいくらですか？',
-    answer: '月額1,980円のサブスクリプション制です。参加回数に制限はありません。お食事代は当日割り勘となります。',
+    answer: 'イベント後の相互評価システムにより、マナーの良いコミュニティを維持しています。',
   },
   {
     question: '1人で参加しても大丈夫？',
@@ -61,7 +57,7 @@ const faqs = [
   },
   {
     question: 'どんな人が参加していますか？',
-    answer: '20代後半〜30代を中心に、様々な職業の方が参加しています。「新しい出会いを楽しみたい」という共通点を持った、オープンマインドな方々です。',
+    answer: '20代〜30代を中心に、様々な職業の方が参加しています。「新しい出会いを楽しみたい」という共通点を持った、オープンマインドな方々です。',
   },
 ];
 
@@ -69,12 +65,12 @@ const features = [
   {
     icon: Shield,
     title: '安心の会員制',
-    description: '本人確認済み・相互評価システムで、安心して参加できます。',
+    description: 'LINE連携・相互評価システムで、安心して参加できます。',
   },
   {
     icon: CreditCard,
     title: 'シンプルな料金',
-    description: '月額1,980円で参加し放題。食事代は当日割り勘のみ。',
+    description: '定額サブスクリプションで参加し放題。食事代は当日割り勘のみ。',
   },
   {
     icon: Clock,
@@ -199,41 +195,31 @@ export default function LandingPage() {
           </BlurFade>
 
           <BlurFade delay={0.2}>
-            <p className="text-amber-500 font-medium tracking-widest text-sm mb-4">
-              SOCIAL SERENDIPITY PLATFORM
+            <p className="text-lg md:text-xl text-slate-300 mb-4">
+              初対面の男女4-6人とディナーができるアプリ
             </p>
           </BlurFade>
 
           <BlurFade delay={0.3}>
-            <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white leading-tight mb-6">
-              <AnimatedGradientText className="font-serif text-4xl md:text-6xl lg:text-7xl">
+            <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white leading-relaxed mb-6 overflow-visible">
+              <AnimatedGradientText className="font-serif text-4xl md:text-6xl lg:text-7xl pb-4">
                 Dine Tokyo
               </AnimatedGradientText>
             </h1>
           </BlurFade>
 
           <BlurFade delay={0.4}>
-            <p className="font-serif text-xl md:text-2xl text-slate-300 mb-4">
-              人生は、予測不能な「点」でできている。
-            </p>
-          </BlurFade>
-
-          <BlurFade delay={0.5}>
-            <p className="text-slate-400 mb-12 max-w-lg mx-auto">
-              4〜6人のソーシャルディナーで、
-              偶然の出会いを楽しむ。
+            <p className="font-serif text-xl md:text-2xl text-slate-300 mb-12">
+              人生を動かすのは偶然の出会いだ
             </p>
           </BlurFade>
 
           <BlurFade delay={0.6}>
             <div className="flex flex-col items-center gap-4">
               <ShimmerButton onClick={handleLineOA} variant="accent" className="text-lg px-8 py-4">
-                メンバーになる
+                今すぐLINEではじめる
                 <ArrowRight className="w-5 h-5 ml-2" />
               </ShimmerButton>
-              <p className="text-sm text-slate-500">
-                月額1,980円 ・ LINE でかんたん登録
-              </p>
             </div>
           </BlurFade>
         </div>
@@ -252,11 +238,8 @@ export default function LandingPage() {
       <section className="py-24 px-4 bg-slate-900">
         <div className="max-w-4xl mx-auto">
           <BlurFade>
-            <p className="text-amber-500 font-medium tracking-widest text-sm text-center mb-4">
-              HOW IT WORKS
-            </p>
             <h2 className="font-serif text-3xl md:text-4xl text-white text-center mb-4">
-              たった4ステップで、新しい出会いへ
+              たった<span className="text-amber-500 text-4xl md:text-5xl font-bold">4</span>ステップ
             </h2>
             <p className="text-slate-400 text-center mb-16 max-w-xl mx-auto">
               面倒な準備は一切不要。あなたは当日お店に行くだけ。
@@ -340,21 +323,14 @@ export default function LandingPage() {
               </p>
               <div className="font-serif text-lg md:text-xl text-slate-300 leading-relaxed space-y-6">
                 <p>
-                  「人生を変える出会いは、いつも予想外の場所で起きる。」
+                  自宅と会社の往復をして、いつものお馴染みの友達と飲んでいませんか？
                 </p>
                 <p className="text-slate-400">
-                  私自身、仕事を通じて出会った人、旅先で偶然話しかけた人、
-                  友人の紹介で知り合った人。人生の転機となった出会いは、
-                  すべて「予定になかった」ものでした。
+                  人生を動かすのは、日々の小さな積み重ねと、それを昇華させる「偶然の出会い」だと思っています。
                 </p>
                 <p className="text-slate-400">
-                  Dine Tokyo(ダイントーキョー)は、そんな「偶然の出会い」を、
-                  安心して楽しめる場所として作りました。
-                  恋愛目的ではなく、純粋に「新しい人と話す」楽しさを
-                  もう一度思い出してほしい。
-                </p>
-                <p className="text-slate-400">
-                  次の「点」が、あなたを待っています。
+                  このサービスは偶然の出会いを提供します。
+                  恋愛目的ではなく、友達作り目的でもなく、純粋に「新しい人と出会う」楽しさを感じてください。
                 </p>
               </div>
               <div className="mt-8 pt-6 border-t border-slate-700">
@@ -465,10 +441,12 @@ export default function LandingPage() {
           </BlurFade>
 
           <BlurFade delay={0.2}>
-            <ShimmerButton onClick={handleLineOA} variant="accent" className="text-lg px-8 py-4">
-              メンバーになる
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </ShimmerButton>
+            <div className="flex justify-center">
+              <ShimmerButton onClick={handleLineOA} variant="accent" className="text-lg px-8 py-4">
+                今すぐLINEではじめる
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </ShimmerButton>
+            </div>
           </BlurFade>
         </div>
       </section>
@@ -488,7 +466,7 @@ export default function LandingPage() {
             </Link>
           </div>
           <div className="text-sm text-slate-600">
-            © 2024 Dine Tokyo(ダイントーキョー)
+            © 2026 Dine Tokyo(ダイントーキョー)
           </div>
         </div>
       </footer>

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getAreaLabel } from '@/lib/utils';
 
 export async function GET() {
   const supabase = await createClient();
@@ -33,7 +34,7 @@ export async function GET() {
 
   return NextResponse.json({
     nextEvent: {
-      area: event.area,
+      area: getAreaLabel(event.area),
       date: `${month}/${day}(${weekday})`,
     },
   });
