@@ -90,6 +90,8 @@ export interface Match {
   restaurant_url: string | null;
   reservation_name: string | null;
   table_members: string[];
+  reminder_sent_at: string | null;
+  reminder_sent_by: string | null;
   created_at: string;
 }
 

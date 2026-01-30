@@ -9,7 +9,8 @@ import { Select } from '@/components/ui/select';
 import { UserAvatar } from '@/components/UserAvatar';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
-import { ArrowLeft, Plus, X, Users, Store, Check, Trash2, UserPlus, Ban } from 'lucide-react';
+import { ArrowLeft, Plus, X, Users, Store, Check, Trash2, UserPlus, Ban, Bell } from 'lucide-react';
+import { ReminderConfirmationDialog } from '@/components/admin/ReminderConfirmationDialog';
 import type { Event, Participation, User, Match, Guest, Gender, ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface EventDetailClientProps {
@@ -95,6 +96,18 @@ export function EventDetailClient({
   const [newGuest, setNewGuest] = useState({ display_name: '', gender: 'male' as Gender });
   const [addingGuest, setAddingGuest] = useState(false);
 
+  // Reminder dialog state
+  const [showReminderDialog, setShowReminderDialog] = useState(false);
+  const [reminderRecipients, setReminderRecipients] = useState<Array<{
+    id: string;
+    displayName: string;
+    hasLineId: boolean;
+    isGuest: boolean;
+  }>>([]);
+  const [reminderStats, setReminderStats] = useState({ total: 0, willReceive: 0, willSkip: 0 });
+  const [reminderAlreadySent, setReminderAlreadySent] = useState(false);
+  const [loadingRecipients, setLoadingRecipients] = useState(false);
+
   // Group participations by group_id (for pair entries)
   const groupedParticipations = useMemo(() => {
     return participations.reduce((acc, p) => {
@@ -131,6 +144,17 @@ export function EventDetailClient({
   const unassignedGuests = useMemo(() => {
     return guests.filter(g => !assignedIds.has(toGuestId(g.id)));
   }, [guests, assignedIds]);
+
+  // Check if event is today
+  const isEventToday = useMemo(() => {
+    const eventDate = new Date(event.event_date);
+    const today = new Date();
+    return (
+      eventDate.getFullYear() === today.getFullYear() &&
+      eventDate.getMonth() === today.getMonth() &&
+      eventDate.getDate() === today.getDate()
+    );
+  }, [event.event_date]);
 
   // Get participant info by user_id
   const getParticipantInfo = (userId: string): ParticipantInfo | undefined => {
@@ -429,6 +453,44 @@ export function EventDetailClient({
     } finally {
       setCanceling(false);
     }
+  };
+
+  // Open reminder dialog and fetch recipients
+  const handleOpenReminderDialog = async () => {
+    setLoadingRecipients(true);
+    try {
+      const response = await fetch(`/api/admin/events/${event.id}/reminder`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch recipients');
+      }
+
+      setReminderRecipients(data.recipients);
+      setReminderStats(data.stats);
+      setReminderAlreadySent(data.reminderAlreadySent);
+      setShowReminderDialog(true);
+    } catch (error) {
+      console.error('Fetch recipients error:', error);
+      alert('送信先の取得に失敗しました');
+    } finally {
+      setLoadingRecipients(false);
+    }
+  };
+
+  // Send reminder notifications
+  const handleSendReminder = async () => {
+    const response = await fetch(`/api/admin/events/${event.id}/reminder`, {
+      method: 'POST',
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to send reminder');
+    }
+
+    alert(`リマインダーを送信しました。\n送信: ${data.notifications.sent}件\n失敗: ${data.notifications.failed}件\nスキップ: ${data.notifications.skipped}件`);
   };
 
   // Render participant card (compact version for tables)
@@ -812,6 +874,18 @@ export function EventDetailClient({
                     イベントをキャンセル
                   </Button>
                 )}
+                {event.status === 'matched' && isEventToday && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOpenReminderDialog}
+                    loading={loadingRecipients}
+                    className="border-blue-500/50 text-blue-500 hover:bg-blue-500/10"
+                  >
+                    <Bell className="w-4 h-4 mr-1" />
+                    リマインダー送信
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -1129,6 +1203,16 @@ export function EventDetailClient({
             </ul>
           </CardContent>
         </Card>
+
+        {/* Reminder Confirmation Dialog */}
+        <ReminderConfirmationDialog
+          isOpen={showReminderDialog}
+          onClose={() => setShowReminderDialog(false)}
+          onConfirm={handleSendReminder}
+          recipients={reminderRecipients}
+          stats={reminderStats}
+          reminderAlreadySent={reminderAlreadySent}
+        />
     </AdminLayout>
   );
 }

@@ -347,3 +347,124 @@ ${data.lateMemberName}さんが約${data.lateMinutes}分遅れるとのことで
     return false;
   }
 }
+
+export interface ReminderNotificationData {
+  eventDate: string;
+  area: string;
+  restaurantName: string;
+  restaurantUrl?: string | null;
+  reservationName?: string | null;
+  memberNames: string[];
+}
+
+/**
+ * Send LINE push notification reminder for today's dinner
+ */
+export async function sendReminderNotification(
+  lineUserId: string,
+  data: ReminderNotificationData
+): Promise<boolean> {
+  const client = getLineClient();
+
+  if (!client) {
+    console.log(`[LINE] Skipping reminder for user ${lineUserId} - client not configured`);
+    return false;
+  }
+
+  try {
+    const eventDate = new Date(data.eventDate);
+    const dateStr = eventDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const timeStr = eventDate.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const areaLabels: Record<string, string> = {
+      shibuya: '渋谷',
+      ebisu: '恵比寿',
+      roppongi: '六本木',
+      ginza: '銀座',
+      shinjuku: '新宿',
+    };
+    const areaLabel = areaLabels[data.area] || data.area;
+
+    let message = `【本日のディナーリマインダー】
+
+本日、以下のディナーが予定されています。
+
+【日時】${dateStr} ${timeStr}〜
+【お店】${data.restaurantName}`;
+
+    if (data.restaurantUrl) {
+      message += `\n${data.restaurantUrl}`;
+    }
+
+    message += `\n【エリア】${areaLabel}`;
+
+    if (data.reservationName) {
+      message += `\n【予約名】${data.reservationName}`;
+    }
+
+    message += `\n\n【メンバー】\n${data.memberNames.join('\n')}`;
+    message += `\n\n素敵な時間をお過ごしください！`;
+
+    await client.pushMessage({
+      to: lineUserId,
+      messages: [
+        {
+          type: 'text',
+          text: message,
+        },
+      ],
+    });
+
+    console.log(`[LINE] Reminder sent to user ${lineUserId}`);
+    return true;
+  } catch (error) {
+    console.error(`[LINE] Failed to send reminder to user ${lineUserId}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Send reminder notifications to all members of a match
+ */
+export async function sendReminderNotificationsToMembers(
+  members: Array<{ lineUserId: string | null; displayName: string }>,
+  eventDate: string,
+  area: string,
+  restaurantName: string,
+  restaurantUrl?: string | null,
+  reservationName?: string | null
+): Promise<{ sent: number; failed: number; skipped: number }> {
+  const memberNames = members.map(m => m.displayName);
+  const results = { sent: 0, failed: 0, skipped: 0 };
+
+  for (const member of members) {
+    if (!member.lineUserId) {
+      results.skipped++;
+      continue;
+    }
+
+    const success = await sendReminderNotification(member.lineUserId, {
+      eventDate,
+      area,
+      restaurantName,
+      restaurantUrl,
+      reservationName,
+      memberNames,
+    });
+
+    if (success) {
+      results.sent++;
+    } else {
+      results.failed++;
+    }
+  }
+
+  return results;
+}
