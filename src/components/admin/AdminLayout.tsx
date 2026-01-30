@@ -33,7 +33,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <div className="h-16 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/dashboard" className="text-xl font-bold text-white">
-                Dine Tokyo(ダイントーキョー)
+                Dine Tokyo<span className="text-sm">(ダイントーキョー)</span>
               </Link>
               <span className="text-sm text-slate-400 bg-slate-800 px-2 py-1 rounded">
                 Admin

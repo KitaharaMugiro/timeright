@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { formatDate, formatTime, getAreaLabel, isReviewAccessible, isToday, isWithin48Hours, isWithinEventWindow } from '@/lib/utils';
-import { Calendar, MapPin, LogOut, Star, ArrowRight, Settings, User as UserIcon, X, Ticket, Clock, Copy, Check, Users, Sparkles } from 'lucide-react';
+import { Calendar, MapPin, LogOut, Star, ArrowRight, Settings, User as UserIcon, X, Ticket, Clock, Copy, Check, Users, Sparkles, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import {
   ShimmerButton,
@@ -28,6 +28,7 @@ interface DashboardClientProps {
   participations: (Participation & { events: Event })[];
   matches: (Match & { events: Event })[];
   participantsMap: Record<string, { avatar_url: string | null; job: string }>;
+  guestsMap: Record<string, { display_name: string; gender: string }>;
   attendanceMap: Record<string, Record<string, { attendance_status: string; late_minutes: number | null }>>;
   pairPartnersMap: Record<string, PairPartner>;
 }
@@ -38,6 +39,7 @@ export function DashboardClient({
   participations,
   matches,
   participantsMap,
+  guestsMap,
   attendanceMap,
   pairPartnersMap,
 }: DashboardClientProps) {
@@ -193,7 +195,7 @@ export function DashboardClient({
       >
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="text-xl font-semibold text-white">
-            Dine Tokyo(ダイントーキョー)
+            Dine Tokyo<span className="text-sm">(ダイントーキョー)</span>
           </Link>
           <div className="flex items-center gap-1">
             <Link href="/connections">
@@ -295,18 +297,30 @@ export function DashboardClient({
                   <div className="flex items-center gap-4 mb-8">
                     <AvatarCircles
                       avatarUrls={todayDinner.table_members
-                        .filter((id) => id !== user.id && !id.startsWith('guest:'))
-                        .map((memberId) => ({
-                          imageUrl: participantsMap[memberId]?.avatar_url || '/default-avatar.png',
-                          job: participantsMap[memberId]?.job || '',
-                          attendanceStatus: (localAttendanceMap[todayDinner.event_id]?.[memberId]?.attendance_status || 'attending') as AttendanceStatus,
-                          lateMinutes: localAttendanceMap[todayDinner.event_id]?.[memberId]?.late_minutes ?? undefined,
-                        }))}
+                        .filter((id) => id !== user.id)
+                        .map((memberId) => {
+                          const isGuest = memberId.startsWith('guest:');
+                          if (isGuest) {
+                            const guest = guestsMap[memberId];
+                            return {
+                              imageUrl: '/default-avatar.png',
+                              job: guest?.display_name || 'ゲスト',
+                              attendanceStatus: 'attending' as AttendanceStatus,
+                              lateMinutes: undefined,
+                            };
+                          }
+                          return {
+                            imageUrl: participantsMap[memberId]?.avatar_url || '/default-avatar.png',
+                            job: participantsMap[memberId]?.job || '',
+                            attendanceStatus: (localAttendanceMap[todayDinner.event_id]?.[memberId]?.attendance_status || 'attending') as AttendanceStatus,
+                            lateMinutes: localAttendanceMap[todayDinner.event_id]?.[memberId]?.late_minutes ?? undefined,
+                          };
+                        })}
                       showJob
                       className="scale-110"
                     />
                     <span className="text-slate-300">
-                      他{todayDinner.table_members.filter((id) => !id.startsWith('guest:')).length - 1}人と食事
+                      他{todayDinner.table_members.filter((id) => id !== user.id).length}人と食事
                     </span>
                   </div>
 
@@ -469,17 +483,29 @@ export function DashboardClient({
                         <div className="flex items-center gap-3">
                           <AvatarCircles
                             avatarUrls={match.table_members
-                              .filter((id) => id !== user.id && !id.startsWith('guest:'))
-                              .map((memberId) => ({
-                                imageUrl: participantsMap[memberId]?.avatar_url || '/default-avatar.png',
-                                job: participantsMap[memberId]?.job || '',
-                                attendanceStatus: (localAttendanceMap[match.event_id]?.[memberId]?.attendance_status || 'attending') as AttendanceStatus,
-                                lateMinutes: localAttendanceMap[match.event_id]?.[memberId]?.late_minutes ?? undefined,
-                              }))}
+                              .filter((id) => id !== user.id)
+                              .map((memberId) => {
+                                const isGuest = memberId.startsWith('guest:');
+                                if (isGuest) {
+                                  const guest = guestsMap[memberId];
+                                  return {
+                                    imageUrl: '/default-avatar.png',
+                                    job: guest?.display_name || 'ゲスト',
+                                    attendanceStatus: 'attending' as AttendanceStatus,
+                                    lateMinutes: undefined,
+                                  };
+                                }
+                                return {
+                                  imageUrl: participantsMap[memberId]?.avatar_url || '/default-avatar.png',
+                                  job: participantsMap[memberId]?.job || '',
+                                  attendanceStatus: (localAttendanceMap[match.event_id]?.[memberId]?.attendance_status || 'attending') as AttendanceStatus,
+                                  lateMinutes: localAttendanceMap[match.event_id]?.[memberId]?.late_minutes ?? undefined,
+                                };
+                              })}
                             showJob
                           />
                           <span className="text-sm text-slate-400">
-                            他{match.table_members.filter((id) => !id.startsWith('guest:')).length - 1}人と食事
+                            他{match.table_members.filter((id) => id !== user.id).length}人と食事
                           </span>
                         </div>
 
@@ -554,6 +580,28 @@ export function DashboardClient({
             </div>
           </section>
         )}
+
+        {/* Accept invite button */}
+        <section className="mb-8">
+          <BlurFade>
+            <Link href="/invite/enter">
+              <GlassCard className="hover:border-amber-500/30 transition-colors cursor-pointer">
+                <div className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                      <UserPlus className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-white">友達からの招待を受ける</p>
+                      <p className="text-sm text-slate-400">招待コードを入力して参加</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-slate-400" />
+                </div>
+              </GlassCard>
+            </Link>
+          </BlurFade>
+        </section>
 
         {/* Pending participations */}
         {localParticipations.filter((p) => p.status === 'pending').length > 0 && (
@@ -636,33 +684,43 @@ export function DashboardClient({
                                   </div>
                                 </div>
                               ) : (
-                                // Waiting for partner - show invite link
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2 text-slate-400">
-                                    <Users className="w-4 h-4" />
-                                    <span className="text-sm">ペア待ち</span>
+                                // Waiting for partner - show invite link and short code
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-slate-400">
+                                      <Users className="w-4 h-4" />
+                                      <span className="text-sm">ペア待ち</span>
+                                    </div>
+                                    <motion.button
+                                      onClick={() => handleCopyInviteLink(participation.invite_token, participation.id)}
+                                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isCopied
+                                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                          : 'bg-amber-500/10 text-amber-500 border border-amber-500/30 hover:bg-amber-500/20'
+                                        }`}
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                    >
+                                      {isCopied ? (
+                                        <>
+                                          <Check className="w-4 h-4" />
+                                          コピーしました
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="w-4 h-4" />
+                                          招待リンクをコピー
+                                        </>
+                                      )}
+                                    </motion.button>
                                   </div>
-                                  <motion.button
-                                    onClick={() => handleCopyInviteLink(participation.invite_token, participation.id)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isCopied
-                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                                        : 'bg-amber-500/10 text-amber-500 border border-amber-500/30 hover:bg-amber-500/20'
-                                      }`}
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                  >
-                                    {isCopied ? (
-                                      <>
-                                        <Check className="w-4 h-4" />
-                                        コピーしました
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy className="w-4 h-4" />
-                                        招待リンクをコピー
-                                      </>
-                                    )}
-                                  </motion.button>
+                                  {participation.short_code && (
+                                    <div className="flex items-center justify-end gap-2 text-xs text-slate-500">
+                                      <span>招待コード:</span>
+                                      <code className="bg-white/5 px-2 py-1 rounded font-mono text-slate-300">
+                                        {participation.short_code}
+                                      </code>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>

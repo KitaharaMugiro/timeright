@@ -149,7 +149,7 @@ export default function LandingPage() {
       >
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="text-xl font-semibold tracking-tight text-white">
-            Dine Tokyo(ダイントーキョー)
+            Dine Tokyo<span className="text-sm">(ダイントーキョー)</span>
           </Link>
           <motion.button
             onClick={handleLineOA}
@@ -459,7 +459,7 @@ export default function LandingPage() {
       <footer className="py-10 px-4 border-t border-slate-800 bg-slate-950">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span className="text-xl font-semibold text-white">
-            Dine Tokyo(ダイントーキョー)
+            Dine Tokyo<span className="text-sm">(ダイントーキョー)</span>
           </span>
           <div className="flex gap-6 text-sm text-slate-500">
             <Link href="/terms" className="hover:text-slate-300 transition-colors">

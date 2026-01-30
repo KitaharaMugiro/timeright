@@ -72,6 +72,7 @@ export interface Participation {
   group_id: string;
   entry_type: EntryType;
   invite_token: string;
+  short_code: string | null;
   mood: ParticipationMood;
   mood_text: string | null;
   budget_level: BudgetLevel;

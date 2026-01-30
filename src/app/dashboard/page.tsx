@@ -106,6 +106,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const allMemberIds = [...new Set((matches || []).flatMap((m) => m.table_members))];
   // Filter out guest IDs (they start with "guest:")
   const realUserIds = allMemberIds.filter((id) => !id.startsWith('guest:'));
+  // Extract guest IDs (remove "guest:" prefix to get actual guest UUID)
+  const guestIds = allMemberIds
+    .filter((id) => id.startsWith('guest:'))
+    .map((id) => id.replace('guest:', ''));
 
   // Fetch participant details (avatar_url and job only)
   const { data: participants } = realUserIds.length > 0
@@ -114,6 +118,20 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         .select('id, avatar_url, job')
         .in('id', realUserIds) as { data: { id: string; avatar_url: string | null; job: string }[] | null }
     : { data: [] as { id: string; avatar_url: string | null; job: string }[] };
+
+  // Fetch guest details
+  const { data: guests } = guestIds.length > 0
+    ? await supabase
+        .from('guests')
+        .select('id, display_name, gender')
+        .in('id', guestIds) as { data: { id: string; display_name: string; gender: string }[] | null }
+    : { data: [] as { id: string; display_name: string; gender: string }[] };
+
+  // Create a map for guests (keyed with "guest:" prefix to match table_members format)
+  const guestsMap: Record<string, { display_name: string; gender: string }> = {};
+  (guests || []).forEach((g) => {
+    guestsMap[`guest:${g.id}`] = { display_name: g.display_name, gender: g.gender };
+  });
 
   // Fetch attendance status for all matched participants
   const matchEventIds = [...new Set((matches || []).map((m) => m.event_id))];
@@ -150,6 +168,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       participations={participations || []}
       matches={matches || []}
       participantsMap={participantsMap}
+      guestsMap={guestsMap}
       attendanceMap={attendanceMap}
       pairPartnersMap={pairPartnersMap}
     />

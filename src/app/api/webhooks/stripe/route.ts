@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/server';
-import { generateInviteToken } from '@/lib/utils';
+import { generateInviteToken, generateShortCode } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import Stripe from 'stripe';
 import type { User, EntryType, ParticipationMood, BudgetLevel } from '@/types/database';
@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
             if (!existingParticipation) {
               const groupId = uuidv4();
               const inviteToken = generateInviteToken();
+              const shortCode = generateShortCode();
 
               await (supabase.from('participations') as any).insert({
                 user_id: userId,
@@ -120,6 +121,7 @@ export async function POST(request: NextRequest) {
                 mood_text: moodText,
                 budget_level: budgetLevel,
                 invite_token: inviteToken,
+                short_code: shortCode,
                 status: 'pending',
               });
             }

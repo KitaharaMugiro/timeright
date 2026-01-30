@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
-import { Calendar, MapPin, UserPlus, User, Copy, Check, ArrowLeft, MessageSquare } from 'lucide-react';
+import { Calendar, MapPin, UserPlus, User, Copy, Check, ArrowLeft, MessageSquare, Link2 } from 'lucide-react';
 import type { Event, ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface EntryClientProps {
@@ -16,7 +16,7 @@ interface EntryClientProps {
   subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'none';
 }
 
-type EntryMode = 'select' | 'mood' | 'budget' | 'confirm' | 'invite';
+type EntryMode = 'select' | 'pair-type' | 'mood' | 'budget' | 'confirm' | 'invite';
 type EntryType = 'solo' | 'pair';
 
 const moodOptions: { value: ParticipationMood; label: string; description: string; emoji: string }[] = [
@@ -79,7 +79,21 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
       return;
     }
     setEntryType(type);
-    setMode('mood');
+    if (type === 'pair') {
+      setMode('pair-type');
+    } else {
+      setMode('mood');
+    }
+  };
+
+  const handlePairTypeSelect = (isInviter: boolean) => {
+    if (isInviter) {
+      // 自分が招待する → 気分選択へ
+      setMode('mood');
+    } else {
+      // 招待を受ける → 招待コード入力ページへ
+      router.push('/invite/enter');
+    }
   };
 
   const handleSelectMood = (selectedMood: ParticipationMood) => {
@@ -264,6 +278,62 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Pair type select */}
+        {mode === 'pair-type' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-white">友達との参加方法</h2>
+            <p className="text-sm text-slate-400">
+              自分が招待する側ですか？それとも招待を受ける側ですか？
+            </p>
+
+            <Card
+              className="cursor-pointer bg-white/5 border-white/10 hover:border-white/20 transition-colors"
+              onClick={() => handlePairTypeSelect(true)}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center">
+                    <UserPlus className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1 text-white">自分が招待する</h3>
+                    <p className="text-sm text-slate-400">
+                      招待リンクを作成して友達に送る
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer bg-white/5 border-white/10 hover:border-white/20 transition-colors"
+              onClick={() => handlePairTypeSelect(false)}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Link2 className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1 text-white">招待を受ける</h3>
+                    <p className="text-sm text-slate-400">
+                      友達からの招待コードを入力する
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Button
+              variant="ghost"
+              onClick={() => setMode('select')}
+              className="w-full text-slate-400 hover:text-white"
+            >
+              戻る
+            </Button>
           </div>
         )}
 

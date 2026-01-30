@@ -77,3 +77,29 @@ export function generateInviteToken(): string {
   }
   return token;
 }
+
+export function generateShortCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluded I, O, 0, 1 to avoid confusion
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+export function extractInviteToken(input: string): string | null {
+  // If input looks like a URL, extract the token
+  const urlMatch = input.match(/\/invite\/([A-Za-z0-9]+)/);
+  if (urlMatch) {
+    return urlMatch[1];
+  }
+  // If input is 6 characters (short code), return as-is (uppercase)
+  if (/^[A-Za-z0-9]{6}$/.test(input.trim())) {
+    return input.trim().toUpperCase();
+  }
+  // If input is 32 characters (full token), return as-is
+  if (/^[A-Za-z0-9]{32}$/.test(input.trim())) {
+    return input.trim();
+  }
+  return null;
+}

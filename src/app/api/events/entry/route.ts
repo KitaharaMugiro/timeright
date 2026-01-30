@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
-import { generateInviteToken, isWithin48Hours } from '@/lib/utils';
+import { generateInviteToken, generateShortCode, isWithin48Hours } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import type { EntryType, User, Event, ParticipationMood, Participation, BudgetLevel } from '@/types/database';
 
@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
 
     const groupId = uuidv4();
     const inviteToken = generateInviteToken();
+    const shortCode = generateShortCode();
 
     if (existingParticipation && existingParticipation.status === 'canceled') {
       // Reactivate canceled participation
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
           mood_text: mood_text || null,
           budget_level,
           invite_token: inviteToken,
+          short_code: shortCode,
           status: 'pending',
         })
         .eq('id', existingParticipation.id);
@@ -120,6 +122,7 @@ export async function POST(request: NextRequest) {
         mood_text: mood_text || null,
         budget_level,
         invite_token: inviteToken,
+        short_code: shortCode,
         status: 'pending',
       });
 
@@ -135,6 +138,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       invite_token: entry_type === 'pair' ? inviteToken : null,
+      short_code: entry_type === 'pair' ? shortCode : null,
     });
   } catch (err) {
     console.error('Entry error:', err);

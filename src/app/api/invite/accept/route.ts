@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
-import { generateInviteToken, isWithin48Hours } from '@/lib/utils';
+import { generateInviteToken, generateShortCode, isWithin48Hours } from '@/lib/utils';
 import type { User, Participation, Event, ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface AcceptRequest {
@@ -122,6 +122,7 @@ export async function POST(request: NextRequest) {
       mood_text: mood_text || null,
       budget_level,
       invite_token: generateInviteToken(),
+      short_code: generateShortCode(),
       status: 'pending',
     });
 

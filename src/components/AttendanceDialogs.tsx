@@ -243,7 +243,7 @@ export function LateDialog({ isOpen, onClose, onConfirm }: LateDialogProps) {
 
                 <div className="bg-slate-900/50 rounded-xl p-4">
                   <p className="text-sm text-slate-400">
-                    他のメンバーにLINEで通知されます。お店で待っていてもらえます。
+                    他のメンバーにダッシュボードで表示されます。
                   </p>
                 </div>
               </div>
