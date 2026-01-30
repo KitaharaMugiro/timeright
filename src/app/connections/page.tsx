@@ -42,6 +42,7 @@ export default async function ConnectionsPage() {
       comment: review.comment,
       memo: review.memo,
       block_flag: review.block_flag,
+      is_no_show: review.is_no_show || false,
       created_at: review.created_at,
     },
     person: review.target,

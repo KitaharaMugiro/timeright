@@ -11,7 +11,10 @@ interface ReviewRequest {
   rating: number;
   memo: string | null;
   block_flag: boolean;
+  is_no_show?: boolean;
 }
+
+const NO_SHOW_PENALTY = -100;
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,13 +30,21 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createServiceClient();
 
-    const { match_id, target_user_id, rating, memo, block_flag }: ReviewRequest =
+    const { match_id, target_user_id, rating, memo, block_flag, is_no_show }: ReviewRequest =
       await request.json();
 
-    // Validate rating
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    // Validate rating (0 is allowed for No-Show)
+    if (!Number.isInteger(rating) || rating < 0 || rating > 5) {
       return NextResponse.json(
-        { error: 'Rating must be an integer between 1 and 5' },
+        { error: 'Rating must be an integer between 0 and 5' },
+        { status: 400 }
+      );
+    }
+
+    // Validate No-Show flag consistency
+    if (rating === 0 && !is_no_show) {
+      return NextResponse.json(
+        { error: 'Rating 0 requires is_no_show flag' },
         { status: 400 }
       );
     }
@@ -106,6 +117,7 @@ export async function POST(request: NextRequest) {
       rating,
       memo,
       block_flag,
+      is_no_show: is_no_show || false,
     }).select('id').single();
 
     if (insertError) {
@@ -120,8 +132,14 @@ export async function POST(request: NextRequest) {
     try {
       // レビューを送った人: +20pt
       await addStagePoints(userId, STAGE_POINTS.REVIEW_SENT, 'review_sent', reviewData.id);
-      // レビューを受けた人: 評価に応じて +5〜25pt
-      await addStagePoints(target_user_id, getReviewReceivedPoints(rating), 'review_received', reviewData.id);
+
+      if (is_no_show) {
+        // No-Show報告の場合: 対象者に -100pt ペナルティ
+        await addStagePoints(target_user_id, NO_SHOW_PENALTY, 'no_show', reviewData.id);
+      } else {
+        // 通常レビュー: 評価に応じて +5〜25pt
+        await addStagePoints(target_user_id, getReviewReceivedPoints(rating), 'review_received', reviewData.id);
+      }
     } catch (pointError) {
       console.error('Failed to add stage points:', pointError);
     }

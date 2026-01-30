@@ -8,7 +8,7 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Star, Check, AlertTriangle } from 'lucide-react';
 import type { Match, Event, User } from '@/types/database';
-import { RATING_DEFINITIONS, getRatingDefinition, isBlockRating } from '@/lib/review-ratings';
+import { RATING_DEFINITIONS, getRatingDefinition, isBlockRating, isNoShowRating } from '@/lib/review-ratings';
 
 interface ReviewClientProps {
   match: Match & { events: Event };
@@ -23,22 +23,22 @@ export function ReviewClient({
 }: ReviewClientProps) {
   const [reviewedUserIds, setReviewedUserIds] = useState(initialReviewedIds);
   const [currentMember, setCurrentMember] = useState<typeof members[0] | null>(null);
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState<number | null>(null);
   const [memo, setMemo] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const selectedRatingDef = getRatingDefinition(rating);
+  const selectedRatingDef = rating !== null ? getRatingDefinition(rating) : undefined;
 
   const unreviewedMembers = members.filter((m) => !reviewedUserIds.includes(m.id));
 
   const handleSelectMember = (member: typeof members[0]) => {
     setCurrentMember(member);
-    setRating(0);
+    setRating(null);
     setMemo('');
   };
 
   const handleSubmitReview = async () => {
-    if (!currentMember || rating === 0) return;
+    if (!currentMember || rating === null) return;
 
     setLoading(true);
     try {
@@ -51,6 +51,7 @@ export function ReviewClient({
           rating,
           memo: memo || null,
           block_flag: isBlockRating(rating),
+          is_no_show: isNoShowRating(rating),
         }),
       });
 
@@ -60,7 +61,7 @@ export function ReviewClient({
 
       setReviewedUserIds([...reviewedUserIds, currentMember.id]);
       setCurrentMember(null);
-      setRating(0);
+      setRating(null);
       setMemo('');
     } catch (error) {
       console.error('Review error:', error);
@@ -126,47 +127,75 @@ export function ReviewClient({
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   評価
                 </label>
-                <div className="flex gap-2 mb-3" data-testid="star-buttons">
-                  {RATING_DEFINITIONS.map((def) => (
-                    <button
-                      key={def.value}
-                      onClick={() => setRating(def.value)}
-                      data-testid={`star-button-${def.value}`}
-                      className={cn(
-                        'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
-                        def.value <= rating
-                          ? def.isBlock
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-yellow-400 text-white'
-                          : 'bg-white/10 text-slate-500 hover:bg-white/20'
-                      )}
-                    >
-                      <Star className="w-5 h-5" fill={def.value <= rating ? 'currentColor' : 'none'} />
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-2 mb-3" data-testid="star-buttons">
+                  {RATING_DEFINITIONS.map((def) => {
+                    const isSelected = rating === def.value;
+                    const isNoShow = def.isNoShow;
+
+                    return (
+                      <button
+                        key={def.value}
+                        onClick={() => setRating(def.value)}
+                        data-testid={`star-button-${def.value}`}
+                        className={cn(
+                          'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
+                          isSelected
+                            ? isNoShow
+                              ? 'bg-red-500 text-white'
+                              : def.isBlock
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-yellow-400 text-white'
+                            : 'bg-white/10 text-slate-500 hover:bg-white/20'
+                        )}
+                        title={def.label}
+                      >
+                        {isNoShow ? (
+                          <span className="text-sm font-bold">NS</span>
+                        ) : (
+                          <Star className="w-5 h-5" fill={isSelected ? 'currentColor' : 'none'} />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
                 {selectedRatingDef && (
                   <div
                     data-testid="rating-description"
                     className={cn(
                       'p-3 rounded-lg text-sm',
-                      selectedRatingDef.isBlock
-                        ? 'bg-orange-500/10 border border-orange-500/30'
-                        : 'bg-green-500/10 border border-green-500/30'
+                      selectedRatingDef.isNoShow
+                        ? 'bg-red-500/10 border border-red-500/30'
+                        : selectedRatingDef.isBlock
+                          ? 'bg-orange-500/10 border border-orange-500/30'
+                          : 'bg-green-500/10 border border-green-500/30'
                     )}
                   >
                     <div className="font-medium mb-1 flex items-center gap-2">
-                      {selectedRatingDef.isBlock && (
-                        <AlertTriangle className="w-4 h-4 text-orange-400" />
+                      {(selectedRatingDef.isBlock || selectedRatingDef.isNoShow) && (
+                        <AlertTriangle className={cn(
+                          'w-4 h-4',
+                          selectedRatingDef.isNoShow ? 'text-red-400' : 'text-orange-400'
+                        )} />
                       )}
-                      <span className={selectedRatingDef.isBlock ? 'text-orange-400' : 'text-green-400'}>
+                      <span className={cn(
+                        selectedRatingDef.isNoShow
+                          ? 'text-red-400'
+                          : selectedRatingDef.isBlock
+                            ? 'text-orange-400'
+                            : 'text-green-400'
+                      )}>
                         {selectedRatingDef.label}
                       </span>
                     </div>
                     <div className="text-slate-400">
                       {selectedRatingDef.description}
                     </div>
-                    {selectedRatingDef.isBlock && (
+                    {selectedRatingDef.isNoShow && (
+                      <div className="text-red-400/80 text-xs mt-2">
+                        ※ No-Show報告は相手に-100ptのペナルティが課されます
+                      </div>
+                    )}
+                    {selectedRatingDef.isBlock && !selectedRatingDef.isNoShow && (
                       <div className="text-orange-400/80 text-xs mt-2">
                         ※ この評価を選ぶと、今後この方とマッチングしません
                       </div>
@@ -196,7 +225,7 @@ export function ReviewClient({
                 <Button
                   onClick={handleSubmitReview}
                   loading={loading}
-                  disabled={rating === 0}
+                  disabled={rating === null}
                   className="flex-1"
                   data-testid="submit-review-btn"
                 >

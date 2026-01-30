@@ -104,14 +104,38 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   // Get all unique member IDs from matches for participant info
   const allMemberIds = [...new Set((matches || []).flatMap((m) => m.table_members))];
+  // Filter out guest IDs (they start with "guest:")
+  const realUserIds = allMemberIds.filter((id) => !id.startsWith('guest:'));
 
   // Fetch participant details (avatar_url and job only)
-  const { data: participants } = allMemberIds.length > 0
+  const { data: participants } = realUserIds.length > 0
     ? await supabase
         .from('users')
         .select('id, avatar_url, job')
-        .in('id', allMemberIds) as { data: { id: string; avatar_url: string | null; job: string }[] | null }
+        .in('id', realUserIds) as { data: { id: string; avatar_url: string | null; job: string }[] | null }
     : { data: [] as { id: string; avatar_url: string | null; job: string }[] };
+
+  // Fetch attendance status for all matched participants
+  const matchEventIds = [...new Set((matches || []).map((m) => m.event_id))];
+  const { data: matchParticipations } = matchEventIds.length > 0 && realUserIds.length > 0
+    ? await supabase
+        .from('participations')
+        .select('user_id, event_id, attendance_status, late_minutes')
+        .in('event_id', matchEventIds)
+        .in('user_id', realUserIds) as { data: { user_id: string; event_id: string; attendance_status: string; late_minutes: number | null }[] | null }
+    : { data: [] as { user_id: string; event_id: string; attendance_status: string; late_minutes: number | null }[] };
+
+  // Create a map for quick lookup: { eventId: { oderId: { attendance_status, late_minutes } } }
+  const attendanceMap: Record<string, Record<string, { attendance_status: string; late_minutes: number | null }>> = {};
+  (matchParticipations || []).forEach((p) => {
+    if (!attendanceMap[p.event_id]) {
+      attendanceMap[p.event_id] = {};
+    }
+    attendanceMap[p.event_id][p.user_id] = {
+      attendance_status: p.attendance_status,
+      late_minutes: p.late_minutes,
+    };
+  });
 
   // Create a map for quick lookup
   const participantsMap: Record<string, { avatar_url: string | null; job: string }> = {};
@@ -126,6 +150,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       participations={participations || []}
       matches={matches || []}
       participantsMap={participantsMap}
+      attendanceMap={attendanceMap}
       pairPartnersMap={pairPartnersMap}
     />
   );

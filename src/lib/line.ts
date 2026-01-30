@@ -228,3 +228,122 @@ export async function sendCancellationNotificationsToMembers(
 
   return results;
 }
+
+export interface MemberCancelNotificationData {
+  canceledMemberName: string;
+  eventDate: string;
+  restaurantName: string;
+}
+
+/**
+ * Send LINE notification when a member cancels their attendance
+ */
+export async function sendMemberCancelNotification(
+  lineUserId: string,
+  data: MemberCancelNotificationData
+): Promise<boolean> {
+  const client = getLineClient();
+
+  if (!client) {
+    console.log(`[LINE] Skipping member cancel notification for user ${lineUserId} - client not configured`);
+    return false;
+  }
+
+  try {
+    const eventDate = new Date(data.eventDate);
+    const dateStr = eventDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const timeStr = eventDate.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const message = `【メンバーキャンセルのお知らせ】
+
+${data.canceledMemberName}さんが${dateStr}のディナーをキャンセルしました。
+
+【日時】${dateStr} ${timeStr}〜
+【お店】${data.restaurantName}
+
+他のメンバーと引き続きお楽しみください。`;
+
+    await client.pushMessage({
+      to: lineUserId,
+      messages: [
+        {
+          type: 'text',
+          text: message,
+        },
+      ],
+    });
+
+    console.log(`[LINE] Member cancel notification sent to user ${lineUserId}`);
+    return true;
+  } catch (error) {
+    console.error(`[LINE] Failed to send member cancel notification to user ${lineUserId}:`, error);
+    return false;
+  }
+}
+
+export interface MemberLateNotificationData {
+  lateMemberName: string;
+  lateMinutes: number;
+  eventDate: string;
+  restaurantName: string;
+}
+
+/**
+ * Send LINE notification when a member reports they will be late
+ */
+export async function sendMemberLateNotification(
+  lineUserId: string,
+  data: MemberLateNotificationData
+): Promise<boolean> {
+  const client = getLineClient();
+
+  if (!client) {
+    console.log(`[LINE] Skipping member late notification for user ${lineUserId} - client not configured`);
+    return false;
+  }
+
+  try {
+    const eventDate = new Date(data.eventDate);
+    const dateStr = eventDate.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const timeStr = eventDate.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const message = `【遅刻連絡】
+
+${data.lateMemberName}さんが約${data.lateMinutes}分遅れるとのことです。
+
+【日時】${dateStr} ${timeStr}〜
+【お店】${data.restaurantName}
+
+先にお店でお待ちください。`;
+
+    await client.pushMessage({
+      to: lineUserId,
+      messages: [
+        {
+          type: 'text',
+          text: message,
+        },
+      ],
+    });
+
+    console.log(`[LINE] Member late notification sent to user ${lineUserId}`);
+    return true;
+  } catch (error) {
+    console.error(`[LINE] Failed to send member late notification to user ${lineUserId}:`, error);
+    return false;
+  }
+}

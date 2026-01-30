@@ -13,7 +13,8 @@ import {
   Particles,
 } from '@/components/ui/magicui';
 import { AvatarCircles } from '@/components/ui/avatar-circles';
-import type { User, Event, Participation, Match } from '@/types/database';
+import type { User, Event, Participation, Match, AttendanceStatus } from '@/types/database';
+import { CancelDialog, LateDialog } from '@/components/AttendanceDialogs';
 
 interface PairPartner {
   id: string;
@@ -27,6 +28,7 @@ interface DashboardClientProps {
   participations: (Participation & { events: Event })[];
   matches: (Match & { events: Event })[];
   participantsMap: Record<string, { avatar_url: string | null; job: string }>;
+  attendanceMap: Record<string, Record<string, { attendance_status: string; late_minutes: number | null }>>;
   pairPartnersMap: Record<string, PairPartner>;
 }
 
@@ -36,11 +38,17 @@ export function DashboardClient({
   participations,
   matches,
   participantsMap,
+  attendanceMap,
   pairPartnersMap,
 }: DashboardClientProps) {
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [localParticipations, setLocalParticipations] = useState(participations);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [localAttendanceMap, setLocalAttendanceMap] = useState(attendanceMap);
+
+  // Attendance dialog state
+  const [cancelDialogMatch, setCancelDialogMatch] = useState<(Match & { events: Event }) | null>(null);
+  const [lateDialogMatch, setLateDialogMatch] = useState<(Match & { events: Event }) | null>(null);
 
   const handleCopyInviteLink = async (inviteToken: string, participationId: string) => {
     const inviteUrl = `${window.location.origin}/invite/${inviteToken}`;
@@ -62,6 +70,86 @@ export function DashboardClient({
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/';
+  };
+
+  // Get user's participation for a match
+  const getUserParticipation = (match: Match & { events: Event }) => {
+    return localParticipations.find(
+      (p) => p.event_id === match.event_id && p.status === 'matched'
+    );
+  };
+
+  // Check if within 24 hours
+  const isWithin24Hours = (eventDate: string) => {
+    const event = new Date(eventDate);
+    const now = new Date();
+    return event.getTime() - now.getTime() < 24 * 60 * 60 * 1000;
+  };
+
+  // Handle attendance cancel
+  const handleAttendanceCancel = async () => {
+    if (!cancelDialogMatch) return;
+    const participation = getUserParticipation(cancelDialogMatch);
+    if (!participation) return;
+
+    const response = await fetch('/api/events/attendance', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        participation_id: participation.id,
+        action: 'cancel',
+      }),
+    });
+
+    if (response.ok) {
+      // Update local attendance map
+      setLocalAttendanceMap((prev) => ({
+        ...prev,
+        [cancelDialogMatch.event_id]: {
+          ...prev[cancelDialogMatch.event_id],
+          [user.id]: { attendance_status: 'canceled', late_minutes: null },
+        },
+      }));
+    } else {
+      const data = await response.json();
+      alert(data.error || '処理に失敗しました');
+    }
+  };
+
+  // Handle late notification
+  const handleLateNotify = async (minutes: number) => {
+    if (!lateDialogMatch) return;
+    const participation = getUserParticipation(lateDialogMatch);
+    if (!participation) return;
+
+    const response = await fetch('/api/events/attendance', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        participation_id: participation.id,
+        action: 'late',
+        late_minutes: minutes,
+      }),
+    });
+
+    if (response.ok) {
+      // Update local attendance map
+      setLocalAttendanceMap((prev) => ({
+        ...prev,
+        [lateDialogMatch.event_id]: {
+          ...prev[lateDialogMatch.event_id],
+          [user.id]: { attendance_status: 'late', late_minutes: minutes },
+        },
+      }));
+    } else {
+      const data = await response.json();
+      alert(data.error || '処理に失敗しました');
+    }
+  };
+
+  // Check if user has already canceled or is late
+  const getUserAttendanceStatus = (match: Match & { events: Event }) => {
+    return localAttendanceMap[match.event_id]?.[user.id]?.attendance_status || 'attending';
   };
 
   const handleCancel = async (participationId: string) => {
@@ -207,16 +295,18 @@ export function DashboardClient({
                   <div className="flex items-center gap-4 mb-8">
                     <AvatarCircles
                       avatarUrls={todayDinner.table_members
-                        .filter((id) => id !== user.id)
+                        .filter((id) => id !== user.id && !id.startsWith('guest:'))
                         .map((memberId) => ({
                           imageUrl: participantsMap[memberId]?.avatar_url || '/default-avatar.png',
                           job: participantsMap[memberId]?.job || '',
+                          attendanceStatus: (localAttendanceMap[todayDinner.event_id]?.[memberId]?.attendance_status || 'attending') as AttendanceStatus,
+                          lateMinutes: localAttendanceMap[todayDinner.event_id]?.[memberId]?.late_minutes ?? undefined,
                         }))}
                       showJob
                       className="scale-110"
                     />
                     <span className="text-slate-300">
-                      他{todayDinner.table_members.length - 1}人と食事
+                      他{todayDinner.table_members.filter((id) => !id.startsWith('guest:')).length - 1}人と食事
                     </span>
                   </div>
 
@@ -259,6 +349,42 @@ export function DashboardClient({
                           レビューを書く
                         </motion.button>
                       </Link>
+                    )}
+
+                    {/* Attendance buttons - only show if not already canceled */}
+                    {getUserAttendanceStatus(todayDinner) === 'attending' && (
+                      <>
+                        <motion.button
+                          onClick={() => setLateDialogMatch(todayDinner)}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-colors"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Clock className="w-4 h-4" />
+                          遅刻連絡
+                        </motion.button>
+                        <motion.button
+                          onClick={() => setCancelDialogMatch(todayDinner)}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-colors"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <X className="w-4 h-4" />
+                          キャンセル
+                        </motion.button>
+                      </>
+                    )}
+                    {getUserAttendanceStatus(todayDinner) === 'late' && (
+                      <span className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400">
+                        <Clock className="w-4 h-4" />
+                        遅刻連絡済み ({localAttendanceMap[todayDinner.event_id]?.[user.id]?.late_minutes}分)
+                      </span>
+                    )}
+                    {getUserAttendanceStatus(todayDinner) === 'canceled' && (
+                      <span className="flex items-center gap-2 px-4 py-2 text-sm text-red-400">
+                        <X className="w-4 h-4" />
+                        キャンセル済み
+                      </span>
                     )}
                   </div>
                 </div>
@@ -343,15 +469,17 @@ export function DashboardClient({
                         <div className="flex items-center gap-3">
                           <AvatarCircles
                             avatarUrls={match.table_members
-                              .filter((id) => id !== user.id)
+                              .filter((id) => id !== user.id && !id.startsWith('guest:'))
                               .map((memberId) => ({
                                 imageUrl: participantsMap[memberId]?.avatar_url || '/default-avatar.png',
                                 job: participantsMap[memberId]?.job || '',
+                                attendanceStatus: (localAttendanceMap[match.event_id]?.[memberId]?.attendance_status || 'attending') as AttendanceStatus,
+                                lateMinutes: localAttendanceMap[match.event_id]?.[memberId]?.late_minutes ?? undefined,
                               }))}
                             showJob
                           />
                           <span className="text-sm text-slate-400">
-                            他{match.table_members.length - 1}人と食事
+                            他{match.table_members.filter((id) => !id.startsWith('guest:')).length - 1}人と食事
                           </span>
                         </div>
 
@@ -380,6 +508,42 @@ export function DashboardClient({
                                 レビュー
                               </motion.button>
                             </Link>
+                          )}
+
+                          {/* Attendance buttons */}
+                          {getUserAttendanceStatus(match) === 'attending' && (
+                            <>
+                              <motion.button
+                                onClick={() => setLateDialogMatch(match)}
+                                className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-colors"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                title="遅刻連絡"
+                              >
+                                <Clock className="w-4 h-4" />
+                              </motion.button>
+                              <motion.button
+                                onClick={() => setCancelDialogMatch(match)}
+                                className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-colors"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                title="キャンセル"
+                              >
+                                <X className="w-4 h-4" />
+                              </motion.button>
+                            </>
+                          )}
+                          {getUserAttendanceStatus(match) === 'late' && (
+                            <span className="flex items-center gap-1 px-3 py-2 text-xs text-amber-400">
+                              <Clock className="w-3 h-3" />
+                              {localAttendanceMap[match.event_id]?.[user.id]?.late_minutes}分遅れ
+                            </span>
+                          )}
+                          {getUserAttendanceStatus(match) === 'canceled' && (
+                            <span className="flex items-center gap-1 px-3 py-2 text-xs text-red-400">
+                              <X className="w-3 h-3" />
+                              キャンセル済
+                            </span>
                           )}
                         </div>
                       </div>
@@ -577,6 +741,19 @@ export function DashboardClient({
           )}
         </section>
       </main>
+
+      {/* Attendance Dialogs */}
+      <CancelDialog
+        isOpen={!!cancelDialogMatch}
+        onClose={() => setCancelDialogMatch(null)}
+        onConfirm={handleAttendanceCancel}
+        isWithin24Hours={cancelDialogMatch ? isWithin24Hours(cancelDialogMatch.events.event_date) : false}
+      />
+      <LateDialog
+        isOpen={!!lateDialogMatch}
+        onClose={() => setLateDialogMatch(null)}
+        onConfirm={handleLateNotify}
+      />
     </div>
   );
 }

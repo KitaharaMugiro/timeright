@@ -1,6 +1,7 @@
 /**
  * レビュー評価の星の意味定義
  *
+ * 星0: No-Show（無断キャンセル）- 特別ペナルティ
  * 星1-3: BLOCK（今後マッチングしない）
  * 星4-5: 通常（また会いたい）
  */
@@ -10,9 +11,17 @@ export interface RatingDefinition {
   label: string;
   description: string;
   isBlock: boolean;
+  isNoShow?: boolean;
 }
 
 export const RATING_DEFINITIONS: RatingDefinition[] = [
+  {
+    value: 0,
+    label: 'No-Show（無断キャンセル）',
+    description: '当日来なかった、連絡なしにキャンセルした',
+    isBlock: true,
+    isNoShow: true,
+  },
   {
     value: 1,
     label: '迷惑行為',
@@ -58,4 +67,12 @@ export function getRatingDefinition(rating: number): RatingDefinition | undefine
 export function isBlockRating(rating: number): boolean {
   const definition = getRatingDefinition(rating);
   return definition?.isBlock ?? false;
+}
+
+/**
+ * 評価値からNo-Showフラグを判定
+ */
+export function isNoShowRating(rating: number): boolean {
+  const definition = getRatingDefinition(rating);
+  return definition?.isNoShow ?? false;
 }

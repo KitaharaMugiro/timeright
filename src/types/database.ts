@@ -3,12 +3,13 @@ export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'none';
 export type EventStatus = 'open' | 'matched' | 'closed';
 export type EntryType = 'solo' | 'pair';
 export type ParticipationStatus = 'pending' | 'matched' | 'canceled';
+export type AttendanceStatus = 'attending' | 'canceled' | 'late';
 export type PersonalityType = 'Leader' | 'Supporter' | 'Analyst' | 'Entertainer';
 export type ParticipationMood = 'lively' | 'relaxed' | 'inspire' | 'other';
 export type BudgetLevel = 1 | 2 | 3;
 export type ReferralStatus = 'pending' | 'completed' | 'expired';
 export type MemberStage = 'bronze' | 'silver' | 'gold' | 'platinum';
-export type StagePointReason = 'participation' | 'review_sent' | 'review_received' | 'cancel';
+export type StagePointReason = 'participation' | 'review_sent' | 'review_received' | 'cancel' | 'late_cancel' | 'no_show';
 export type IcebreakerGameType =
   | 'questions'
   | 'would_you_rather'
@@ -75,6 +76,10 @@ export interface Participation {
   mood_text: string | null;
   budget_level: BudgetLevel;
   status: ParticipationStatus;
+  attendance_status: AttendanceStatus;
+  attendance_updated_at: string | null;
+  late_minutes: number | null;
+  cancel_reason: string | null;
   created_at: string;
 }
 
@@ -97,6 +102,7 @@ export interface Review {
   comment: string | null;
   memo: string | null;
   block_flag: boolean;
+  is_no_show: boolean;
   created_at: string;
 }
 
@@ -295,6 +301,7 @@ export interface Database {
       event_status: EventStatus;
       entry_type: EntryType;
       participation_status: ParticipationStatus;
+      attendance_status: AttendanceStatus;
       personality_type: PersonalityType;
       participation_mood: ParticipationMood;
       budget_level: BudgetLevel;
