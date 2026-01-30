@@ -57,6 +57,31 @@ export class DashboardPage {
   readonly entryButtons: Locator;
   readonly enteredBadge: Locator;
 
+  // Attendance management elements
+  readonly attendanceCancelButton: Locator;
+  readonly attendanceLateButton: Locator;
+  readonly canceledStatus: Locator;
+  readonly lateStatus: Locator;
+
+  // Cancel dialog elements
+  readonly cancelDialog: Locator;
+  readonly cancelDialogTitle: Locator;
+  readonly cancelDialogPenaltyInfo: Locator;
+  readonly cancelDialogConfirmButton: Locator;
+  readonly cancelDialogBackButton: Locator;
+
+  // Late dialog elements
+  readonly lateDialog: Locator;
+  readonly lateDialogTitle: Locator;
+  readonly lateMinutesInput: Locator;
+  readonly lateDialogConfirmButton: Locator;
+  readonly lateDialogCancelButton: Locator;
+  readonly lateDialogError: Locator;
+
+  // Avatar status overlay icons
+  readonly avatarCanceledBadge: Locator;
+  readonly avatarLateBadge: Locator;
+
   constructor(page: Page) {
     this.page = page;
 
@@ -96,6 +121,39 @@ export class DashboardPage {
     this.eventCards = page.locator('.glass-card, [class*="GlassCard"]');
     this.entryButtons = page.locator('a', { hasText: '参加する' });
     this.enteredBadge = page.locator('button', { hasText: 'エントリー済み' });
+
+    // Attendance management buttons (in confirmed dinner section)
+    // Cancel button has X icon with red styling
+    this.attendanceCancelButton = page.locator('button').filter({
+      has: page.locator('svg.lucide-x'),
+    }).filter({ hasText: /キャンセル/ });
+    // Late button has Clock icon with amber styling
+    this.attendanceLateButton = page.locator('button').filter({
+      has: page.locator('svg.lucide-clock'),
+    }).filter({ hasText: /遅刻連絡/ });
+
+    // Attendance status indicators
+    this.canceledStatus = page.locator('text=キャンセル済み');
+    this.lateStatus = page.locator('span').filter({ hasText: /遅刻連絡済み/ });
+
+    // Cancel dialog
+    this.cancelDialog = page.locator('div').filter({ hasText: 'キャンセルの確認' }).first();
+    this.cancelDialogTitle = page.locator('h2', { hasText: 'キャンセルの確認' });
+    this.cancelDialogPenaltyInfo = page.locator('text=ペナルティについて');
+    this.cancelDialogConfirmButton = page.locator('button', { hasText: 'キャンセルする' });
+    this.cancelDialogBackButton = page.locator('button', { hasText: '戻る' });
+
+    // Late dialog
+    this.lateDialog = page.locator('div').filter({ hasText: '遅刻連絡' }).first();
+    this.lateDialogTitle = page.locator('h2', { hasText: '遅刻連絡' });
+    this.lateMinutesInput = page.locator('input[type="number"]');
+    this.lateDialogConfirmButton = page.locator('button', { hasText: '遅刻を連絡する' });
+    this.lateDialogCancelButton = page.locator('button', { hasText: 'キャンセル' }).last();
+    this.lateDialogError = page.locator('p.text-red-400');
+
+    // Avatar overlay badges for attendance status
+    this.avatarCanceledBadge = page.locator('.bg-red-500').filter({ has: page.locator('svg.lucide-x') });
+    this.avatarLateBadge = page.locator('.bg-amber-500').filter({ has: page.locator('svg.lucide-clock') });
   }
 
   /**
@@ -204,5 +262,139 @@ export class DashboardPage {
     await this.page.screenshot({
       path: `test-results/screenshots/dashboard-${name}.png`,
     });
+  }
+
+  // ==========================================================================
+  // Attendance Management Methods
+  // ==========================================================================
+
+  /**
+   * Click the attendance cancel button on a confirmed dinner
+   * Opens the cancel confirmation dialog
+   */
+  async clickAttendanceCancelButton() {
+    await expect(this.attendanceCancelButton.first()).toBeVisible();
+    await this.attendanceCancelButton.first().click();
+  }
+
+  /**
+   * Click the late notification button on a confirmed dinner
+   * Opens the late notification dialog
+   */
+  async clickAttendanceLateButton() {
+    await expect(this.attendanceLateButton.first()).toBeVisible();
+    await this.attendanceLateButton.first().click();
+  }
+
+  /**
+   * Verify cancel dialog is open and shows penalty info
+   */
+  async verifyCancelDialogOpen() {
+    await expect(this.cancelDialogTitle).toBeVisible({ timeout: 5000 });
+    await expect(this.cancelDialogPenaltyInfo).toBeVisible();
+    await expect(this.cancelDialogConfirmButton).toBeVisible();
+    await expect(this.cancelDialogBackButton).toBeVisible();
+  }
+
+  /**
+   * Verify late dialog is open
+   */
+  async verifyLateDialogOpen() {
+    await expect(this.lateDialogTitle).toBeVisible({ timeout: 5000 });
+    await expect(this.lateMinutesInput).toBeVisible();
+    await expect(this.lateDialogConfirmButton).toBeVisible();
+  }
+
+  /**
+   * Confirm cancel in the dialog
+   */
+  async confirmCancel() {
+    await this.cancelDialogConfirmButton.click();
+  }
+
+  /**
+   * Cancel the cancel dialog (go back)
+   */
+  async dismissCancelDialog() {
+    await this.cancelDialogBackButton.click();
+  }
+
+  /**
+   * Enter late minutes and confirm
+   */
+  async submitLateNotification(minutes: number) {
+    await this.lateMinutesInput.fill(String(minutes));
+    await this.lateDialogConfirmButton.click();
+  }
+
+  /**
+   * Dismiss the late dialog
+   */
+  async dismissLateDialog() {
+    await this.lateDialogCancelButton.click();
+  }
+
+  /**
+   * Verify canceled status is shown
+   */
+  async verifyCanceledStatus() {
+    await expect(this.canceledStatus).toBeVisible({ timeout: 5000 });
+  }
+
+  /**
+   * Verify late status is shown with minutes
+   */
+  async verifyLateStatus(minutes?: number) {
+    await expect(this.lateStatus).toBeVisible({ timeout: 5000 });
+    if (minutes !== undefined) {
+      await expect(this.lateStatus).toContainText(`${minutes}分`);
+    }
+  }
+
+  /**
+   * Verify attendance buttons are hidden (after cancel or late)
+   */
+  async verifyAttendanceButtonsHidden() {
+    await expect(this.attendanceCancelButton).not.toBeVisible();
+    await expect(this.attendanceLateButton).not.toBeVisible();
+  }
+
+  /**
+   * Verify avatar has canceled badge overlay
+   */
+  async verifyAvatarCanceledBadge() {
+    await expect(this.avatarCanceledBadge.first()).toBeVisible();
+  }
+
+  /**
+   * Verify avatar has late badge overlay
+   */
+  async verifyAvatarLateBadge() {
+    await expect(this.avatarLateBadge.first()).toBeVisible();
+  }
+
+  /**
+   * Verify late dialog error message
+   */
+  async verifyLateDialogError(errorText?: string) {
+    await expect(this.lateDialogError).toBeVisible();
+    if (errorText) {
+      await expect(this.lateDialogError).toContainText(errorText);
+    }
+  }
+
+  /**
+   * Verify penalty amount shown in cancel dialog
+   */
+  async verifyCancelPenalty(isWithin24Hours: boolean) {
+    const expectedPenalty = isWithin24Hours ? '-50 pt' : '-30 pt';
+    const penaltyText = this.page.locator(`text=${expectedPenalty}`);
+    await expect(penaltyText).toBeVisible();
+
+    // Verify the correct row is highlighted (text-white font-medium)
+    const highlightedRow = isWithin24Hours
+      ? this.page.locator('li').filter({ hasText: '24時間以内のキャンセル' })
+      : this.page.locator('li').filter({ hasText: '通常キャンセル' });
+    await expect(highlightedRow).toHaveClass(/text-white/);
   }
 }

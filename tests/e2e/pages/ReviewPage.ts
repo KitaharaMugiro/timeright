@@ -57,6 +57,11 @@ export class ReviewPage {
   readonly notAvailableMessage: Locator;
   readonly reviewAccessTime: Locator;
 
+  // No-Show rating elements
+  readonly noShowButton: Locator;
+  readonly noShowDescription: Locator;
+  readonly noShowPenaltyWarning: Locator;
+
   constructor(page: Page) {
     this.page = page;
 
@@ -96,6 +101,13 @@ export class ReviewPage {
     this.notAvailableTitle = page.locator('h1', { hasText: 'レビューはまだできません' });
     this.notAvailableMessage = page.locator('p', { hasText: 'イベント開始から2時間後' });
     this.reviewAccessTime = page.locator('p', { hasText: 'レビュー可能時刻' });
+
+    // No-Show rating elements
+    this.noShowButton = page.locator('[data-testid="star-button-0"]');
+    this.noShowDescription = page.locator('[data-testid="rating-description"]').filter({
+      hasText: 'No-Show',
+    });
+    this.noShowPenaltyWarning = page.locator('text=-100pt');
   }
 
   /**
@@ -361,5 +373,67 @@ export class ReviewPage {
     await this.page.screenshot({
       path: `test-results/screenshots/review-${name}.png`,
     });
+  }
+
+  // ==========================================================================
+  // No-Show Rating Methods
+  // ==========================================================================
+
+  /**
+   * Select No-Show (rating 0) option
+   */
+  async selectNoShowRating() {
+    await this.noShowButton.click();
+  }
+
+  /**
+   * Verify No-Show button is visible with "NS" text
+   */
+  async verifyNoShowButtonVisible() {
+    await expect(this.noShowButton).toBeVisible();
+    await expect(this.noShowButton).toContainText('NS');
+  }
+
+  /**
+   * Verify No-Show is selected (red styling)
+   */
+  async verifyNoShowSelected() {
+    const className = await this.noShowButton.getAttribute('class');
+    expect(className).toContain('bg-red-500');
+  }
+
+  /**
+   * Verify No-Show description and penalty warning
+   */
+  async verifyNoShowDescription() {
+    await expect(this.noShowDescription).toBeVisible();
+    await expect(this.noShowPenaltyWarning).toBeVisible();
+  }
+
+  /**
+   * Complete a No-Show review for a participant
+   */
+  async reviewParticipantAsNoShow(options: {
+    index?: number;
+    name?: string;
+    comment?: string;
+  }) {
+    // Select participant
+    if (options.name) {
+      await this.selectParticipantByName(options.name);
+    } else {
+      await this.selectParticipant(options.index ?? 0);
+    }
+
+    // Select No-Show rating
+    await this.selectNoShowRating();
+
+    // Set comment if provided
+    if (options.comment) {
+      await this.setComment(options.comment);
+    }
+
+    // Submit
+    await this.submitReview();
   }
 }
