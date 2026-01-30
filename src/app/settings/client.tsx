@@ -9,6 +9,7 @@ import {
   CreditCard,
   FileText,
   Shield,
+  Scale,
   LogOut,
   Trash2,
   ChevronRight,
@@ -39,6 +40,7 @@ const menuItems = [
     items: [
       { label: '利用規約', href: '/terms', icon: FileText },
       { label: 'プライバシーポリシー', href: '/privacy', icon: Shield },
+      { label: '特定商取引法に基づく表記', href: '/legal', icon: Scale },
     ],
   },
 ];
