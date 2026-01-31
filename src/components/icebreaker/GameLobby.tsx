@@ -114,7 +114,7 @@ export function GameLobby({
                   <UserAvatar
                     displayName={displayName}
                     avatarUrl={member?.avatar_url}
-                    gender={member?.gender}
+                    gender={member?.gender || 'male'}
                     size="sm"
                   />
                   <div>

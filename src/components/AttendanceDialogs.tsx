@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertTriangle, Clock, Loader2 } from 'lucide-react';
+import { X, AlertTriangle, Clock, Loader2, Pencil } from 'lucide-react';
 
 interface CancelDialogProps {
   isOpen: boolean;
@@ -135,12 +135,23 @@ interface LateDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (minutes: number) => Promise<void>;
+  initialMinutes?: number | null;
 }
 
-export function LateDialog({ isOpen, onClose, onConfirm }: LateDialogProps) {
+export function LateDialog({ isOpen, onClose, onConfirm, initialMinutes }: LateDialogProps) {
   const [minutes, setMinutes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ダイアログが開いたときに初期値をセット
+  useEffect(() => {
+    if (isOpen && initialMinutes) {
+      setMinutes(String(initialMinutes));
+    } else if (!isOpen) {
+      setMinutes('');
+      setError(null);
+    }
+  }, [isOpen, initialMinutes]);
 
   const handleConfirm = async () => {
     const mins = parseInt(minutes, 10);
@@ -201,9 +212,15 @@ export function LateDialog({ isOpen, onClose, onConfirm }: LateDialogProps) {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-amber-500/10 rounded-lg">
-                    <Clock className="w-5 h-5 text-amber-400" />
+                    {initialMinutes ? (
+                      <Pencil className="w-5 h-5 text-amber-400" />
+                    ) : (
+                      <Clock className="w-5 h-5 text-amber-400" />
+                    )}
                   </div>
-                  <h2 className="text-lg font-semibold text-white">遅刻連絡</h2>
+                  <h2 className="text-lg font-semibold text-white">
+                    {initialMinutes ? '遅刻時間の変更' : '遅刻連絡'}
+                  </h2>
                 </div>
                 <button
                   onClick={handleClose}

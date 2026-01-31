@@ -349,7 +349,7 @@ export function DashboardClient({
                           whileTap={{ scale: 0.98 }}
                         >
                           <Sparkles className="w-4 h-4" />
-                          Ice Breaker を始める
+                          ゲームを始める
                         </motion.button>
                       </Link>
                     )}
