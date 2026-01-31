@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/select';
 import { UserAvatar } from '@/components/UserAvatar';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
-import { ArrowLeft, Plus, X, Users, Store, Check, Trash2, UserPlus, Ban, Bell } from 'lucide-react';
+import { ArrowLeft, Plus, X, Users, Store, Check, Trash2, UserPlus, Ban, Bell, Wand2 } from 'lucide-react';
 import { ReminderConfirmationDialog } from '@/components/admin/ReminderConfirmationDialog';
 import type { Event, Participation, User, Match, Guest, Gender, ParticipationMood, BudgetLevel } from '@/types/database';
 
@@ -235,6 +235,138 @@ export function EventDetailClient({
       members: [],
     };
     setTables([...tables, newTable]);
+  };
+
+  // Auto-assign participants to tables
+  const autoAssign = () => {
+    // Collect all members (participants + guests) grouped by their group_id
+    interface GroupInfo {
+      groupId: string;
+      memberIds: string[]; // user_id or guest:guest_id
+      maleCount: number;
+      femaleCount: number;
+      size: number;
+    }
+
+    const groups: GroupInfo[] = [];
+
+    // Process registered participants
+    for (const [groupId, members] of Object.entries(groupedParticipations)) {
+      const maleCount = members.filter(m => m.users.gender === 'male').length;
+      const femaleCount = members.filter(m => m.users.gender === 'female').length;
+      groups.push({
+        groupId,
+        memberIds: members.map(m => m.user_id),
+        maleCount,
+        femaleCount,
+        size: members.length,
+      });
+    }
+
+    // Process guests
+    for (const [groupId, members] of Object.entries(groupedGuests)) {
+      const maleCount = members.filter(g => g.gender === 'male').length;
+      const femaleCount = members.filter(g => g.gender === 'female').length;
+      groups.push({
+        groupId,
+        memberIds: members.map(g => toGuestId(g.id)),
+        maleCount,
+        femaleCount,
+        size: members.length,
+      });
+    }
+
+    if (groups.length === 0) return;
+
+    // Calculate total people
+    const totalPeople = groups.reduce((sum, g) => sum + g.size, 0);
+
+    // Calculate optimal number of tables (target 5 people per table, min 3, max 8)
+    const targetPerTable = 5;
+    let numTables = Math.round(totalPeople / targetPerTable);
+    numTables = Math.max(1, numTables); // At least 1 table
+
+    // Ensure we can fit everyone (max 8 per table)
+    while (numTables * 8 < totalPeople) {
+      numTables++;
+    }
+
+    // Ensure tables aren't too empty (min 3 per table if possible)
+    while (numTables > 1 && totalPeople / numTables < 3) {
+      numTables--;
+    }
+
+    // Create empty tables
+    const newTables: TableGroup[] = Array.from({ length: numTables }, (_, i) => ({
+      id: `auto-${Date.now()}-${i}`,
+      restaurant_name: '',
+      restaurant_url: '',
+      reservation_name: '',
+      members: [],
+    }));
+
+    // Track gender counts per table
+    const tableStats = newTables.map(() => ({ male: 0, female: 0, total: 0 }));
+
+    // Sort groups: larger groups first, then by gender balance preference
+    const sortedGroups = [...groups].sort((a, b) => {
+      // Larger groups first (harder to place)
+      if (b.size !== a.size) return b.size - a.size;
+      // Then by total count
+      return (b.maleCount + b.femaleCount) - (a.maleCount + a.femaleCount);
+    });
+
+    // Assign groups to tables
+    for (const group of sortedGroups) {
+      // Find the best table for this group
+      let bestTableIdx = 0;
+      let bestScore = -Infinity;
+
+      for (let i = 0; i < newTables.length; i++) {
+        const stats = tableStats[i];
+        const newTotal = stats.total + group.size;
+
+        // Skip if would exceed max size
+        if (newTotal > 8) continue;
+
+        // Calculate score based on:
+        // 1. Gender balance improvement
+        // 2. Table size balance
+        const currentGenderDiff = Math.abs(stats.male - stats.female);
+        const newMale = stats.male + group.maleCount;
+        const newFemale = stats.female + group.femaleCount;
+        const newGenderDiff = Math.abs(newMale - newFemale);
+        const genderBalanceImprovement = currentGenderDiff - newGenderDiff;
+
+        // Prefer tables with fewer people (balance table sizes)
+        const sizeBalanceScore = (8 - stats.total) * 2;
+
+        // Bonus for keeping groups together and improving balance
+        const score = genderBalanceImprovement * 10 + sizeBalanceScore;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestTableIdx = i;
+        }
+      }
+
+      // Assign group to best table
+      newTables[bestTableIdx].members.push(...group.memberIds);
+      tableStats[bestTableIdx].male += group.maleCount;
+      tableStats[bestTableIdx].female += group.femaleCount;
+      tableStats[bestTableIdx].total += group.size;
+    }
+
+    // Remove empty tables
+    const nonEmptyTables = newTables.filter(t => t.members.length > 0);
+
+    // If all tables are empty, something went wrong
+    if (nonEmptyTables.length === 0) {
+      alert('自動割り当てに失敗しました');
+      return;
+    }
+
+    setTables(nonEmptyTables);
   };
 
   // Remove a table
@@ -1066,10 +1198,26 @@ export function EventDetailClient({
                 <Store className="w-5 h-5" />
                 テーブル ({tables.length})
               </h2>
-              <Button variant="outline" size="sm" onClick={addTable}>
-                <Plus className="w-4 h-4 mr-1" />
-                テーブル追加
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (tables.length > 0 && !confirm('現在のテーブル設定をリセットして自動割り当てしますか？')) {
+                      return;
+                    }
+                    autoAssign();
+                  }}
+                  disabled={participations.length + guests.length === 0}
+                >
+                  <Wand2 className="w-4 h-4 mr-1" />
+                  自動割り当て
+                </Button>
+                <Button variant="outline" size="sm" onClick={addTable}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  テーブル追加
+                </Button>
+              </div>
             </div>
 
             {tables.length === 0 ? (
@@ -1194,7 +1342,8 @@ export function EventDetailClient({
           <CardContent className="p-4">
             <h3 className="font-semibold mb-2 text-white">使い方</h3>
             <ul className="text-sm text-slate-400 space-y-1">
-              <li>• 参加者をクリックして選択し、テーブルをクリックして割り当てます</li>
+              <li>• <strong className="text-info">自動割り当て</strong>：参加者を性別バランスを考慮して自動でテーブルに振り分けます</li>
+              <li>• 参加者をクリックして選択し、テーブルをクリックして手動で割り当てることもできます</li>
               <li>• グループで参加している人は一緒に移動します</li>
               <li>• 「ゲスト追加」で登録していない外部参加者を追加できます</li>
               <li>• 各テーブルは3〜8人で構成してください（推奨4〜6人）</li>

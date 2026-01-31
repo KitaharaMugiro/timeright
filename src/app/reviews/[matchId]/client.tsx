@@ -90,7 +90,26 @@ export function ReviewClient({
           {match.restaurant_name} でのディナーはいかがでしたか？
         </p>
 
-        {allReviewed ? (
+        {members.length === 0 ? (
+          <Card data-testid="review-no-members-card" className="bg-white/5 border-white/10">
+            <CardContent className="p-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-slate-500/20 text-slate-400 flex items-center justify-center mx-auto mb-4" data-testid="no-members-icon">
+                <Check className="w-8 h-8" />
+              </div>
+              <h2 className="text-lg font-semibold mb-2 text-white" data-testid="no-members-title">
+                レビュー対象者なし
+              </h2>
+              <p className="text-slate-400 mb-6" data-testid="no-members-message">
+                このグループには登録ユーザーがいないため、
+                <br />
+                レビュー対象者がいません。
+              </p>
+              <Link href="/dashboard">
+                <Button className="w-full" data-testid="no-members-dashboard-btn">ダッシュボードへ</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : allReviewed ? (
           <Card data-testid="review-completion-card" className="bg-white/5 border-white/10">
             <CardContent className="p-6 text-center">
               <div className="w-16 h-16 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center mx-auto mb-4" data-testid="completion-icon">

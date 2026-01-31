@@ -56,12 +56,16 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
     );
   }
 
-  // Get other members' info
-  const otherMemberIds = match.table_members.filter((id: string) => id !== user.id);
-  const { data: membersData } = await supabase
-    .from('users')
-    .select('id, display_name, personality_type, job, avatar_url, gender')
-    .in('id', otherMemberIds);
+  // Get other members' info (filter out guest IDs that start with 'guest:')
+  const otherMemberIds = match.table_members.filter(
+    (id: string) => id !== user.id && !id.startsWith('guest:')
+  );
+  const { data: membersData } = otherMemberIds.length > 0
+    ? await supabase
+        .from('users')
+        .select('id, display_name, personality_type, job, avatar_url, gender')
+        .in('id', otherMemberIds)
+    : { data: [] };
 
   const members = (membersData || []) as Pick<User, 'id' | 'display_name' | 'personality_type' | 'job' | 'avatar_url' | 'gender'>[];
 

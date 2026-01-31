@@ -317,6 +317,7 @@ export function DashboardClient({
                           };
                         })}
                       showJob
+                      noOverlap
                       className="scale-110"
                     />
                     <span className="text-slate-300">
@@ -503,6 +504,7 @@ export function DashboardClient({
                                 };
                               })}
                             showJob
+                            noOverlap
                           />
                           <span className="text-sm text-slate-400">
                             他{match.table_members.filter((id) => id !== user.id).length}人と食事

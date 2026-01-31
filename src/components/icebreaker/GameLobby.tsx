@@ -100,9 +100,8 @@ export function GameLobby({
         <div className="space-y-2">
           {players.map((player) => {
             const member = getMemberInfo(player.user_id);
-            if (!member) return null;
-
             const playerIsHost = player.user_id === session.host_user_id;
+            const displayName = member?.display_name ?? '参加者';
 
             return (
               <motion.div
@@ -113,15 +112,15 @@ export function GameLobby({
               >
                 <div className="flex items-center gap-3">
                   <UserAvatar
-                    displayName={member.display_name}
-                    avatarUrl={member.avatar_url}
-                    gender={member.gender}
+                    displayName={displayName}
+                    avatarUrl={member?.avatar_url}
+                    gender={member?.gender}
                     size="sm"
                   />
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-white font-medium">
-                        {member.display_name}
+                        {displayName}
                       </span>
                       {playerIsHost && (
                         <Crown className="w-4 h-4 text-amber-400" />

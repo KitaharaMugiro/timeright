@@ -17,6 +17,7 @@ interface AvatarCirclesProps {
   numPeople?: number
   avatarUrls: Avatar[]
   showJob?: boolean
+  noOverlap?: boolean
 }
 
 export const AvatarCircles = ({
@@ -24,9 +25,10 @@ export const AvatarCircles = ({
   className,
   avatarUrls,
   showJob = false,
+  noOverlap = false,
 }: AvatarCirclesProps) => {
   return (
-    <div className={cn("z-10 flex -space-x-4 rtl:space-x-reverse", className)}>
+    <div className={cn("z-10 flex", noOverlap ? "gap-2" : "-space-x-4 rtl:space-x-reverse", className)}>
       {avatarUrls.map((avatar, index) => {
         const hasImage = avatar.imageUrl && avatar.imageUrl !== '/default-avatar.png'
         const isCanceled = avatar.attendanceStatus === 'canceled'

@@ -83,11 +83,16 @@ export default async function IcebreakerPage({ params }: IcebreakerPageProps) {
     }
   }
 
-  // Get table members info
-  const { data: membersData } = await supabase
-    .from('users')
-    .select('id, display_name, avatar_url, gender')
-    .in('id', userMatch.table_members);
+  // Get table members info (filter out guest IDs that start with 'guest:')
+  const userMemberIds = userMatch.table_members.filter(
+    (id: string) => !id.startsWith('guest:')
+  );
+  const { data: membersData } = userMemberIds.length > 0
+    ? await supabase
+        .from('users')
+        .select('id, display_name, avatar_url, gender')
+        .in('id', userMemberIds)
+    : { data: [] };
 
   const members = (membersData || []) as Pick<User, 'id' | 'display_name' | 'avatar_url' | 'gender'>[];
 
