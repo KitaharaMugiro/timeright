@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 
-type ContentType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things';
+type ContentType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things' | 'ng-word';
 
 const TABLE_MAP: Record<ContentType, string> = {
   questions: 'icebreaker_questions',
   'would-you-rather': 'icebreaker_would_you_rather',
   'word-wolf': 'icebreaker_word_wolf',
   'common-things': 'icebreaker_common_things',
+  'ng-word': 'icebreaker_ng_word',
 };
 
 // GET - アクティブなお題を取得

@@ -11,6 +11,8 @@ interface CheckoutRequest {
   mood?: ParticipationMood;
   mood_text?: string | null;
   budget_level?: BudgetLevel;
+  // For invite flow
+  invite_token?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -59,14 +61,30 @@ export async function POST(request: NextRequest) {
       metadata.budget_level = String(body.budget_level || 2);
     }
 
-    // Set success/cancel URLs based on whether event info is provided
-    const successUrl = body.event_id
-      ? `${process.env.NEXT_PUBLIC_APP_URL}/events/${body.event_id}/entry/success`
-      : `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`;
+    // Add invite info to metadata if provided
+    if (body.invite_token) {
+      metadata.invite_token = body.invite_token;
+      metadata.mood = body.mood || 'lively';
+      if (body.mood_text) {
+        metadata.mood_text = body.mood_text;
+      }
+      metadata.budget_level = String(body.budget_level || 2);
+    }
 
-    const cancelUrl = body.event_id
-      ? `${process.env.NEXT_PUBLIC_APP_URL}/events/${body.event_id}/entry?canceled=true`
-      : `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/subscribe?canceled=true`;
+    // Set success/cancel URLs based on the flow
+    let successUrl: string;
+    let cancelUrl: string;
+
+    if (body.event_id) {
+      successUrl = `${process.env.NEXT_PUBLIC_APP_URL}/events/${body.event_id}/entry/success`;
+      cancelUrl = `${process.env.NEXT_PUBLIC_APP_URL}/events/${body.event_id}/entry?canceled=true`;
+    } else if (body.invite_token) {
+      successUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?invite_success=true`;
+      cancelUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/enter?canceled=true`;
+    } else {
+      successUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`;
+      cancelUrl = `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/subscribe?canceled=true`;
+    }
 
     // Create checkout session
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
@@ -83,9 +101,10 @@ export async function POST(request: NextRequest) {
       metadata,
     };
 
-    // Apply invite coupon if user has pending invite and hasn't used coupon yet
+    // Apply invite coupon if user has pending invite (from login flow) or invite_token (from direct flow)
+    const hasInviteToken = user.pending_invite_token || body.invite_token;
     const isEligibleForInviteCoupon =
-      user.pending_invite_token &&
+      hasInviteToken &&
       !user.has_used_invite_coupon &&
       process.env.STRIPE_REFERRAL_COUPON_ID;
 

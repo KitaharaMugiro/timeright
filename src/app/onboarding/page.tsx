@@ -267,8 +267,8 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleCompleteOnboarding = async () => {
-    if (!personalityType) return;
+  const handleCompleteOnboarding = async (skipPersonality = false) => {
+    if (!skipPersonality && !personalityType) return;
 
     setLoading(true);
     try {
@@ -277,7 +277,7 @@ export default function OnboardingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...profile,
-          personality_type: personalityType,
+          ...(personalityType && { personality_type: personalityType }),
         }),
       });
 
@@ -533,6 +533,18 @@ export default function OnboardingPage() {
                       }}
                     />
                   ))}
+                </div>
+
+                {/* Skip button */}
+                <div className="mt-6 text-center">
+                  <button
+                    type="button"
+                    onClick={() => handleCompleteOnboarding(true)}
+                    disabled={loading}
+                    className="text-sm text-slate-500 hover:text-slate-400 transition-colors underline underline-offset-4"
+                  >
+                    {loading ? '処理中...' : 'スキップして始める'}
+                  </button>
                 </div>
               </GlassCard>
             </motion.div>

@@ -8,7 +8,7 @@ interface OnboardingData {
   gender: Gender;
   birth_date: string;
   job: string;
-  personality_type: PersonalityType;
+  personality_type?: PersonalityType;
 }
 
 export async function POST(request: NextRequest) {
@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
 
     const data: OnboardingData = await request.json();
 
-    // Validate required fields
-    if (!data.display_name || !data.gender || !data.birth_date || !data.job || !data.personality_type) {
+    // Validate required fields (personality_type is optional - can be skipped)
+    if (!data.display_name || !data.gender || !data.birth_date || !data.job) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         gender: data.gender,
         birth_date: data.birth_date,
         job: data.job,
-        personality_type: data.personality_type,
+        ...(data.personality_type && { personality_type: data.personality_type }),
       })
       .eq('id', userId);
 

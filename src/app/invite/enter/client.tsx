@@ -11,6 +11,7 @@ import type { ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface InviteEnterClientProps {
   isLoggedIn: boolean;
+  hasActiveSubscription: boolean;
   pendingInviteToken: string | null;
 }
 
@@ -70,6 +71,7 @@ const budgetOptions: { value: BudgetLevel; label: string; description: string; s
 
 export function InviteEnterClient({
   isLoggedIn,
+  hasActiveSubscription,
   pendingInviteToken,
 }: InviteEnterClientProps) {
   const router = useRouter();
@@ -165,26 +167,50 @@ export function InviteEnterClient({
 
     setLoading(true);
     try {
-      const response = await fetch('/api/invite/accept', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: inviteInfo.token,
-          mood,
-          mood_text: mood === 'other' ? moodText : null,
-          budget_level: budgetLevel,
-        }),
-      });
+      if (hasActiveSubscription) {
+        // User has subscription - directly accept the invite
+        const response = await fetch('/api/invite/accept', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: inviteInfo.token,
+            mood,
+            mood_text: mood === 'other' ? moodText : null,
+            budget_level: budgetLevel,
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to accept invite');
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to accept invite');
+        }
+
+        router.push('/dashboard');
+      } else {
+        // User needs subscription - redirect to checkout with invite info
+        const response = await fetch('/api/stripe/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invite_token: inviteInfo.token,
+            mood,
+            mood_text: mood === 'other' ? moodText : null,
+            budget_level: budgetLevel,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create checkout');
+        }
+
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
       }
-
-      router.push('/dashboard');
     } catch (error) {
-      console.error('Accept invite error:', error);
+      console.error('Submit invite error:', error);
       alert('エラーが発生しました。もう一度お試しください。');
     } finally {
       setLoading(false);

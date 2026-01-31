@@ -101,7 +101,7 @@ export default defineConfig({
   webServer: {
     // Run Next.js with test environment - set DOTENV_KEY to disable .env.local loading
     // Then use explicit env vars to connect to local Supabase
-    command: 'NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321  SUPABASE_SERVICE_ROLE_KEY=sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz next dev',
+    command: 'NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321  next dev',
     url: 'http://localhost:3000',
     // Reuse existing server if running (e.g., in development)
     // Set PLAYWRIGHT_FRESH_SERVER=1 to always start fresh

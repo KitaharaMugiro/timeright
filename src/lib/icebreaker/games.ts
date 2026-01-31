@@ -113,6 +113,20 @@ export const GAME_DEFINITIONS: GameDefinition[] = [
       '全体に向けて相手を紹介',
     ],
   },
+  {
+    id: 'ng_word',
+    name: 'NGワードゲーム',
+    description: '自分のNGワードを言わずに会話',
+    emoji: '🚫',
+    minPlayers: 3,
+    maxPlayers: 8,
+    hasRounds: false,
+    instructions: [
+      '全員にNGワードが配られます',
+      '自分のNGワードは見えません',
+      '会話中に言ってしまったらアウト！',
+    ],
+  },
 ];
 
 export function getGameDefinition(gameType: IcebreakerGameType): GameDefinition {

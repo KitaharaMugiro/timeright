@@ -5,7 +5,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { generateInviteToken, generateShortCode } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import Stripe from 'stripe';
-import type { User, EntryType, ParticipationMood, BudgetLevel } from '@/types/database';
+import type { User, EntryType, ParticipationMood, BudgetLevel, Participation, Event } from '@/types/database';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -124,6 +124,82 @@ export async function POST(request: NextRequest) {
                 short_code: shortCode,
                 status: 'pending',
               });
+            }
+          }
+
+          // 招待からの参加登録を作成
+          const inviteTokenFromMetadata = session.metadata?.invite_token;
+          if (inviteTokenFromMetadata) {
+            const mood = (session.metadata?.mood || 'lively') as ParticipationMood;
+            const moodText = session.metadata?.mood_text || null;
+            const budgetLevel = (parseInt(session.metadata?.budget_level || '2', 10) || 2) as BudgetLevel;
+
+            // Get the original participation by invite token
+            const { data: participationData } = await supabase
+              .from('participations')
+              .select('*, events(*)')
+              .eq('invite_token', inviteTokenFromMetadata)
+              .single();
+
+            const originalParticipation = participationData as (Participation & { events: Event }) | null;
+
+            if (originalParticipation && originalParticipation.events.status === 'open') {
+              // Check for existing participation
+              const { data: existingData } = await supabase
+                .from('participations')
+                .select('id, entry_type, group_id')
+                .eq('user_id', userId)
+                .eq('event_id', originalParticipation.event_id)
+                .neq('status', 'canceled')
+                .single();
+
+              const existingParticipation = existingData as { id: string; entry_type: string; group_id: string } | null;
+
+              if (existingParticipation) {
+                // Solo entry exists - link to friend's group
+                const { count: groupCount } = await supabase
+                  .from('participations')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('group_id', originalParticipation.group_id)
+                  .eq('event_id', originalParticipation.event_id)
+                  .neq('status', 'canceled');
+
+                if (!groupCount || groupCount < 3) {
+                  await (supabase.from('participations') as any)
+                    .update({
+                      group_id: originalParticipation.group_id,
+                      entry_type: 'pair',
+                      mood,
+                      mood_text: moodText,
+                      budget_level: budgetLevel,
+                    })
+                    .eq('id', existingParticipation.id);
+                }
+              } else {
+                // Check group size limit (max 3 members)
+                const { count: groupCount } = await supabase
+                  .from('participations')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('group_id', originalParticipation.group_id)
+                  .eq('event_id', originalParticipation.event_id)
+                  .neq('status', 'canceled');
+
+                if (!groupCount || groupCount < 3) {
+                  // Create participation with same group_id
+                  await (supabase.from('participations') as any).insert({
+                    user_id: userId,
+                    event_id: originalParticipation.event_id,
+                    group_id: originalParticipation.group_id,
+                    entry_type: 'pair',
+                    mood,
+                    mood_text: moodText,
+                    budget_level: budgetLevel,
+                    invite_token: generateInviteToken(),
+                    short_code: generateShortCode(),
+                    status: 'pending',
+                  });
+                }
+              }
             }
           }
         }

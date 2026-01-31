@@ -6,7 +6,8 @@ export type IcebreakerGameType =
   | 'common_things'
   | 'whodunit'
   | 'guess_favorite'
-  | 'peer_intro';
+  | 'peer_intro'
+  | 'ng_word';
 
 export type IcebreakerSessionStatus = 'waiting' | 'playing' | 'finished';
 
@@ -82,6 +83,11 @@ export interface GameData {
   interviewPairs?: [string, string][];
   currentPairIndex2?: number;
   introductions?: { aboutUserId: string; byUserId: string; text: string }[];
+
+  // NG Word
+  ngWordAssignments?: { userId: string; ngWord: string }[];
+  eliminatedPlayers?: string[];
+  discussionTopic?: string;
 }
 
 export interface PlayerData {
@@ -111,6 +117,10 @@ export interface PlayerData {
   partnerId?: string;
   notes?: string;
   introduction?: string;
+
+  // NG Word
+  myNgWord?: string;
+  isEliminated?: boolean;
 }
 
 // Question types for data files
@@ -143,4 +153,15 @@ export interface CommonThingsCategory {
   id: string;
   name: string;
   prompts: string[];
+}
+
+export interface NgWordItem {
+  id: string;
+  word: string;
+  category: string;
+}
+
+export interface NgWordTopic {
+  id: string;
+  topic: string;
 }

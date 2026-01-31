@@ -18,6 +18,7 @@ import { CommonThingsGame } from '@/components/icebreaker/games/CommonThingsGame
 import { WhodunitGame } from '@/components/icebreaker/games/WhodunitGame';
 import { GuessFavoriteGame } from '@/components/icebreaker/games/GuessFavoriteGame';
 import { PeerIntroGame } from '@/components/icebreaker/games/PeerIntroGame';
+import { NgWordGame } from '@/components/icebreaker/games/NgWordGame';
 
 interface IcebreakerClientProps {
   matchId: string;
@@ -177,6 +178,8 @@ export function IcebreakerClient({
         return <GuessFavoriteGame {...gameProps} />;
       case 'peer_intro':
         return <PeerIntroGame {...gameProps} />;
+      case 'ng_word':
+        return <NgWordGame {...gameProps} />;
       default:
         return <div>Unknown game type</div>;
     }
