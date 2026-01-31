@@ -5,7 +5,7 @@ import { Page, Locator, expect } from '@playwright/test';
  *
  * The subscription settings page shows:
  * - Current subscription status (active, canceled, past_due, none)
- * - Price display (1,980 yen/month)
+ * - Plan title
  * - Feature list
  * - Manage subscription button (for active subscriptions)
  * - Cancellation message with end date (for canceled subscriptions)
@@ -23,7 +23,7 @@ export class SubscriptionSettingsPage {
   // Status display elements
   readonly statusBadge: Locator;
   readonly statusLabel: Locator;
-  readonly priceDisplay: Locator;
+  readonly planTitle: Locator;
   readonly statusDescription: Locator;
 
   // Feature list
@@ -57,7 +57,7 @@ export class SubscriptionSettingsPage {
       hasText: /有効|解約済み|支払い遅延|未登録/,
     });
     this.statusLabel = this.statusBadge;
-    this.priceDisplay = page.locator('text=1,980');
+    this.planTitle = page.locator('text=月額プラン');
     this.statusDescription = page.locator('p').filter({
       hasText: /サブスクリプション|次回更新日|お支払い情報/,
     });
@@ -98,7 +98,7 @@ export class SubscriptionSettingsPage {
    * Verify page loaded correctly
    */
   async verifyPageLoaded() {
-    await expect(this.priceDisplay).toBeVisible();
+    await expect(this.planTitle).toBeVisible();
     await expect(this.statusBadge).toBeVisible();
   }
 

@@ -133,7 +133,7 @@ export function InviteClient({
             </div>
 
             <p className="text-xs text-slate-500 mt-4">
-              Dine Tokyo メンバーへの登録が必要です（初月無料・翌月から月額1,980円）
+              Dine Tokyo メンバーへの登録が必要です（初月無料）
             </p>
           </CardContent>
         </Card>

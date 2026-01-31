@@ -119,6 +119,18 @@ export async function POST(request: NextRequest) {
         ...sessionParams.metadata,
         is_invite_coupon: 'true',
       };
+    } else if (process.env.STRIPE_SOUGYOU_MEMBERSHIP_COUPON_ID) {
+      // Apply founding member coupon for non-invite signups
+      // This coupon provides permanent discount for early adopters (first 1,000 members)
+      sessionParams.discounts = [
+        {
+          coupon: process.env.STRIPE_SOUGYOU_MEMBERSHIP_COUPON_ID,
+        },
+      ];
+      sessionParams.metadata = {
+        ...sessionParams.metadata,
+        is_sougyou_member: 'true',
+      };
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);

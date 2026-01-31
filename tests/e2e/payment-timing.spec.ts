@@ -232,7 +232,6 @@ test.describe('Flow 2: Unsubscribed User Event Entry (Payment Required)', () => 
       // Verify the orange box with payment notice text
       await expect(eventEntryPage.paymentNotice).toBeVisible();
       await expect(eventEntryPage.paymentNoticeText).toContainText('月額プラン');
-      await expect(eventEntryPage.paymentNoticeText).toContainText('1,980');
     });
 
     test('should show "決済して参加する" button for unsubscribed user', async ({ page }) => {

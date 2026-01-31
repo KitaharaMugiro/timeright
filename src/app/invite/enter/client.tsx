@@ -344,8 +344,8 @@ export function InviteEnterClient({
               {!isLoggedIn && (
                 <p className="text-xs text-slate-500 mt-4">
                   {inviteInfo.isEligibleForCoupon
-                    ? 'Dine Tokyo(ダイントーキョー) メンバーへの登録が必要です（初月無料・翌月から月額1,980円）'
-                    : 'Dine Tokyo(ダイントーキョー) メンバー（月額1,980円）への登録が必要です'}
+                    ? 'Dine Tokyo(ダイントーキョー) メンバーへの登録が必要です（初月無料）'
+                    : 'Dine Tokyo(ダイントーキョー) メンバーへの登録が必要です'}
                 </p>
               )}
 

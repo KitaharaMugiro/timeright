@@ -317,8 +317,62 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Founder Story Section */}
+      {/* Pricing Section - Founding Member */}
       <section className="py-24 px-4 bg-slate-900">
+        <div className="max-w-2xl mx-auto">
+          <BlurFade>
+            <div className="text-center mb-8">
+              <motion.div
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 mb-6"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                <span className="text-sm font-medium text-amber-400">
+                  🎉 最初の1,000名限定
+                </span>
+              </motion.div>
+              <h2 className="font-serif text-3xl md:text-4xl text-white mb-4">
+                あなたの席は、一生この価格で。
+              </h2>
+            </div>
+
+            <GlassCard className="p-8 md:p-10">
+              <div className="text-center mb-8">
+                <div className="mb-6">
+                  <span className="text-slate-400 line-through text-xl">通常価格: ¥3,980/月</span>
+                </div>
+                <div className="flex items-baseline justify-center gap-2 mb-2">
+                  <AnimatedGradientText className="text-5xl md:text-6xl font-bold">
+                    ¥1,980
+                  </AnimatedGradientText>
+                  <span className="text-xl text-slate-400">/月</span>
+                </div>
+                <p className="text-amber-500 font-medium">創設メンバー価格（永久継続）</p>
+              </div>
+
+              <div className="border-t border-slate-700 pt-6">
+                <p className="text-center text-slate-300">
+                  <span className="text-amber-400 font-medium">1回あたりワンコイン（約500円）</span>
+                  <br />
+                  <span className="text-slate-400 text-sm mt-2 block">
+                    週に一度の新しい出会いを、コーヒー1杯の価格で。
+                  </span>
+                </p>
+              </div>
+
+              <div className="mt-8 flex justify-center">
+                <ShimmerButton onClick={handleLineOA} variant="accent" className="text-lg px-8 py-4">
+                  今すぐLINEではじめる
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </ShimmerButton>
+              </div>
+            </GlassCard>
+          </BlurFade>
+        </div>
+      </section>
+
+      {/* Founder Story Section */}
+      <section className="py-24 px-4 bg-slate-950">
         <div className="max-w-2xl mx-auto">
           <BlurFade>
             <GlassCard className="p-8 md:p-12">

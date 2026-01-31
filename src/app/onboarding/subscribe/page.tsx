@@ -92,17 +92,14 @@ export default function SubscribePage() {
                   </motion.div>
 
                   <motion.div
-                    className="text-5xl font-bold"
+                    className="text-2xl font-bold"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
                   >
-                    <AnimatedGradientText>¥1,980</AnimatedGradientText>
-                    <span className="text-base font-normal text-slate-400">
-                      /月
-                    </span>
+                    <AnimatedGradientText>月額サブスクリプション</AnimatedGradientText>
                   </motion.div>
-                  <p className="text-sm text-slate-500 mt-1">税込</p>
+                  <p className="text-sm text-slate-500 mt-2">お支払い画面で料金をご確認ください</p>
                 </div>
 
                 <ul className="space-y-4 mb-8">

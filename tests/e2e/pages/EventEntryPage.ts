@@ -90,7 +90,7 @@ export class EventEntryPage {
     this.entryTypeSummary = page.getByText(/参加方法：/).locator('xpath=..');
     this.moodSummary = page.getByText(/気分：/).locator('xpath=..');
     this.paymentNotice = page.locator('.bg-orange-50');
-    this.paymentNoticeText = page.getByText('イベントに参加するには月額プラン（¥1,980/月）への登録が必要です');
+    this.paymentNoticeText = page.getByText('イベントに参加するには月額プランへの登録が必要です');
     this.confirmButton = page.getByRole('button', { name: '参加を確定する' });
     this.paymentConfirmButton = page.getByRole('button', { name: '決済して参加する' });
     this.confirmBackButton = page.locator('[class*="CardContent"]').getByRole('button', { name: '戻る' });

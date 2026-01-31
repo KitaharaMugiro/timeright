@@ -504,7 +504,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
               {subscriptionStatus !== 'active' && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
                   <p className="text-sm text-amber-400">
-                    イベントに参加するには月額プラン（¥1,980/月）への登録が必要です。
+                    イベントに参加するには月額プランへの登録が必要です。
                   </p>
                 </div>
               )}

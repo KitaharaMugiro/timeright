@@ -149,8 +149,7 @@ export function SubscriptionClient({ user }: SubscriptionClientProps) {
               </div>
 
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-3xl font-bold text-white">¥1,980</span>
-                <span className="text-slate-400">/月</span>
+                <span className="text-2xl font-bold text-white">月額プラン</span>
               </div>
 
               <p className="text-slate-400 mb-6">{status.description}</p>

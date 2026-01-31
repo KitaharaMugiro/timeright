@@ -22,7 +22,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Dine Tokyo(ダイントーキョー) - 目的のない出会いを、友達と。",
-  description: "4-6人のソーシャルディナーで、新しい出会いを楽しむ。月額1,980円で参加し放題。",
+  description: "4-6人のソーシャルディナーで、新しい出会いを楽しむ。月額サブスクで参加し放題。",
   icons: {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Dine Tokyo(ダイントーキョー) - 目的のない出会いを、友達と。",
-    description: "4-6人のソーシャルディナーで、新しい出会いを楽しむ。月額1,980円で参加し放題。",
+    description: "4-6人のソーシャルディナーで、新しい出会いを楽しむ。月額サブスクで参加し放題。",
     type: "website",
   },
   verification: {

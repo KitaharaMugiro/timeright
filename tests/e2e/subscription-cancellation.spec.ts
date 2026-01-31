@@ -316,9 +316,8 @@ test.describe('Subscription Settings Page', () => {
       const subscriptionPage = new SubscriptionSettingsPage(page);
       await subscriptionPage.goto();
 
-      // Verify price display
-      await expect(subscriptionPage.priceDisplay).toBeVisible();
-      await expect(page.locator('text=/月')).toBeVisible();
+      // Verify plan title display
+      await expect(subscriptionPage.planTitle).toBeVisible();
 
       // Verify features are listed
       await subscriptionPage.verifyFeaturesDisplayed();
@@ -657,7 +656,7 @@ test.describe('Full Cancellation Journey', () => {
 
       // Subscribe page should be displayed
       await expect(page.locator('text=メンバー登録')).toBeVisible();
-      await expect(page.locator('text=1,980')).toBeVisible();
+      await expect(page.locator('text=月額サブスクリプション')).toBeVisible();
     });
   });
 });
@@ -678,7 +677,7 @@ test.describe('Responsive Design', () => {
 
       await subscriptionPage.verifyPageLoaded();
       await expect(subscriptionPage.manageSubscriptionButton).toBeVisible();
-      await expect(subscriptionPage.priceDisplay).toBeVisible();
+      await expect(subscriptionPage.planTitle).toBeVisible();
 
       await subscriptionPage.takeScreenshot('mobile-active');
     });

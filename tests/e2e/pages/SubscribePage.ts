@@ -4,7 +4,7 @@ import { Page, Locator, expect } from '@playwright/test';
  * Page Object Model for the Subscribe Page (/onboarding/subscribe)
  *
  * The subscription page shows:
- * - Subscription price (1,980 yen/month)
+ * - Subscription title
  * - Feature list (5 items)
  * - Subscribe button (redirects to Stripe Checkout)
  * - Terms and Privacy links
@@ -15,7 +15,7 @@ export class SubscribePage {
   // Page elements
   readonly pageTitle: Locator;
   readonly lastStepBadge: Locator;
-  readonly priceDisplay: Locator;
+  readonly subscriptionTitle: Locator;
   readonly featureList: Locator;
   readonly featureItems: Locator;
   readonly subscribeButton: Locator;
@@ -29,7 +29,7 @@ export class SubscribePage {
     // Page elements
     this.pageTitle = page.locator('h1', { hasText: 'メンバー登録' });
     this.lastStepBadge = page.locator('text=最後のステップ');
-    this.priceDisplay = page.locator('text=1,980');
+    this.subscriptionTitle = page.locator('text=月額サブスクリプション');
     this.featureList = page.locator('ul');
     this.featureItems = page.locator('li', { hasText: /参加回数|性格診断|厳選された|安心の|いつでも/ });
     this.subscribeButton = page.locator('button', { hasText: /サブスクリプションを開始|処理中/ });
@@ -52,7 +52,7 @@ export class SubscribePage {
   async verifyPageLoaded() {
     await expect(this.pageTitle).toBeVisible();
     await expect(this.lastStepBadge).toBeVisible();
-    await expect(this.priceDisplay).toBeVisible();
+    await expect(this.subscriptionTitle).toBeVisible();
     await expect(this.subscribeButton).toBeVisible();
   }
 
@@ -65,12 +65,10 @@ export class SubscribePage {
   }
 
   /**
-   * Verify price is displayed correctly
+   * Verify subscription title is displayed correctly
    */
-  async verifyPrice() {
-    await expect(this.priceDisplay).toBeVisible();
-    const priceText = await this.page.locator('text=税込').textContent();
-    expect(priceText).toContain('税込');
+  async verifySubscriptionTitle() {
+    await expect(this.subscriptionTitle).toBeVisible();
   }
 
   /**

@@ -342,8 +342,8 @@ test.describe.skip('Subscribe Page - Authenticated', () => {
       await expect(page.locator('text=Last Step')).toBeVisible();
     });
 
-    test('should display correct price', async () => {
-      await subscribePage.verifyPrice();
+    test('should display subscription title', async () => {
+      await subscribePage.verifySubscriptionTitle();
     });
 
     test('should display all 5 features', async () => {
@@ -386,7 +386,7 @@ test.describe.skip('Subscribe Page - Authenticated', () => {
       await page.waitForLoadState('networkidle');
 
       await expect(subscribePage.subscribeButton).toBeVisible();
-      await expect(subscribePage.priceDisplay).toBeVisible();
+      await expect(subscribePage.subscriptionTitle).toBeVisible();
     });
   });
 });
