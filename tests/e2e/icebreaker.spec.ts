@@ -332,9 +332,8 @@ test.describe('Ice Breaker - Full Feature Tests (Dynamic Setup)', () => {
     // If button is enabled (enough players ready), test back from playing state
     if (isEnabled && buttonText?.includes('ゲームを開始')) {
       await startButton.click();
-      await page.waitForTimeout(1000);
-
-      // Verify game view appears
+      
+      // Wait for game view to appear using proper selector
       await icebreakerPage.verifyGamePlayVisible();
 
       // Click back button from playing state
