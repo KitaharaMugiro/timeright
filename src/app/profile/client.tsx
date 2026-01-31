@@ -13,11 +13,12 @@ import {
 } from '@/components/ui/magicui';
 import { MemberStageCard } from '@/components/MemberStageCard';
 import { BadgesCard } from '@/components/BadgesCard';
-import type { User, Gender, PersonalityType, MemberStageInfo } from '@/types/database';
+import type { User, Gender, PersonalityType, MemberStageInfo, UserBadgeWithBadge } from '@/types/database';
 
 interface ProfileClientProps {
   user: User;
   stageInfo: MemberStageInfo;
+  userBadges: UserBadgeWithBadge[];
 }
 
 const personalityLabels: Record<PersonalityType, { label: string; emoji: string; description: string }> = {
@@ -32,7 +33,7 @@ const genderLabels: Record<Gender, string> = {
   female: '女性',
 };
 
-export function ProfileClient({ user, stageInfo }: ProfileClientProps) {
+export function ProfileClient({ user, stageInfo, userBadges }: ProfileClientProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -248,7 +249,7 @@ export function ProfileClient({ user, stageInfo }: ProfileClientProps) {
         {/* Badges */}
         <BlurFade delay={0.075}>
           <div className="mb-6">
-            <BadgesCard isIdentityVerified={user.is_identity_verified} />
+            <BadgesCard isIdentityVerified={user.is_identity_verified} userBadges={userBadges} />
           </div>
         </BlurFade>
 

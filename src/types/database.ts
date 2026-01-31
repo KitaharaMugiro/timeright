@@ -211,6 +211,34 @@ export interface IcebreakerNgWord {
   updated_at: string;
 }
 
+export type BadgeIconType = 'emoji' | 'lucide';
+
+export interface Badge {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  icon_emoji: string | null;
+  icon_type: BadgeIconType | null;
+  lucide_icon: string | null;
+  color: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface UserBadge {
+  id: string;
+  user_id: string;
+  badge_id: string;
+  awarded_at: string;
+  awarded_reason: string | null;
+}
+
+export interface UserBadgeWithBadge extends UserBadge {
+  badge: Badge;
+}
+
 export type Json =
   | string
   | number

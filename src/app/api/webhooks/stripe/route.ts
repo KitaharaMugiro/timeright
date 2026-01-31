@@ -62,6 +62,25 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', userId);
 
+          // Award founding member badge (Gold Badge)
+          const { data: foundingBadge } = await supabase
+            .from('badges')
+            .select('id')
+            .eq('slug', 'founding_member')
+            .single();
+
+          if (foundingBadge) {
+            await (supabase.from('user_badges') as any)
+              .upsert(
+                {
+                  user_id: userId,
+                  badge_id: foundingBadge.id,
+                  awarded_reason: 'Initial subscription',
+                },
+                { onConflict: 'user_id,badge_id' }
+              );
+          }
+
           // Mark invite coupon as used if this checkout used the invite coupon
           const isInviteCoupon = session.metadata?.is_invite_coupon === 'true';
           if (isInviteCoupon) {

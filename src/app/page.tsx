@@ -364,7 +364,7 @@ export default function LandingPage() {
                   </AnimatedGradientText>
                   <span className="text-xl text-slate-400">/月</span>
                 </div>
-                <p className="text-amber-500 font-medium">創設メンバー価格（永久継続）</p>
+                <p className="text-amber-500 font-medium">初期メンバー価格（永久継続）</p>
               </div>
 
               <div className="border-t border-slate-700 pt-6">
