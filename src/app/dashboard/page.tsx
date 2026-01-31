@@ -8,7 +8,7 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect('/');
+    redirect('/liff');
   }
 
   // Check if onboarding is complete
