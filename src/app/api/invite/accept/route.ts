@@ -82,19 +82,62 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing participation
-    const { data: existingParticipation } = await supabase
+    const { data: existingData } = await supabase
       .from('participations')
-      .select('id')
+      .select('id, entry_type, group_id')
       .eq('user_id', userId)
       .eq('event_id', originalParticipation.event_id)
       .neq('status', 'canceled')
       .single();
 
+    const existingParticipation = existingData as { id: string; entry_type: string; group_id: string } | null;
+
     if (existingParticipation) {
-      return NextResponse.json(
-        { error: 'Already entered this event' },
-        { status: 400 }
-      );
+      // If already in a pair/group, don't allow
+      if (existingParticipation.entry_type === 'pair') {
+        return NextResponse.json(
+          { error: 'Already entered this event with a friend' },
+          { status: 400 }
+        );
+      }
+
+      // Solo entry exists - link to friend's group instead of creating new participation
+      // Check group size limit before linking
+      const { count: groupCount } = await supabase
+        .from('participations')
+        .select('*', { count: 'exact', head: true })
+        .eq('group_id', originalParticipation.group_id)
+        .eq('event_id', originalParticipation.event_id)
+        .neq('status', 'canceled');
+
+      if (groupCount && groupCount >= 3) {
+        return NextResponse.json(
+          { error: 'この招待リンクは既に使用されています（グループ上限: 3人）' },
+          { status: 400 }
+        );
+      }
+
+      // Update existing solo participation to join the group
+      const { error: updateError } = await (supabase
+        .from('participations') as any)
+        .update({
+          group_id: originalParticipation.group_id,
+          entry_type: 'pair',
+          mood,
+          mood_text: mood_text || null,
+          budget_level,
+        })
+        .eq('id', existingParticipation.id);
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to link to friend' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true, linked: true });
     }
 
     // Check group size limit (max 3 members)
