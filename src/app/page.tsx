@@ -13,6 +13,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
   ShimmerButton,
@@ -227,6 +228,22 @@ export default function LandingPage() {
             </div>
           </BlurFade>
         </div>
+
+        {/* Mascot */}
+        <motion.div
+          className="absolute bottom-4 right-4 md:bottom-8 md:right-8 lg:bottom-12 lg:right-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.5 }}
+        >
+          <Image
+            src="/mascot_neko_transparent.png"
+            alt="Dine Tokyo マスコット"
+            width={280}
+            height={280}
+            className="w-40 h-40 md:w-52 md:h-52 lg:w-72 lg:h-72 object-contain"
+          />
+        </motion.div>
 
         {/* Scroll indicator */}
         <motion.div

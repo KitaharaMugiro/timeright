@@ -45,6 +45,7 @@ export interface User {
   stage_points: number;
   member_stage: MemberStage;
   stage_updated_at: string;
+  is_identity_verified: boolean;
   created_at: string;
 }
 

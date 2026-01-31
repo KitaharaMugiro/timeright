@@ -87,7 +87,7 @@ export default async function DashboardPage() {
     realUserIds.length > 0
       ? supabase
           .from('users')
-          .select('id, avatar_url, job')
+          .select('id, display_name, avatar_url, job')
           .in('id', realUserIds)
       : null,
 
@@ -143,10 +143,10 @@ export default async function DashboardPage() {
   });
 
   // Build participantsMap
-  const participantsMap: Record<string, { avatar_url: string | null; job: string }> = {};
-  const participants = participantsResult?.data as { id: string; avatar_url: string | null; job: string }[] | null;
+  const participantsMap: Record<string, { display_name: string; avatar_url: string | null; job: string }> = {};
+  const participants = participantsResult?.data as { id: string; display_name: string; avatar_url: string | null; job: string }[] | null;
   (participants || []).forEach((p) => {
-    participantsMap[p.id] = { avatar_url: p.avatar_url, job: p.job };
+    participantsMap[p.id] = { display_name: p.display_name, avatar_url: p.avatar_url, job: p.job };
   });
 
   return (

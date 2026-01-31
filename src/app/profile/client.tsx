@@ -12,6 +12,7 @@ import {
   Particles,
 } from '@/components/ui/magicui';
 import { MemberStageCard } from '@/components/MemberStageCard';
+import { BadgesCard } from '@/components/BadgesCard';
 import type { User, Gender, PersonalityType, MemberStageInfo } from '@/types/database';
 
 interface ProfileClientProps {
@@ -241,6 +242,13 @@ export function ProfileClient({ user, stageInfo }: ProfileClientProps) {
         <BlurFade delay={0.05}>
           <div className="mb-6">
             <MemberStageCard stageInfo={stageInfo} />
+          </div>
+        </BlurFade>
+
+        {/* Badges */}
+        <BlurFade delay={0.075}>
+          <div className="mb-6">
+            <BadgesCard isIdentityVerified={user.is_identity_verified} />
           </div>
         </BlurFade>
 

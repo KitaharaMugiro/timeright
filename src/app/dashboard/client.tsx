@@ -27,7 +27,7 @@ interface DashboardClientProps {
   events: Event[];
   participations: (Participation & { events: Event })[];
   matches: (Match & { events: Event })[];
-  participantsMap: Record<string, { avatar_url: string | null; job: string }>;
+  participantsMap: Record<string, { display_name: string; avatar_url: string | null; job: string }>;
   guestsMap: Record<string, { display_name: string; gender: string }>;
   attendanceMap: Record<string, Record<string, { attendance_status: string; late_minutes: number | null }>>;
   pairPartnersMap: Record<string, PairPartner>;
@@ -152,6 +152,19 @@ export function DashboardClient({
   // Check if user has already canceled or is late
   const getUserAttendanceStatus = (match: Match & { events: Event }) => {
     return localAttendanceMap[match.event_id]?.[user.id]?.attendance_status || 'attending';
+  };
+
+  // Get late members (excluding current user) for a match
+  const getLateMembers = (match: Match & { events: Event }) => {
+    return match.table_members
+      .filter((memberId) => memberId !== user.id && !memberId.startsWith('guest:'))
+      .filter((memberId) => localAttendanceMap[match.event_id]?.[memberId]?.attendance_status === 'late')
+      .map((memberId) => ({
+        id: memberId,
+        displayName: participantsMap[memberId]?.display_name || '参加者',
+        avatarUrl: participantsMap[memberId]?.avatar_url,
+        lateMinutes: localAttendanceMap[match.event_id]?.[memberId]?.late_minutes,
+      }));
   };
 
   const handleCancel = async (participationId: string) => {
@@ -292,6 +305,42 @@ export function DashboardClient({
                       <span className="text-lg">{getAreaLabel(todayDinner.events.area)}</span>
                     </div>
                   </div>
+
+                  {/* Late members banner */}
+                  {getLateMembers(todayDinner).length > 0 && (
+                    <motion.div
+                      className="mb-6 p-4 rounded-xl bg-amber-500/20 border border-amber-500/40"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-full bg-amber-500/30">
+                          <Clock className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-amber-400 font-medium mb-1">遅刻のお知らせ</p>
+                          <div className="space-y-1">
+                            {getLateMembers(todayDinner).map((member) => (
+                              <div key={member.id} className="flex items-center gap-2 text-sm text-white/90">
+                                {member.avatarUrl && (
+                                  <img
+                                    src={member.avatarUrl}
+                                    alt={member.displayName}
+                                    className="w-5 h-5 rounded-full object-cover"
+                                  />
+                                )}
+                                <span>
+                                  <span className="font-medium">{member.displayName}</span>さんが約
+                                  <span className="font-medium text-amber-400">{member.lateMinutes}分</span>
+                                  遅れます
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
 
                   {/* Participants */}
                   <div className="flex items-center gap-4 mb-8">
@@ -483,6 +532,33 @@ export function DashboardClient({
 
                       {/* Divider with ticket punch effect */}
                       <div className="ticket-divider my-4" />
+
+                      {/* Late members banner */}
+                      {getLateMembers(match).length > 0 && (
+                        <motion.div
+                          className="mb-4 p-3 rounded-lg bg-amber-500/15 border border-amber-500/30"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                              {getLateMembers(match).map((member) => (
+                                <span key={member.id} className="flex items-center gap-1 text-amber-300">
+                                  {member.avatarUrl && (
+                                    <img
+                                      src={member.avatarUrl}
+                                      alt={member.displayName}
+                                      className="w-4 h-4 rounded-full object-cover"
+                                    />
+                                  )}
+                                  <span>{member.displayName}さん 約{member.lateMinutes}分遅れ</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
 
                       {/* Bottom section - participants */}
                       <div className="flex items-center justify-between">
