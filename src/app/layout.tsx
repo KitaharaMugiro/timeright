@@ -35,6 +35,9 @@ export const metadata: Metadata = {
     description: "4-6人のソーシャルディナーで、新しい出会いを楽しむ。月額1,980円で参加し放題。",
     type: "website",
   },
+  verification: {
+    google: "nCQXz1fhJHjeKkxo7U2qJDwl1COf_hqg2d0VZyFZUSg",
+  },
 };
 
 export const viewport: Viewport = {
