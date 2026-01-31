@@ -4,12 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { DashboardClient } from './client';
 import type { Match, Event, Participation } from '@/types/database';
 
-interface DashboardPageProps {
-  searchParams: Promise<{ success?: string }>;
-}
-
-export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const params = await searchParams;
+export default async function DashboardPage() {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -19,24 +14,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // Check if onboarding is complete
   if (!user.personality_type) {
     redirect('/onboarding');
-  }
-
-  // Check subscription status
-  // Skip check if coming from successful Stripe checkout (webhook may not have processed yet)
-  const isFromCheckout = params.success === 'true';
-
-  // Allow access if:
-  // 1. Status is 'active'
-  // 2. Status is 'canceled' but still within the subscription period
-  // 3. Coming from successful checkout (webhook may not have processed yet)
-  const hasValidSubscription =
-    user.subscription_status === 'active' ||
-    (user.subscription_status === 'canceled' &&
-     user.subscription_period_end &&
-     new Date(user.subscription_period_end) > new Date());
-
-  if (!hasValidSubscription && !isFromCheckout) {
-    redirect('/onboarding/subscribe');
   }
 
   const supabase = await createServiceClient();

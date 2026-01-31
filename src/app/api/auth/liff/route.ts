@@ -51,7 +51,6 @@ export async function POST(request: NextRequest) {
     const existingUser = existingUserData as User | null;
     let userId: string;
     let needsOnboarding = false;
-    let needsSubscription = false;
 
     if (existingUser) {
       userId = existingUser.id;
@@ -63,15 +62,6 @@ export async function POST(request: NextRequest) {
       }
       // Check if onboarding is complete
       needsOnboarding = !existingUser.personality_type;
-
-      // Check subscription status
-      const hasValidSubscription =
-        existingUser.subscription_status === 'active' ||
-        (existingUser.subscription_status === 'canceled' &&
-          existingUser.subscription_period_end &&
-          new Date(existingUser.subscription_period_end) > new Date());
-
-      needsSubscription = !hasValidSubscription && !needsOnboarding;
     } else {
       // Create new user with minimal data - rest will be filled in onboarding
       const { data: newUserData, error: insertError } = await (supabase
@@ -141,12 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine redirect URL
-    let redirectUrl = '/dashboard';
-    if (needsOnboarding) {
-      redirectUrl = '/onboarding';
-    } else if (needsSubscription) {
-      redirectUrl = '/onboarding/subscribe';
-    }
+    const redirectUrl = needsOnboarding ? '/onboarding' : '/dashboard';
 
     return NextResponse.json({ redirectUrl });
   } catch (err) {
