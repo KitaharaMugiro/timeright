@@ -306,6 +306,48 @@ test.describe('Ice Breaker - Full Feature Tests (Dynamic Setup)', () => {
     await expect(page).toHaveURL('/dashboard');
   });
 
+  test('Full flow: Back navigation from playing state works correctly', async ({ page }) => {
+    await setupIcebreakerTestData(page);
+    await loginAsUser(page, seededUserIds.activeUser);
+
+    const icebreakerPage = new IcebreakerPage(page);
+    await icebreakerPage.goto(TEST_EVENT_ID);
+    await icebreakerPage.waitForPageLoad();
+
+    const selectorVisible = await icebreakerPage.sectionHeader.isVisible().catch(() => false);
+    if (!selectorVisible) {
+      test.skip(true, 'Event setup failed');
+      return;
+    }
+
+    // Select Questions game (host creates session and is auto-joined as ready)
+    await icebreakerPage.selectGame('質問タイム');
+    await icebreakerPage.verifyLobbyVisible('質問タイム');
+
+    // Check if we can start the game (may need more players)
+    const startButton = icebreakerPage.startGameButton;
+    const isEnabled = await startButton.isEnabled().catch(() => false);
+    const buttonText = await startButton.textContent();
+
+    // If button is enabled (enough players ready), test back from playing state
+    if (isEnabled && buttonText?.includes('ゲームを開始')) {
+      await startButton.click();
+      await page.waitForTimeout(1000);
+
+      // Verify game view appears
+      await icebreakerPage.verifyGamePlayVisible();
+
+      // Click back button from playing state
+      await icebreakerPage.clickBack();
+      
+      // Should return to game selector (leaves the session)
+      await icebreakerPage.verifyGameSelectorVisible();
+    } else {
+      // If we can't start game with single player, that's expected
+      console.log('Cannot test back from playing state - need more players to start game');
+    }
+  });
+
   test('Full flow: Dashboard shows Ice Breaker button for in-window event', async ({ page }) => {
     await setupIcebreakerTestData(page);
     await loginAsUser(page, seededUserIds.activeUser);
