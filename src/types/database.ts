@@ -23,6 +23,7 @@ export type IcebreakerSessionStatus = 'waiting' | 'playing' | 'finished';
 export type IcebreakerQuestionCategory = 'casual' | 'fun' | 'deep';
 export type IcebreakerWordWolfCategory = 'food' | 'place' | 'animal' | 'season' | 'entertainment' | 'sports' | 'other';
 export type IcebreakerCommonThingsCategory = 'food' | 'hobby' | 'travel' | 'lifestyle' | 'personality' | 'experience' | 'other';
+export type IcebreakerNgWordCategory = 'food' | 'daily' | 'emotion' | 'action' | 'place' | 'other';
 
 export interface User {
   id: string;
@@ -195,6 +196,15 @@ export interface IcebreakerCommonThings {
   id: string;
   prompt: string;
   category: IcebreakerCommonThingsCategory;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IcebreakerNgWord {
+  id: string;
+  word: string;
+  category: IcebreakerNgWordCategory;
   is_active: boolean;
   created_at: string;
   updated_at: string;

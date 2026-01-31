@@ -3,13 +3,14 @@ import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { User } from '@/types/database';
 
-type ContentType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things';
+type ContentType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things' | 'ng-word';
 
 const TABLE_MAP: Record<ContentType, string> = {
   questions: 'icebreaker_questions',
   'would-you-rather': 'icebreaker_would_you_rather',
   'word-wolf': 'icebreaker_word_wolf',
   'common-things': 'icebreaker_common_things',
+  'ng-word': 'icebreaker_ng_word',
 };
 
 async function verifyAdmin() {
@@ -219,6 +220,15 @@ function validatePayload(type: ContentType, payload: any): string | null {
         )
       ) {
         return 'category must be food, hobby, travel, lifestyle, personality, experience, or other';
+      }
+      break;
+    case 'ng-word':
+      if (!payload.word) return 'word is required';
+      if (
+        !payload.category ||
+        !['food', 'daily', 'emotion', 'action', 'place', 'other'].includes(payload.category)
+      ) {
+        return 'category must be food, daily, emotion, action, place, or other';
       }
       break;
   }
