@@ -134,11 +134,10 @@ export function IcebreakerClient({
     setViewMode('select');
   };
 
-  const handleBack = () => {
-    if (viewMode === 'lobby') {
-      setViewMode('select');
-    } else if (viewMode === 'playing') {
-      setViewMode('lobby');
+  const handleBack = async () => {
+    if (viewMode === 'lobby' || viewMode === 'playing') {
+      // Leave session when going back from lobby or playing mode
+      await handleLeaveSession();
     } else {
       router.push('/dashboard');
     }
