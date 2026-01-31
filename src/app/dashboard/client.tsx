@@ -390,10 +390,15 @@ export function DashboardClient({
                       </>
                     )}
                     {getUserAttendanceStatus(todayDinner) === 'late' && (
-                      <span className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400">
+                      <motion.button
+                        onClick={() => setLateDialogMatch(todayDinner)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-colors"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
                         <Clock className="w-4 h-4" />
                         遅刻連絡済み ({localAttendanceMap[todayDinner.event_id]?.[user.id]?.late_minutes}分)
-                      </span>
+                      </motion.button>
                     )}
                     {getUserAttendanceStatus(todayDinner) === 'canceled' && (
                       <span className="flex items-center gap-2 px-4 py-2 text-sm text-red-400">
@@ -562,10 +567,16 @@ export function DashboardClient({
                             </>
                           )}
                           {getUserAttendanceStatus(match) === 'late' && (
-                            <span className="flex items-center gap-1 px-3 py-2 text-xs text-amber-400">
+                            <motion.button
+                              onClick={() => setLateDialogMatch(match)}
+                              className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-colors"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              title="遅刻時間を変更"
+                            >
                               <Clock className="w-3 h-3" />
                               {localAttendanceMap[match.event_id]?.[user.id]?.late_minutes}分遅れ
-                            </span>
+                            </motion.button>
                           )}
                           {getUserAttendanceStatus(match) === 'canceled' && (
                             <span className="flex items-center gap-1 px-3 py-2 text-xs text-red-400">
@@ -813,6 +824,7 @@ export function DashboardClient({
         isOpen={!!lateDialogMatch}
         onClose={() => setLateDialogMatch(null)}
         onConfirm={handleLateNotify}
+        initialMinutes={lateDialogMatch ? localAttendanceMap[lateDialogMatch.event_id]?.[user.id]?.late_minutes : null}
       />
     </div>
   );

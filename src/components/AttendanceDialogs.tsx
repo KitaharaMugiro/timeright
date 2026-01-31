@@ -285,7 +285,7 @@ export function LateDialog({ isOpen, onClose, onConfirm, initialMinutes }: LateD
                       送信中...
                     </>
                   ) : (
-                    '遅刻を連絡する'
+                    initialMinutes ? '変更する' : '遅刻を連絡する'
                   )}
                 </button>
               </div>
