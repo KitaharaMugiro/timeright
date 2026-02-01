@@ -209,14 +209,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Cannot cancel within 48 hours of event
-    if (isWithin48Hours(participation.events.event_date)) {
-      return NextResponse.json(
-        { error: '開催48時間前を過ぎているためキャンセルできません' },
-        { status: 400 }
-      );
-    }
-
     // Update status to canceled
     const { error: updateError } = await (supabase
       .from('participations') as any)

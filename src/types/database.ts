@@ -19,12 +19,14 @@ export type IcebreakerGameType =
   | 'common_things'
   | 'whodunit'
   | 'guess_favorite'
-  | 'peer_intro';
+  | 'peer_intro'
+  | 'ng_word';
 export type IcebreakerSessionStatus = 'waiting' | 'playing' | 'finished';
 export type IcebreakerQuestionCategory = 'casual' | 'fun' | 'deep';
 export type IcebreakerWordWolfCategory = 'food' | 'place' | 'animal' | 'season' | 'entertainment' | 'sports' | 'other';
 export type IcebreakerCommonThingsCategory = 'food' | 'hobby' | 'travel' | 'lifestyle' | 'personality' | 'experience' | 'other';
 export type IcebreakerNgWordCategory = 'food' | 'daily' | 'emotion' | 'action' | 'place' | 'other';
+export type GameCategorySlug = 'intro' | 'lively' | 'relaxed' | 'inspire';
 
 export interface User {
   id: string;
@@ -212,6 +214,39 @@ export interface IcebreakerNgWord {
   updated_at: string;
 }
 
+export interface IcebreakerGameCategory {
+  id: string;
+  slug: GameCategorySlug;
+  name: string;
+  description: string | null;
+  emoji: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IcebreakerGame {
+  id: string;
+  game_type: IcebreakerGameType;
+  category_id: string | null;
+  name: string;
+  description: string | null;
+  emoji: string | null;
+  min_players: number;
+  max_players: number;
+  has_rounds: boolean;
+  instructions: string[];
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IcebreakerGameWithCategory extends IcebreakerGame {
+  category: IcebreakerGameCategory | null;
+}
+
 export type BadgeIconType = 'emoji' | 'lucide';
 
 export interface Badge {
@@ -379,6 +414,24 @@ export interface Database {
           line_message_id: string;
         };
         Update: Partial<IdentityVerificationRequest>;
+        Relationships: [];
+      };
+      icebreaker_game_categories: {
+        Row: IcebreakerGameCategory;
+        Insert: Partial<IcebreakerGameCategory> & {
+          slug: GameCategorySlug;
+          name: string;
+        };
+        Update: Partial<IcebreakerGameCategory>;
+        Relationships: [];
+      };
+      icebreaker_games: {
+        Row: IcebreakerGame;
+        Insert: Partial<IcebreakerGame> & {
+          game_type: IcebreakerGameType;
+          name: string;
+        };
+        Update: Partial<IcebreakerGame>;
         Relationships: [];
       };
     };

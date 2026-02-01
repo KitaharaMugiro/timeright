@@ -5,8 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useIcebreakerRealtime } from '@/lib/icebreaker/realtime';
-import { GAME_DEFINITIONS } from '@/lib/icebreaker/games';
-import type { User } from '@/types/database';
+import type { User, IcebreakerGameCategory, IcebreakerGame } from '@/types/database';
 import type { IcebreakerGameType } from '@/lib/icebreaker/types';
 import { GameSelector } from '@/components/icebreaker/GameSelector';
 import { GameLobby } from '@/components/icebreaker/GameLobby';
@@ -25,6 +24,8 @@ interface IcebreakerClientProps {
   userId: string;
   members: Pick<User, 'id' | 'display_name' | 'avatar_url' | 'gender'>[];
   eventDate: string;
+  categories: IcebreakerGameCategory[];
+  games: IcebreakerGame[];
 }
 
 type ViewMode = 'select' | 'lobby' | 'playing';
@@ -34,6 +35,8 @@ export function IcebreakerClient({
   userId,
   members,
   eventDate,
+  categories,
+  games,
 }: IcebreakerClientProps) {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>('select');
@@ -229,7 +232,8 @@ export function IcebreakerClient({
               exit={{ opacity: 0, y: -20 }}
             >
               <GameSelector
-                games={GAME_DEFINITIONS}
+                categories={categories}
+                games={games}
                 onSelect={handleSelectGame}
                 activeSession={session}
                 onJoinSession={handleJoinSession}

@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
 import { IcebreakerClient } from './client';
 import { isWithinEventWindow, formatDate, formatTime } from '@/lib/utils';
-import type { Match, Event, User } from '@/types/database';
+import type { Match, Event, User, IcebreakerGameCategory, IcebreakerGame } from '@/types/database';
 
 interface IcebreakerPageProps {
   params: Promise<{ id: string }>;
@@ -96,12 +96,31 @@ export default async function IcebreakerPage({ params }: IcebreakerPageProps) {
 
   const members = (membersData || []) as Pick<User, 'id' | 'display_name' | 'avatar_url' | 'gender'>[];
 
+  // Get game categories and games from DB
+  const [{ data: categoriesData }, { data: gamesData }] = await Promise.all([
+    supabase
+      .from('icebreaker_game_categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true }),
+    supabase
+      .from('icebreaker_games')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true }),
+  ]);
+
+  const categories = (categoriesData || []) as IcebreakerGameCategory[];
+  const games = (gamesData || []) as IcebreakerGame[];
+
   return (
     <IcebreakerClient
       matchId={userMatch.id}
       userId={user.id}
       members={members}
       eventDate={event.event_date}
+      categories={categories}
+      games={games}
     />
   );
 }
