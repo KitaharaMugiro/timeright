@@ -369,7 +369,7 @@ export default function LandingPage() {
 
               <div className="border-t border-slate-700 pt-6">
                 <p className="text-center text-slate-300">
-                  <span className="text-amber-400 font-medium">1回あたりワンコイン（約500円）</span>
+                  <span className="text-amber-400 font-medium">食事1回あたりワンコイン（約500円）</span>
                   <br />
                   <span className="text-slate-400 text-sm mt-2 block">
                     週に一度の新しい出会いを、コーヒー1杯の価格で。

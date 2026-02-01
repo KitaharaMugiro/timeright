@@ -10,6 +10,7 @@ export type BudgetLevel = 1 | 2 | 3;
 export type ReferralStatus = 'pending' | 'completed' | 'expired';
 export type MemberStage = 'bronze' | 'silver' | 'gold' | 'platinum';
 export type StagePointReason = 'participation' | 'review_sent' | 'review_received' | 'cancel' | 'late_cancel' | 'no_show';
+export type VerificationStatus = 'pending' | 'approved' | 'rejected';
 export type IcebreakerGameType =
   | 'questions'
   | 'would_you_rather'
@@ -239,6 +240,22 @@ export interface UserBadgeWithBadge extends UserBadge {
   badge: Badge;
 }
 
+export interface IdentityVerificationRequest {
+  id: string;
+  user_id: string;
+  line_user_id: string;
+  line_message_id: string;
+  status: VerificationStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  created_at: string;
+}
+
+export interface VerificationRequestWithUser extends IdentityVerificationRequest {
+  user: Pick<User, 'id' | 'display_name' | 'avatar_url' | 'gender' | 'birth_date'>;
+}
+
 export type Json =
   | string
   | number
@@ -334,6 +351,36 @@ export interface Database {
         Update: Partial<IcebreakerPlayer>;
         Relationships: [];
       };
+      badges: {
+        Row: Badge;
+        Insert: Partial<Badge> & {
+          slug: string;
+          name: string;
+          description: string;
+          color: string;
+        };
+        Update: Partial<Badge>;
+        Relationships: [];
+      };
+      user_badges: {
+        Row: UserBadge;
+        Insert: Partial<UserBadge> & {
+          user_id: string;
+          badge_id: string;
+        };
+        Update: Partial<UserBadge>;
+        Relationships: [];
+      };
+      identity_verification_requests: {
+        Row: IdentityVerificationRequest;
+        Insert: Partial<IdentityVerificationRequest> & {
+          user_id: string;
+          line_user_id: string;
+          line_message_id: string;
+        };
+        Update: Partial<IdentityVerificationRequest>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -352,6 +399,7 @@ export interface Database {
       stage_point_reason: StagePointReason;
       icebreaker_game_type: IcebreakerGameType;
       icebreaker_session_status: IcebreakerSessionStatus;
+      verification_status: VerificationStatus;
     };
     CompositeTypes: Record<string, never>;
   };
