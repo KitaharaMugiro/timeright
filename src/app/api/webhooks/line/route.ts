@@ -7,9 +7,9 @@ const { MessagingApiClient } = messagingApi;
 
 // Verify LINE webhook signature
 function verifySignature(body: string, signature: string): boolean {
-  const channelSecret = process.env.LINE_CHANNEL_SECRET;
+  const channelSecret = process.env.LINE_CHANNEL_SECRET_FOR_MESSAGING_API;
   if (!channelSecret) {
-    console.error('LINE_CHANNEL_SECRET is not configured');
+    console.error('[LINE Webhook] LINE_CHANNEL_SECRET_FOR_MESSAGING_API is not configured');
     return false;
   }
 
@@ -17,7 +17,15 @@ function verifySignature(body: string, signature: string): boolean {
     .update(body)
     .digest('base64');
 
-  return hash === signature;
+  const isValid = hash === signature;
+  if (!isValid) {
+    console.error('[LINE Webhook] Signature mismatch');
+    console.error('[LINE Webhook] Expected:', hash);
+    console.error('[LINE Webhook] Received:', signature);
+    console.error('[LINE Webhook] Body length:', body.length);
+  }
+
+  return isValid;
 }
 
 // Get LINE client for reply messages
