@@ -50,7 +50,7 @@ const steps = [
 const faqs = [
   {
     question: '安全性は大丈夫ですか？',
-    answer: 'イベント後の相互評価システムにより、マナーの良いコミュニティを維持しています。',
+    answer: '本人確認済みのユーザーと会えるので安心です。さらに、イベント後の相互評価システムにより、マナーの良いコミュニティを維持しています。',
   },
   {
     question: '1人で参加しても大丈夫？',
@@ -255,6 +255,34 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
+      {/* Founder Story Section */}
+      <section className="py-24 px-4 bg-slate-950">
+        <div className="max-w-2xl mx-auto">
+          <BlurFade>
+            <GlassCard className="p-8 md:p-12">
+              <p className="text-amber-500 font-medium tracking-widest text-sm mb-6">
+                FOUNDER&apos;S NOTE
+              </p>
+              <div className="font-serif text-lg md:text-xl text-slate-300 leading-relaxed space-y-6">
+                <p>
+                  自宅と会社の往復をして、いつものお馴染みの友達と飲んでいませんか？
+                </p>
+                <p className="text-slate-400">
+                  人生を動かすのは、日々の小さな積み重ねと、それを昇華させる「偶然の出会い」だと思っています。
+                </p>
+                <p className="text-slate-400">
+                  このサービスは偶然の出会いを提供します。
+                  恋愛目的ではなく、友達作り目的でもなく、純粋に「新しい人と出会う」楽しさを感じてください。
+                </p>
+              </div>
+              <div className="mt-8 pt-6 border-t border-slate-700">
+                <p className="text-slate-500 text-sm">Founder, Dine Tokyo(ダイントーキョー)</p>
+              </div>
+            </GlassCard>
+          </BlurFade>
+        </div>
+      </section>
+
       {/* How it works */}
       <section className="py-24 px-4 bg-slate-900">
         <div className="max-w-4xl mx-auto">
@@ -382,34 +410,6 @@ export default function LandingPage() {
                   今すぐLINEではじめる
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </ShimmerButton>
-              </div>
-            </GlassCard>
-          </BlurFade>
-        </div>
-      </section>
-
-      {/* Founder Story Section */}
-      <section className="py-24 px-4 bg-slate-950">
-        <div className="max-w-2xl mx-auto">
-          <BlurFade>
-            <GlassCard className="p-8 md:p-12">
-              <p className="text-amber-500 font-medium tracking-widest text-sm mb-6">
-                FOUNDER&apos;S NOTE
-              </p>
-              <div className="font-serif text-lg md:text-xl text-slate-300 leading-relaxed space-y-6">
-                <p>
-                  自宅と会社の往復をして、いつものお馴染みの友達と飲んでいませんか？
-                </p>
-                <p className="text-slate-400">
-                  人生を動かすのは、日々の小さな積み重ねと、それを昇華させる「偶然の出会い」だと思っています。
-                </p>
-                <p className="text-slate-400">
-                  このサービスは偶然の出会いを提供します。
-                  恋愛目的ではなく、友達作り目的でもなく、純粋に「新しい人と出会う」楽しさを感じてください。
-                </p>
-              </div>
-              <div className="mt-8 pt-6 border-t border-slate-700">
-                <p className="text-slate-500 text-sm">Founder, Dine Tokyo(ダイントーキョー)</p>
               </div>
             </GlassCard>
           </BlurFade>
