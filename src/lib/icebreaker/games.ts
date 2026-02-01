@@ -4,7 +4,7 @@ export const GAME_DEFINITIONS: GameDefinition[] = [
   {
     id: 'questions',
     name: '質問タイム',
-    description: '質問を投げて全員が短く答える',
+    description: 'みんなで同じ質問に答えよう！',
     emoji: '💬',
     minPlayers: 2,
     maxPlayers: 10,
@@ -60,7 +60,7 @@ export const GAME_DEFINITIONS: GameDefinition[] = [
   {
     id: 'common_things',
     name: '10の共通点',
-    description: 'ペアで共通点を10個探す',
+    description: 'グループで共通点を10個探す',
     emoji: '🤝',
     minPlayers: 2,
     maxPlayers: 10,
