@@ -21,8 +21,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Dine Tokyo(ダイントーキョー) - 目的のない出会いを、友達と。",
-  description: "4-6人のソーシャルディナーで、新しい出会いを楽しむ。月額サブスクで参加し放題。",
+  title: {
+    default: "Dine Tokyo（ダイントーキョー）｜目的のない出会いを、友達と。",
+    template: "%s | Dine Tokyo",
+  },
+  description:
+    "4〜6人のソーシャルディナーで、新しい出会いを楽しむ。月額サブスクで参加し放題。",
+  applicationName: "Dine Tokyo",
   icons: {
     icon: [
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
@@ -31,9 +36,18 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "Dine Tokyo(ダイントーキョー) - 目的のない出会いを、友達と。",
-    description: "4-6人のソーシャルディナーで、新しい出会いを楽しむ。月額サブスクで参加し放題。",
+    title: "Dine Tokyo（ダイントーキョー）",
+    description:
+      "目的のない出会いを、友達と。4〜6人のソーシャルディナー。",
+    siteName: "Dine Tokyo",
+    url: "https://dine-tokyo.vercel.app/",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dine Tokyo（ダイントーキョー）",
+    description:
+      "目的のない出会いを、友達と。4〜6人のソーシャルディナー。",
   },
   verification: {
     google: "nCQXz1fhJHjeKkxo7U2qJDwl1COf_hqg2d0VZyFZUSg",
@@ -53,6 +67,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className="dark">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Dine Tokyo",
+              alternateName: "ダイントーキョー",
+              url: "https://dine-tokyo.vercel.app/",
+            }),
+          }}
+        />
+      </head>
       <body
         className={`${shipporiMincho.variable} ${notoSansJP.variable} ${inter.variable} antialiased`}
       >
