@@ -369,9 +369,6 @@ export function DashboardClient({
                       noOverlap
                       className="scale-110"
                     />
-                    <span className="text-slate-300">
-                      他{todayDinner.table_members.filter((id) => id !== user.id).length}人と食事
-                    </span>
                   </div>
 
                   {/* Action buttons */}
@@ -587,9 +584,6 @@ export function DashboardClient({
                             showJob
                             noOverlap
                           />
-                          <span className="text-sm text-slate-400">
-                            他{match.table_members.filter((id) => id !== user.id).length}人と食事
-                          </span>
                         </div>
 
                         <div className="flex items-center gap-2">
