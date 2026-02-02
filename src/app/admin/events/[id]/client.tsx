@@ -64,7 +64,7 @@ const moodLabels: Record<ParticipationMood, { label: string; emoji: string; shor
 };
 
 // Budget labels
-const budgetLabels: Record<BudgetLevel, { label: string; stars: string; short: string }> = {
+const budgetLabels: Record<number, { label: string; stars: string; short: string }> = {
   1: { label: 'リーズナブル', stars: '⭐', short: '⭐' },
   2: { label: 'スタンダード', stars: '⭐⭐', short: '⭐⭐' },
   3: { label: 'プレミアム', stars: '⭐⭐⭐', short: '⭐⭐⭐' },
@@ -82,7 +82,7 @@ export function EventDetailClient({
     restaurant_name: m.restaurant_name,
     restaurant_url: m.restaurant_url || '',
     reservation_name: m.reservation_name || '',
-    members: m.table_members,
+    members: m.table_members as string[],
   }));
 
   const [tables, setTables] = useState<TableGroup[]>(initialTables);

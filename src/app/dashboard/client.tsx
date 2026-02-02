@@ -156,7 +156,8 @@ export function DashboardClient({
 
   // Get late members (excluding current user) for a match
   const getLateMembers = (match: Match & { events: Event }) => {
-    return match.table_members
+    const members = (match.table_members as string[]) || [];
+    return members
       .filter((memberId) => memberId !== user.id && !memberId.startsWith('guest:'))
       .filter((memberId) => localAttendanceMap[match.event_id]?.[memberId]?.attendance_status === 'late')
       .map((memberId) => ({
@@ -345,7 +346,7 @@ export function DashboardClient({
                   {/* Participants */}
                   <div className="flex items-center gap-4 mb-8">
                     <AvatarCircles
-                      avatarUrls={todayDinner.table_members
+                      avatarUrls={((todayDinner.table_members as string[]) || [])
                         .filter((id) => id !== user.id)
                         .map((memberId) => {
                           const isGuest = memberId.startsWith('guest:');
@@ -561,7 +562,7 @@ export function DashboardClient({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <AvatarCircles
-                            avatarUrls={match.table_members
+                            avatarUrls={((match.table_members as string[]) || [])
                               .filter((id) => id !== user.id)
                               .map((memberId) => {
                                 const isGuest = memberId.startsWith('guest:');

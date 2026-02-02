@@ -46,7 +46,6 @@ export async function PUT(request: Request) {
 
     const { error } = await supabase
       .from('users')
-      // @ts-expect-error Supabase type inference issue with service role client
       .update(updateData)
       .eq('id', user.id);
 

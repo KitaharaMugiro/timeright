@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 
 type ContentType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things' | 'ng-word';
+type TableName = 'icebreaker_questions' | 'icebreaker_would_you_rather' | 'icebreaker_word_wolf' | 'icebreaker_common_things' | 'icebreaker_ng_word';
 
-const TABLE_MAP: Record<ContentType, string> = {
+const TABLE_MAP: Record<ContentType, TableName> = {
   questions: 'icebreaker_questions',
   'would-you-rather': 'icebreaker_would_you_rather',
   'word-wolf': 'icebreaker_word_wolf',

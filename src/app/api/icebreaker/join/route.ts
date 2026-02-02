@@ -52,8 +52,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     const match = matchData as Pick<Match, 'table_members'> | null;
+    const tableMembers = (match?.table_members as string[]) || [];
 
-    if (!match || !match.table_members.includes(userId)) {
+    if (!match || !tableMembers.includes(userId)) {
       return NextResponse.json({ error: 'Not a match participant' }, { status: 403 });
     }
 

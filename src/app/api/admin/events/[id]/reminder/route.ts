@@ -54,7 +54,7 @@ export async function GET(
       });
     }
 
-    const allMemberIds = matches.flatMap(m => m.table_members);
+    const allMemberIds = matches.flatMap(m => m.table_members as string[]);
     const userIds = [...new Set(allMemberIds.filter(id => !isGuestId(id)))];
     const guestIds = [...new Set(allMemberIds.filter(id => isGuestId(id)).map(fromGuestId))];
 
@@ -194,7 +194,7 @@ export async function POST(
     }
 
     // Collect all member IDs
-    const allMemberIds = matches.flatMap(m => m.table_members);
+    const allMemberIds = matches.flatMap(m => m.table_members as string[]);
     const userIds = allMemberIds.filter(id => !isGuestId(id));
     const guestIds = allMemberIds.filter(id => isGuestId(id)).map(fromGuestId);
 
@@ -230,7 +230,7 @@ export async function POST(
     let totalSkipped = 0;
 
     for (const match of matches) {
-      const members = match.table_members.map(id => {
+      const members = (match.table_members as string[] || []).map(id => {
         const userData = membersMap.get(id);
         return {
           lineUserId: userData?.lineUserId || null,

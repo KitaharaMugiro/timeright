@@ -73,7 +73,6 @@ export async function POST(request: Request) {
     // usersテーブルのavatar_urlを更新
     const { error: updateError } = await supabase
       .from('users')
-      // @ts-expect-error Supabase type inference issue with service role client
       .update({ avatar_url: avatarUrl })
       .eq('id', user.id);
 
@@ -143,7 +142,6 @@ export async function DELETE(request: Request) {
     // usersテーブルのavatar_urlをnullに更新
     const { error: updateError } = await supabase
       .from('users')
-      // @ts-expect-error Supabase type inference issue with service role client
       .update({ avatar_url: null })
       .eq('id', user.id);
 

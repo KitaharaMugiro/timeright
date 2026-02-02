@@ -64,7 +64,7 @@ export default async function DashboardPage() {
   const pairParticipations = (participations || []).filter((p) => p.entry_type === 'pair');
   const groupIds = pairParticipations.map((p) => p.group_id);
 
-  const allMemberIds = [...new Set((matches || []).flatMap((m) => m.table_members))];
+  const allMemberIds = [...new Set((matches || []).flatMap((m) => (m.table_members as string[]) || []))].filter((id): id is string => typeof id === 'string');
   const realUserIds = allMemberIds.filter((id) => !id.startsWith('guest:'));
   const guestIds = allMemberIds
     .filter((id) => id.startsWith('guest:'))

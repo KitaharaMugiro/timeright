@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const user = await requireAuth();
 
-    const stageInfo = getMemberStageInfo(user.stage_points);
+    const stageInfo = getMemberStageInfo(user.stage_points ?? 0);
 
     return NextResponse.json(stageInfo);
   } catch (error) {

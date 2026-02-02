@@ -19,7 +19,7 @@ export default async function ProfilePage() {
     .eq('user_id', user.id)
     .order('awarded_at', { ascending: true });
 
-  const stageInfo = getMemberStageInfo(user.stage_points);
+  const stageInfo = getMemberStageInfo(user.stage_points ?? 0);
 
   return (
     <ProfileClient

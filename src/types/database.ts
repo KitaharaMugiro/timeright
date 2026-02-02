@@ -1,3 +1,11 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 export type Gender = 'male' | 'female';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'none';
 export type EventStatus = 'open' | 'matched' | 'closed';
@@ -45,9 +53,9 @@ export interface User {
   referred_by: string | null;
   has_used_invite_coupon: boolean;
   pending_invite_token: string | null;
-  stage_points: number;
-  member_stage: MemberStage;
-  stage_updated_at: string;
+  stage_points: number | null;
+  member_stage: MemberStage | null;
+  stage_updated_at: string | null;
   is_identity_verified: boolean;
   created_at: string;
 }
@@ -66,7 +74,7 @@ export interface Event {
   event_date: string;
   area: string;
   status: EventStatus;
-  required_stage: MemberStage;
+  required_stage: MemberStage | null;
   created_at: string;
 }
 
@@ -80,7 +88,7 @@ export interface Participation {
   short_code: string | null;
   mood: ParticipationMood;
   mood_text: string | null;
-  budget_level: BudgetLevel;
+  budget_level: number;
   status: ParticipationStatus;
   attendance_status: AttendanceStatus;
   attendance_updated_at: string | null;
@@ -95,7 +103,7 @@ export interface Match {
   restaurant_name: string;
   restaurant_url: string | null;
   reservation_name: string | null;
-  table_members: string[];
+  table_members: Json;
   reminder_sent_at: string | null;
   reminder_sent_by: string | null;
   created_at: string;
@@ -118,7 +126,7 @@ export interface Guest {
   id: string;
   event_id: string;
   display_name: string;
-  gender: Gender;
+  gender: string;
   group_id: string;
   created_at: string;
 }
@@ -291,15 +299,10 @@ export interface VerificationRequestWithUser extends IdentityVerificationRequest
   user: Pick<User, 'id' | 'display_name' | 'avatar_url' | 'gender' | 'birth_date'>;
 }
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
-
 export interface Database {
+  __InternalSupabase: {
+    PostgrestVersion: '14.1';
+  };
   public: {
     Tables: {
       users: {
@@ -418,20 +421,64 @@ export interface Database {
       };
       icebreaker_game_categories: {
         Row: IcebreakerGameCategory;
-        Insert: Partial<IcebreakerGameCategory> & {
-          slug: GameCategorySlug;
+        Insert: {
+          id?: string;
+          slug: string;
           name: string;
+          description?: string | null;
+          emoji?: string | null;
+          sort_order?: number | null;
+          is_active?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
         };
-        Update: Partial<IcebreakerGameCategory>;
+        Update: {
+          id?: string;
+          slug?: string;
+          name?: string;
+          description?: string | null;
+          emoji?: string | null;
+          sort_order?: number | null;
+          is_active?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
         Relationships: [];
       };
       icebreaker_games: {
         Row: IcebreakerGame;
-        Insert: Partial<IcebreakerGame> & {
-          game_type: IcebreakerGameType;
+        Insert: {
+          id?: string;
+          game_type: string;
+          category_id?: string | null;
           name: string;
+          description?: string | null;
+          emoji?: string | null;
+          min_players?: number | null;
+          max_players?: number | null;
+          has_rounds?: boolean | null;
+          instructions?: string[] | null;
+          is_active?: boolean | null;
+          sort_order?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
         };
-        Update: Partial<IcebreakerGame>;
+        Update: {
+          id?: string;
+          game_type?: string;
+          category_id?: string | null;
+          name?: string;
+          description?: string | null;
+          emoji?: string | null;
+          min_players?: number | null;
+          max_players?: number | null;
+          has_rounds?: boolean | null;
+          instructions?: string[] | null;
+          is_active?: boolean | null;
+          sort_order?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
         Relationships: [];
       };
     };

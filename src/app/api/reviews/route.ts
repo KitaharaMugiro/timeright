@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const tableMembers = (match.table_members as string[]) || [];
+
     // Check if 2 hours have passed since event start
     if (!isReviewAccessible(match.events.event_date)) {
       return NextResponse.json(
@@ -72,14 +74,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!match.table_members.includes(userId)) {
+    if (!tableMembers.includes(userId)) {
       return NextResponse.json(
         { error: 'You are not part of this match' },
         { status: 403 }
       );
     }
 
-    if (!match.table_members.includes(target_user_id)) {
+    if (!tableMembers.includes(target_user_id)) {
       return NextResponse.json(
         { error: 'Target user is not part of this match' },
         { status: 400 }

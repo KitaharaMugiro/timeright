@@ -31,8 +31,10 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
     notFound();
   }
 
+  const tableMembers = (match.table_members as string[]) || [];
+
   // Check if user is part of this match
-  if (!match.table_members.includes(user.id)) {
+  if (!tableMembers.includes(user.id)) {
     redirect('/dashboard');
   }
 
@@ -57,7 +59,7 @@ export default async function ReviewPage({ params }: ReviewPageProps) {
   }
 
   // Get other members' info (filter out guest IDs that start with 'guest:')
-  const otherMemberIds = match.table_members.filter(
+  const otherMemberIds = tableMembers.filter(
     (id: string) => id !== user.id && !id.startsWith('guest:')
   );
   const { data: membersData } = otherMemberIds.length > 0

@@ -38,11 +38,13 @@ export default async function IcebreakerPage({ params }: IcebreakerPageProps) {
     .eq('event_id', eventId);
 
   const matches = matchesData as Match[] | null;
-  const userMatch = matches?.find((m) => m.table_members.includes(user.id));
+  const userMatch = matches?.find((m) => ((m.table_members as string[]) || []).includes(user.id));
 
   if (!userMatch) {
     redirect('/dashboard');
   }
+
+  const userMatchMembers = (userMatch.table_members as string[]) || [];
 
   // Check if within 3-hour event window
   if (!isWithinEventWindow(event.event_date, 3)) {
@@ -84,7 +86,7 @@ export default async function IcebreakerPage({ params }: IcebreakerPageProps) {
   }
 
   // Get table members info (filter out guest IDs that start with 'guest:')
-  const userMemberIds = userMatch.table_members.filter(
+  const userMemberIds = userMatchMembers.filter(
     (id: string) => !id.startsWith('guest:')
   );
   const { data: membersData } = userMemberIds.length > 0
