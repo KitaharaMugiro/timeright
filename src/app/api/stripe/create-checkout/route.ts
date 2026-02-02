@@ -131,6 +131,10 @@ export async function POST(request: NextRequest) {
         ...sessionParams.metadata,
         is_sougyou_member: 'true',
       };
+    } else {
+      // Allow promotion codes only when no automatic discount is applied
+      // (Stripe doesn't allow both discounts and allow_promotion_codes)
+      sessionParams.allow_promotion_codes = true;
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams);

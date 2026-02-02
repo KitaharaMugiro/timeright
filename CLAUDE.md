@@ -24,6 +24,7 @@ When creating database schema changes:
 - Next.js 14 (App Router)
 - TypeScript
 - Supabase (PostgreSQL)
+- Magic UI Components
 - Tailwind CSS
 - Framer Motion
 - LINE LIFF integration
