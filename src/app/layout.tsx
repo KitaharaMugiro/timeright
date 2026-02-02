@@ -22,11 +22,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Dine Tokyo（ダイントーキョー）｜目的のない出会いを、友達と。",
+    default: "Dine Tokyo（ダイントーキョー）｜初対面の男女4-6人とディナーができるアプリ",
     template: "%s | Dine Tokyo",
   },
   description:
-    "4〜6人のソーシャルディナーで、新しい出会いを楽しむ。月額サブスクで参加し放題。",
+    "人生を動かすのは偶然の出会いだ。「はじめまして」に会いに行こう。",
   applicationName: "Dine Tokyo",
   icons: {
     icon: [
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Dine Tokyo（ダイントーキョー）",
     description:
-      "目的のない出会いを、友達と。4〜6人のソーシャルディナー。",
+      "初対面の男女4-6人とディナーができるアプリ。人生を動かすのは偶然の出会いだ。「はじめまして」に会いに行こう。",
     siteName: "Dine Tokyo",
     url: "https://dine-tokyo.vercel.app/",
     type: "website",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Dine Tokyo（ダイントーキョー）",
     description:
-      "目的のない出会いを、友達と。4〜6人のソーシャルディナー。",
+      "初対面の男女4-6人とディナーができるアプリ。人生を動かすのは偶然の出会いだ。「はじめまして」に会いに行こう。",
   },
   verification: {
     google: "nCQXz1fhJHjeKkxo7U2qJDwl1COf_hqg2d0VZyFZUSg",
