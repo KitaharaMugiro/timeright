@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
-import { Calendar, MapPin, UserPlus, User, Copy, Check, ArrowLeft, MessageSquare, Link2 } from 'lucide-react';
+import { Calendar, MapPin, UserPlus, User, Copy, Check, ArrowLeft, MessageSquare, Link2, AlertTriangle } from 'lucide-react';
 import type { Event, ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface EntryClientProps {
@@ -508,6 +508,18 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                   </p>
                 </div>
               )}
+
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-red-400 mb-1">キャンセルポリシー</p>
+                    <p className="text-xs text-red-300/80">
+                      マッチング確定後のキャンセルや、連絡なしの無断キャンセル（ドタキャン）には<span className="font-medium">キャンセル料</span>が発生します。
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               <div className="space-y-3">
                 <Button
