@@ -1,174 +1,84 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import type { EventStatus } from '@/types/database';
 
-export async function GET() {
+const DEFAULT_PAGE_SIZE = 20;
+const VALID_STATUSES: EventStatus[] = ['open', 'matched', 'closed'];
+
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const searchParams = request.nextUrl.searchParams;
 
-    // Fetch all events with their participations
-    const { data: events, error: eventsError } = await supabase
+    // Pagination params
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = parseInt(searchParams.get('pageSize') || String(DEFAULT_PAGE_SIZE), 10);
+    const offset = (page - 1) * pageSize;
+
+    // Filter params
+    const statusParam = searchParams.get('status');
+    const status: EventStatus | null = statusParam && VALID_STATUSES.includes(statusParam as EventStatus)
+      ? (statusParam as EventStatus)
+      : null;
+    const months = parseInt(searchParams.get('months') || '3', 10); // Default: last 3 months
+
+    // Calculate date range
+    const fromDate = new Date();
+    fromDate.setMonth(fromDate.getMonth() - months);
+
+    // Build events query with filters
+    let eventsQuery = supabase
       .from('events')
-      .select('*')
-      .order('event_date', { ascending: false });
+      .select('*', { count: 'exact' })
+      .gte('event_date', fromDate.toISOString())
+      .order('event_date', { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    if (status) {
+      eventsQuery = eventsQuery.eq('status', status);
+    }
+
+    const { data: events, error: eventsError, count: totalCount } = await eventsQuery;
 
     if (eventsError) {
       console.error('Error fetching events:', eventsError);
       return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
     }
 
-    // Fetch participations with user info
-    const { data: participations, error: participationsError } = await supabase
-      .from('participations')
-      .select(`
-        *,
-        user:users!participations_user_id_fkey(
-          id,
-          display_name,
-          avatar_url,
-          gender,
-          birth_date,
-          job,
-          line_user_id,
-          member_stage,
-          is_identity_verified,
-          created_at
-        )
-      `)
-      .order('created_at', { ascending: false });
-
-    if (participationsError) {
-      console.error('Error fetching participations:', participationsError);
-      return NextResponse.json({ error: 'Failed to fetch participations' }, { status: 500 });
-    }
-
-    // Fetch all reviews to identify no-shows and get ratings
-    const { data: reviews, error: reviewsError } = await supabase
-      .from('reviews')
-      .select(`
-        id,
-        reviewer_id,
-        target_user_id,
-        match_id,
-        rating,
-        comment,
-        block_flag,
-        is_no_show,
-        created_at,
-        match:matches!reviews_match_id_fkey(
-          event_id
-        )
-      `);
-
-    if (reviewsError) {
-      console.error('Error fetching reviews:', reviewsError);
-      return NextResponse.json({ error: 'Failed to fetch reviews' }, { status: 500 });
-    }
-
-    // Fetch matches to link reviews to events
-    const { data: matches, error: matchesError } = await supabase
-      .from('matches')
-      .select('id, event_id, restaurant_name, table_members');
-
-    if (matchesError) {
-      console.error('Error fetching matches:', matchesError);
-      return NextResponse.json({ error: 'Failed to fetch matches' }, { status: 500 });
-    }
-
-    // Create a map of user reviews by event
-    const userReviewsByEvent: Record<string, Record<string, {
-      receivedReviews: typeof reviews;
-      givenReviews: typeof reviews;
-      noShowCount: number;
-      avgRating: number | null;
-      blockCount: number;
-    }>> = {};
-
-    // Initialize for all events
-    events?.forEach(event => {
-      userReviewsByEvent[event.id] = {};
-    });
-
-    // Process reviews
-    reviews?.forEach(review => {
-      const eventId = (review.match as { event_id: string } | null)?.event_id;
-      if (!eventId) return;
-
-      // Initialize user entries if not exists
-      if (!userReviewsByEvent[eventId]) {
-        userReviewsByEvent[eventId] = {};
-      }
-
-      // For target user (received review)
-      if (!userReviewsByEvent[eventId][review.target_user_id]) {
-        userReviewsByEvent[eventId][review.target_user_id] = {
-          receivedReviews: [],
-          givenReviews: [],
-          noShowCount: 0,
-          avgRating: null,
-          blockCount: 0,
-        };
-      }
-      userReviewsByEvent[eventId][review.target_user_id].receivedReviews.push(review);
-      if (review.is_no_show) {
-        userReviewsByEvent[eventId][review.target_user_id].noShowCount++;
-      }
-      if (review.block_flag) {
-        userReviewsByEvent[eventId][review.target_user_id].blockCount++;
-      }
-
-      // For reviewer (given review)
-      if (!userReviewsByEvent[eventId][review.reviewer_id]) {
-        userReviewsByEvent[eventId][review.reviewer_id] = {
-          receivedReviews: [],
-          givenReviews: [],
-          noShowCount: 0,
-          avgRating: null,
-          blockCount: 0,
-        };
-      }
-      userReviewsByEvent[eventId][review.reviewer_id].givenReviews.push(review);
-    });
-
-    // Calculate average ratings
-    Object.keys(userReviewsByEvent).forEach(eventId => {
-      Object.keys(userReviewsByEvent[eventId]).forEach(userId => {
-        const userData = userReviewsByEvent[eventId][userId];
-        if (userData.receivedReviews.length > 0) {
-          const sum = userData.receivedReviews.reduce((acc, r) => acc + r.rating, 0);
-          userData.avgRating = sum / userData.receivedReviews.length;
-        }
-      });
-    });
-
-    // Get total no-show counts per user (across all events)
-    const totalNoShowsByUser: Record<string, number> = {};
-    reviews?.forEach(review => {
-      if (review.is_no_show) {
-        totalNoShowsByUser[review.target_user_id] = (totalNoShowsByUser[review.target_user_id] || 0) + 1;
-      }
-    });
-
-    // Group participations by event
-    const eventParticipants: Record<string, typeof participations> = {};
-    participations?.forEach(p => {
-      if (!eventParticipants[p.event_id]) {
-        eventParticipants[p.event_id] = [];
-      }
-      eventParticipants[p.event_id].push(p);
-    });
-
-    // Build response
+    // Return events list only (participants loaded on demand)
     const result = events?.map(event => ({
       event,
-      participants: (eventParticipants[event.id] || []).map(p => ({
-        ...p,
-        reviewData: userReviewsByEvent[event.id]?.[p.user_id] || null,
-        totalNoShows: totalNoShowsByUser[p.user_id] || 0,
-      })),
-      match: matches?.find(m => m.event_id === event.id) || null,
+      participantCount: 0, // Will be fetched separately
     }));
 
-    return NextResponse.json({ events: result });
+    // Get participant counts for these events
+    if (events && events.length > 0) {
+      const eventIds = events.map(e => e.id);
+      const { data: counts } = await supabase
+        .from('participations')
+        .select('event_id')
+        .in('event_id', eventIds);
+
+      // Count participants per event
+      const countMap: Record<string, number> = {};
+      counts?.forEach(p => {
+        countMap[p.event_id] = (countMap[p.event_id] || 0) + 1;
+      });
+
+      result?.forEach(r => {
+        r.participantCount = countMap[r.event.id] || 0;
+      });
+    }
+
+    return NextResponse.json({
+      events: result,
+      pagination: {
+        page,
+        pageSize,
+        totalCount: totalCount || 0,
+        totalPages: Math.ceil((totalCount || 0) / pageSize),
+      },
+    });
   } catch (error) {
     console.error('Error in participants API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

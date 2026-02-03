@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,96 +23,156 @@ import {
   X,
   Shield,
   Search,
+  Loader2,
+  ChevronLeft,
 } from 'lucide-react';
-import type { Event, User, Participation, Gender } from '@/types/database';
+import type { Event, User, Participation, Gender, EventStatus } from '@/types/database';
 
-interface ReviewData {
-  receivedReviews: Array<{
-    id: string;
-    rating: number;
-    comment: string | null;
-    is_no_show: boolean;
-    block_flag: boolean;
-  }>;
-  givenReviews: Array<{
-    id: string;
-    rating: number;
-    comment: string | null;
-    is_no_show: boolean;
-    block_flag: boolean;
-  }>;
-  noShowCount: number;
+interface ReviewStats {
+  totalNoShows: number;
+  eventNoShows: number;
   avgRating: number | null;
   blockCount: number;
+  reviewCount: number;
 }
 
 interface ParticipantWithData extends Participation {
   user: Pick<User, 'id' | 'display_name' | 'avatar_url' | 'gender' | 'birth_date' | 'job' | 'line_user_id' | 'member_stage' | 'is_identity_verified' | 'created_at'>;
-  reviewData: ReviewData | null;
-  totalNoShows: number;
+  reviewStats: ReviewStats | null;
 }
 
-interface EventWithParticipants {
+interface EventSummary {
   event: Event;
-  participants: ParticipantWithData[];
-  match: {
-    id: string;
-    restaurant_name: string;
-  } | null;
+  participantCount: number;
 }
+
+interface Pagination {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+interface MatchInfo {
+  id: string;
+  restaurant_name: string;
+  restaurant_url?: string | null;
+}
+
+// Cache for loaded participants
+const participantsCache = new Map<string, { participants: ParticipantWithData[]; match: MatchInfo | null }>();
 
 export function AdminParticipantsClient() {
-  const [events, setEvents] = useState<EventWithParticipants[]>([]);
+  const [events, setEvents] = useState<EventSummary[]>([]);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+  const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
+  const [eventParticipants, setEventParticipants] = useState<ParticipantWithData[]>([]);
+  const [eventMatch, setEventMatch] = useState<MatchInfo | null>(null);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+
+  // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [filterNoShow, setFilterNoShow] = useState<'all' | 'suspected' | 'confirmed'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'matched' | 'canceled'>('all');
+  const [filterEventStatus, setFilterEventStatus] = useState<'all' | EventStatus>('all');
+  const [filterMonths, setFilterMonths] = useState(3);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  useEffect(() => {
-    fetchParticipants();
-  }, []);
-
-  const fetchParticipants = async () => {
+  const fetchEvents = useCallback(async (page: number = 1) => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/admin/participants');
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: '20',
+        months: String(filterMonths),
+      });
+      if (filterEventStatus !== 'all') {
+        params.set('status', filterEventStatus);
+      }
+
+      const res = await fetch(`/api/admin/participants?${params}`);
       const data = await res.json();
       if (data.events) {
         setEvents(data.events);
-        // Auto-expand recent events
-        const recentEventIds = data.events
-          .slice(0, 3)
-          .map((e: EventWithParticipants) => e.event.id);
-        setExpandedEvents(new Set(recentEventIds));
+        setPagination(data.pagination);
+        setCurrentPage(page);
       }
     } catch (error) {
-      console.error('Failed to fetch participants:', error);
+      console.error('Failed to fetch events:', error);
     } finally {
       setLoading(false);
     }
+  }, [filterEventStatus, filterMonths]);
+
+  useEffect(() => {
+    fetchEvents(1);
+  }, [fetchEvents]);
+
+  const fetchParticipants = useCallback(async (eventId: string) => {
+    // Check cache first
+    const cacheKey = `${eventId}-${searchQuery}-${filterNoShow}-${filterStatus}`;
+    const cached = participantsCache.get(cacheKey);
+    if (cached) {
+      setEventParticipants(cached.participants);
+      setEventMatch(cached.match);
+      return;
+    }
+
+    setLoadingParticipants(true);
+    try {
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('search', searchQuery);
+      if (filterNoShow !== 'all') params.set('noShow', filterNoShow);
+      if (filterStatus !== 'all') params.set('status', filterStatus);
+
+      const res = await fetch(`/api/admin/participants/${eventId}?${params}`);
+      const data = await res.json();
+
+      setEventParticipants(data.participants || []);
+      setEventMatch(data.match || null);
+
+      // Cache result
+      participantsCache.set(cacheKey, {
+        participants: data.participants || [],
+        match: data.match || null,
+      });
+    } catch (error) {
+      console.error('Failed to fetch participants:', error);
+      setEventParticipants([]);
+    } finally {
+      setLoadingParticipants(false);
+    }
+  }, [searchQuery, filterNoShow, filterStatus]);
+
+  const toggleEventExpand = async (eventId: string) => {
+    if (expandedEvent === eventId) {
+      setExpandedEvent(null);
+      setEventParticipants([]);
+      setEventMatch(null);
+    } else {
+      setExpandedEvent(eventId);
+      await fetchParticipants(eventId);
+    }
   };
 
-  const toggleEventExpand = (eventId: string) => {
-    setExpandedEvents(prev => {
-      const next = new Set(prev);
-      if (next.has(eventId)) {
-        next.delete(eventId);
-      } else {
-        next.add(eventId);
-      }
-      return next;
-    });
-  };
+  // Refetch participants when filters change (if event is expanded)
+  useEffect(() => {
+    if (expandedEvent) {
+      fetchParticipants(expandedEvent);
+    }
+  }, [expandedEvent, fetchParticipants]);
 
-  const toggleUserSelect = (lineUserId: string | null, userId: string) => {
+  const toggleUserSelect = (lineUserId: string | null, odm: string) => {
     if (!lineUserId) return;
     setSelectedUsers(prev => {
       const next = new Set(prev);
-      const key = `${userId}:${lineUserId}`;
+      const key = `${odm}:${lineUserId}`;
       if (next.has(key)) {
         next.delete(key);
       } else {
@@ -122,13 +182,10 @@ export function AdminParticipantsClient() {
     });
   };
 
-  const selectAllInEvent = (eventId: string) => {
-    const event = events.find(e => e.event.id === eventId);
-    if (!event) return;
-
+  const selectAllVisible = () => {
     setSelectedUsers(prev => {
       const next = new Set(prev);
-      event.participants.forEach(p => {
+      eventParticipants.forEach(p => {
         if (p.user.line_user_id) {
           next.add(`${p.user.id}:${p.user.line_user_id}`);
         }
@@ -137,13 +194,10 @@ export function AdminParticipantsClient() {
     });
   };
 
-  const deselectAllInEvent = (eventId: string) => {
-    const event = events.find(e => e.event.id === eventId);
-    if (!event) return;
-
+  const deselectAllVisible = () => {
     setSelectedUsers(prev => {
       const next = new Set(prev);
-      event.participants.forEach(p => {
+      eventParticipants.forEach(p => {
         if (p.user.line_user_id) {
           next.delete(`${p.user.id}:${p.user.line_user_id}`);
         }
@@ -180,46 +234,6 @@ export function AdminParticipantsClient() {
     }
   };
 
-  const filteredEvents = useMemo(() => {
-    return events.map(e => ({
-      ...e,
-      participants: e.participants.filter(p => {
-        // Search filter
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          const matchesName = p.user.display_name.toLowerCase().includes(query);
-          const matchesJob = p.user.job?.toLowerCase().includes(query);
-          if (!matchesName && !matchesJob) return false;
-        }
-
-        // No-show filter
-        if (filterNoShow === 'suspected' && p.totalNoShows === 0) return false;
-        if (filterNoShow === 'confirmed' && p.totalNoShows < 2) return false;
-
-        // Status filter
-        if (filterStatus !== 'all' && p.status !== filterStatus) return false;
-
-        return true;
-      }),
-    })).filter(e => e.participants.length > 0 || !searchQuery);
-  }, [events, searchQuery, filterNoShow, filterStatus]);
-
-  const stats = useMemo(() => {
-    let totalParticipants = 0;
-    let totalNoShowSuspects = 0;
-    let totalBlocked = 0;
-
-    events.forEach(e => {
-      e.participants.forEach(p => {
-        totalParticipants++;
-        if (p.totalNoShows > 0) totalNoShowSuspects++;
-        if (p.reviewData?.blockCount && p.reviewData.blockCount > 0) totalBlocked++;
-      });
-    });
-
-    return { totalParticipants, totalNoShowSuspects, totalBlocked };
-  }, [events]);
-
   const getAge = (birthDate: string) => {
     const today = new Date();
     const birth = new Date(birthDate);
@@ -245,7 +259,7 @@ export function AdminParticipantsClient() {
     </div>
   );
 
-  if (loading) {
+  if (loading && events.length === 0) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
@@ -268,78 +282,104 @@ export function AdminParticipantsClient() {
           )}
         </div>
 
-        {/* Statistics */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <Card className="glass-card border-slate-700">
-            <CardContent className="p-4">
-              <div className="text-sm text-slate-400">総参加者数</div>
-              <div className="text-2xl font-bold text-white">{stats.totalParticipants}</div>
-            </CardContent>
-          </Card>
-          <Card className="glass-card border-slate-700">
-            <CardContent className="p-4">
-              <div className="text-sm text-slate-400">No Show疑い</div>
-              <div className="text-2xl font-bold text-warning">{stats.totalNoShowSuspects}</div>
-            </CardContent>
-          </Card>
-          <Card className="glass-card border-slate-700">
-            <CardContent className="p-4">
-              <div className="text-sm text-slate-400">ブロック報告</div>
-              <div className="text-2xl font-bold text-error">{stats.totalBlocked}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters */}
+        {/* Event Filters */}
         <Card className="mb-6 glass-card border-slate-700">
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                <Search className="w-4 h-4 text-slate-400" />
-                <Input
-                  placeholder="名前・職業で検索..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1"
-                />
-              </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-400">No Show:</span>
+                <span className="text-sm text-slate-400">期間:</span>
                 <Select
-                  value={filterNoShow}
-                  onChange={(e) => setFilterNoShow(e.target.value as typeof filterNoShow)}
+                  value={String(filterMonths)}
+                  onChange={(e) => {
+                    setFilterMonths(Number(e.target.value));
+                    participantsCache.clear();
+                  }}
                   options={[
-                    { value: 'all', label: 'すべて' },
-                    { value: 'suspected', label: '疑いあり' },
-                    { value: 'confirmed', label: '複数報告' },
+                    { value: '1', label: '1ヶ月' },
+                    { value: '3', label: '3ヶ月' },
+                    { value: '6', label: '6ヶ月' },
+                    { value: '12', label: '1年' },
                   ]}
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-400">ステータス:</span>
+                <span className="text-sm text-slate-400">イベント状態:</span>
                 <Select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+                  value={filterEventStatus}
+                  onChange={(e) => {
+                    setFilterEventStatus(e.target.value as typeof filterEventStatus);
+                    participantsCache.clear();
+                  }}
                   options={[
                     { value: 'all', label: 'すべて' },
-                    { value: 'pending', label: '参加待ち' },
+                    { value: 'open', label: '受付中' },
                     { value: 'matched', label: 'マッチ済' },
-                    { value: 'canceled', label: 'キャンセル' },
+                    { value: 'closed', label: '終了' },
                   ]}
                 />
               </div>
+              {pagination && (
+                <div className="ml-auto text-sm text-slate-400">
+                  {pagination.totalCount}件のイベント
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
+        {/* Participant Filters (shown when event is expanded) */}
+        {expandedEvent && (
+          <Card className="mb-6 glass-card border-slate-700">
+            <CardContent className="p-4">
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                  <Search className="w-4 h-4 text-slate-400" />
+                  <Input
+                    placeholder="名前・職業で検索..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-400">No Show:</span>
+                  <Select
+                    value={filterNoShow}
+                    onChange={(e) => setFilterNoShow(e.target.value as typeof filterNoShow)}
+                    options={[
+                      { value: 'all', label: 'すべて' },
+                      { value: 'suspected', label: '疑いあり' },
+                      { value: 'confirmed', label: '複数報告' },
+                    ]}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-400">ステータス:</span>
+                  <Select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+                    options={[
+                      { value: 'all', label: 'すべて' },
+                      { value: 'pending', label: '参加待ち' },
+                      { value: 'matched', label: 'マッチ済' },
+                      { value: 'canceled', label: 'キャンセル' },
+                    ]}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Event List */}
         <div className="space-y-4">
-          {filteredEvents.map(({ event, participants, match }) => {
-            const isExpanded = expandedEvents.has(event.id);
-            const selectedInEvent = participants.filter(p =>
-              p.user.line_user_id && selectedUsers.has(`${p.user.id}:${p.user.line_user_id}`)
-            ).length;
-            const noShowCount = participants.filter(p => p.totalNoShows > 0).length;
+          {events.map(({ event, participantCount }) => {
+            const isExpanded = expandedEvent === event.id;
+            const selectedInEvent = isExpanded
+              ? eventParticipants.filter(p =>
+                  p.user.line_user_id && selectedUsers.has(`${p.user.id}:${p.user.line_user_id}`)
+                ).length
+              : 0;
 
             return (
               <Card key={event.id} className="glass-card border-slate-700">
@@ -361,23 +401,17 @@ export function AdminParticipantsClient() {
                           <MapPin className="w-4 h-4 text-slate-400 ml-2" />
                           {getAreaLabel(event.area)}
                         </div>
-                        {match && (
+                        {isExpanded && eventMatch && (
                           <div className="text-sm text-slate-400 mt-1">
-                            {match.restaurant_name}
+                            {eventMatch.restaurant_name}
                           </div>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      {noShowCount > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-warning bg-warning/20 px-2 py-1 rounded">
-                          <UserX className="w-3 h-3" />
-                          {noShowCount}
-                        </span>
-                      )}
                       <span className="flex items-center gap-1 text-sm text-slate-400">
                         <Users className="w-4 h-4" />
-                        {participants.length}人
+                        {participantCount}人
                       </span>
                       <span className={cn(
                         'text-xs px-2 py-1 rounded',
@@ -396,7 +430,17 @@ export function AdminParticipantsClient() {
                     {/* Event actions */}
                     <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
                       <div className="text-sm text-slate-400">
-                        {selectedInEvent > 0 && `${selectedInEvent}人選択中`}
+                        {loadingParticipants ? (
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            読み込み中...
+                          </span>
+                        ) : (
+                          <>
+                            {eventParticipants.length}人表示
+                            {selectedInEvent > 0 && ` / ${selectedInEvent}人選択中`}
+                          </>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -404,8 +448,9 @@ export function AdminParticipantsClient() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            selectAllInEvent(event.id);
+                            selectAllVisible();
                           }}
+                          disabled={loadingParticipants}
                         >
                           <Check className="w-3 h-3 mr-1" />
                           全選択
@@ -415,8 +460,9 @@ export function AdminParticipantsClient() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            deselectAllInEvent(event.id);
+                            deselectAllVisible();
                           }}
+                          disabled={loadingParticipants}
                         >
                           <X className="w-3 h-3 mr-1" />
                           選択解除
@@ -425,17 +471,21 @@ export function AdminParticipantsClient() {
                     </div>
 
                     {/* Participants list */}
-                    {participants.length === 0 ? (
+                    {loadingParticipants ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                      </div>
+                    ) : eventParticipants.length === 0 ? (
                       <div className="text-center text-slate-400 py-4">
                         参加者がいません
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {participants.map(participant => {
+                        {eventParticipants.map(participant => {
                           const isSelected = participant.user.line_user_id &&
                             selectedUsers.has(`${participant.user.id}:${participant.user.line_user_id}`);
-                          const hasNoShowReports = participant.totalNoShows > 0;
-                          const hasBlockReports = participant.reviewData?.blockCount && participant.reviewData.blockCount > 0;
+                          const hasNoShowReports = (participant.reviewStats?.totalNoShows || 0) > 0;
+                          const hasBlockReports = (participant.reviewStats?.blockCount || 0) > 0;
 
                           return (
                             <div
@@ -513,11 +563,11 @@ export function AdminParticipantsClient() {
 
                               {/* Reviews info */}
                               <div className="text-right min-w-[120px]">
-                                {participant.reviewData?.avgRating !== null && participant.reviewData?.avgRating !== undefined ? (
+                                {participant.reviewStats?.avgRating !== null && participant.reviewStats?.avgRating !== undefined ? (
                                   <div className="flex items-center justify-end gap-2">
-                                    {renderStars(Math.round(participant.reviewData.avgRating))}
+                                    {renderStars(Math.round(participant.reviewStats.avgRating))}
                                     <span className="text-sm text-slate-400">
-                                      ({participant.reviewData.avgRating.toFixed(1)})
+                                      ({participant.reviewStats.avgRating.toFixed(1)})
                                     </span>
                                   </div>
                                 ) : (
@@ -529,19 +579,19 @@ export function AdminParticipantsClient() {
                                   {hasNoShowReports && (
                                     <span
                                       className="flex items-center gap-1 text-xs text-warning"
-                                      title={`No Show報告: ${participant.totalNoShows}件`}
+                                      title={`No Show報告: ${participant.reviewStats?.totalNoShows}件`}
                                     >
                                       <UserX className="w-3 h-3" />
-                                      {participant.totalNoShows}
+                                      {participant.reviewStats?.totalNoShows}
                                     </span>
                                   )}
-                                  {hasBlockReports && participant.reviewData && (
+                                  {hasBlockReports && (
                                     <span
                                       className="flex items-center gap-1 text-xs text-error"
-                                      title={`ブロック報告: ${participant.reviewData.blockCount}件`}
+                                      title={`ブロック報告: ${participant.reviewStats?.blockCount}件`}
                                     >
                                       <Ban className="w-3 h-3" />
-                                      {participant.reviewData.blockCount}
+                                      {participant.reviewStats?.blockCount}
                                     </span>
                                   )}
                                 </div>
@@ -566,6 +616,33 @@ export function AdminParticipantsClient() {
             );
           })}
         </div>
+
+        {/* Pagination */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1 || loading}
+              onClick={() => fetchEvents(currentPage - 1)}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              前へ
+            </Button>
+            <span className="text-sm text-slate-400">
+              {currentPage} / {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === pagination.totalPages || loading}
+              onClick={() => fetchEvents(currentPage + 1)}
+            >
+              次へ
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        )}
 
         {/* Message Modal */}
         {showMessageModal && (
