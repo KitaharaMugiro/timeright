@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
+import { getCurrentUserId } from '@/lib/auth';
 import type { IcebreakerPlayer } from '@/types/database';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -22,8 +22,7 @@ async function getUntypedClient(): Promise<SupabaseClient<any, 'public', any>> {
 // PATCH: Update player data
 export async function PATCH(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -84,8 +83,7 @@ export async function PATCH(request: NextRequest) {
 // DELETE: Leave session (remove player from session)
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { sendReminderNotificationsToMembers } from '@/lib/line';
 import type { User, Match, Event } from '@/types/database';
+import { getCurrentUserId } from '@/lib/auth';
 
 // Helper functions for guest IDs
 const isGuestId = (id: string) => id.startsWith('guest:');
 const fromGuestId = (id: string) => id.replace('guest:', '');
+
+const isSameDayInTimeZone = (dateA: Date, dateB: Date, timeZone: string): boolean => {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return formatter.format(dateA) === formatter.format(dateB);
+};
 
 /**
  * GET - Fetch recipients preview for reminder
@@ -17,8 +27,7 @@ export async function GET(
 ) {
   try {
     const { id: eventId } = await params;
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -123,8 +132,7 @@ export async function POST(
 ) {
   try {
     const { id: eventId } = await params;
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -165,11 +173,7 @@ export async function POST(
 
     // Check event is today
     const eventDate = new Date(event.event_date);
-    const today = new Date();
-    const isToday =
-      eventDate.getFullYear() === today.getFullYear() &&
-      eventDate.getMonth() === today.getMonth() &&
-      eventDate.getDate() === today.getDate();
+    const isToday = isSameDayInTimeZone(eventDate, new Date(), 'Asia/Tokyo');
 
     if (!isToday) {
       return NextResponse.json(

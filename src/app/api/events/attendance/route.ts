@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { AttendanceStatus, Event, Participation, StagePointReason } from '@/types/database';
+import { getCurrentUserId } from '@/lib/auth';
 
 interface AttendanceRequest {
   participation_id: string;
@@ -17,8 +17,7 @@ const HOURS_24_IN_MS = 24 * 60 * 60 * 1000;
 
 export async function PATCH(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json(

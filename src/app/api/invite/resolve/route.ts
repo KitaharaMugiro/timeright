@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { extractInviteToken, isWithin48Hours } from '@/lib/utils';
 import type { Participation, Event, User } from '@/types/database';
+import { getCurrentUserId, hasValidSubscription } from '@/lib/auth';
 
 interface ResolveRequest {
   input: string;
@@ -20,8 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createServiceClient();
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     // Extract token from input (could be URL, short code, or full token)
     const extracted = extractInviteToken(input);
@@ -127,12 +126,12 @@ export async function POST(request: NextRequest) {
       // Check subscription
       const { data: userData } = await supabase
         .from('users')
-        .select('subscription_status, has_used_invite_coupon')
+        .select('subscription_status, subscription_period_end, has_used_invite_coupon')
         .eq('id', userId)
         .single();
 
-      const user = userData as Pick<User, 'subscription_status' | 'has_used_invite_coupon'> | null;
-      if (user?.subscription_status !== 'active') {
+      const user = userData as Pick<User, 'subscription_status' | 'subscription_period_end' | 'has_used_invite_coupon'> | null;
+      if (user && !hasValidSubscription(user)) {
         // User needs to subscribe - still return invite info but flag it
         // The client will handle the redirect to subscription page
       }

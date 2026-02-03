@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { User } from '@/types/database';
+import { getCurrentUserId } from '@/lib/auth';
 
 type ContentType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things' | 'ng-word';
 type TableName = 'icebreaker_questions' | 'icebreaker_would_you_rather' | 'icebreaker_word_wolf' | 'icebreaker_common_things' | 'icebreaker_ng_word';
@@ -15,8 +15,7 @@ const TABLE_MAP: Record<ContentType, TableName> = {
 };
 
 async function verifyAdmin() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('user_id')?.value;
+  const userId = await getCurrentUserId();
 
   if (!userId) {
     return { error: 'Unauthorized', status: 401 };

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { User } from '@/types/database';
 import { decodeReferralCode } from '@/lib/referral';
+import { createSession, SESSION_TTL_SECONDS } from '@/lib/auth';
 
 interface LineTokenResponse {
   access_token: string;
@@ -239,19 +240,20 @@ export async function GET(request: NextRequest) {
     finalResponse.cookies.delete('pending_invite');
     finalResponse.cookies.delete('auth_redirect');
 
-    // Set session cookies
-    finalResponse.cookies.set('user_id', userId, {
+    // Create session and set cookies
+    const session = await createSession(userId);
+    finalResponse.cookies.set('session_id', session.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      maxAge: SESSION_TTL_SECONDS,
     });
 
     finalResponse.cookies.set('line_user_id', profile.userId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge: SESSION_TTL_SECONDS,
     });
 
     return finalResponse;

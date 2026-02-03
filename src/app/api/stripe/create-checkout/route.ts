@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { User, EntryType, ParticipationMood, BudgetLevel } from '@/types/database';
 import Stripe from 'stripe';
+import { getCurrentUserId } from '@/lib/auth';
 
 interface CheckoutRequest {
   event_id?: string;
@@ -17,8 +17,7 @@ interface CheckoutRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json(

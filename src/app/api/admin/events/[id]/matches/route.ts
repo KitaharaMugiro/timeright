@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { sendMatchNotificationsToMembers } from '@/lib/line';
 import type { User, Match, Event } from '@/types/database';
+import { getCurrentUserId } from '@/lib/auth';
 
 interface MatchData {
   table_id: string;
@@ -22,8 +22,7 @@ export async function POST(
 ) {
   try {
     const { id: eventId } = await params;
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json(

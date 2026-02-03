@@ -14,6 +14,7 @@ interface EntryClientProps {
   event: Event;
   canInvite: boolean;
   subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'none';
+  subscriptionPeriodEnd: string | null;
 }
 
 type EntryMode = 'select' | 'pair-type' | 'mood' | 'budget' | 'confirm' | 'invite';
@@ -61,7 +62,12 @@ const budgetOptions: { value: BudgetLevel; label: string; description: string; s
   },
 ];
 
-export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClientProps) {
+export function EntryClient({
+  event,
+  canInvite,
+  subscriptionStatus,
+  subscriptionPeriodEnd,
+}: EntryClientProps) {
   const router = useRouter();
   const [mode, setMode] = useState<EntryMode>('select');
   const [entryType, setEntryType] = useState<EntryType>('solo');
@@ -72,6 +78,12 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const hasValidSubscription =
+    subscriptionStatus === 'active' ||
+    (subscriptionStatus === 'canceled' &&
+      subscriptionPeriodEnd &&
+      new Date(subscriptionPeriodEnd) > new Date());
 
   const handleSelectType = (type: EntryType) => {
     if (type === 'pair' && !canInvite) {
@@ -126,7 +138,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
     setLoading(true);
     try {
       // 未契約の場合、Stripe Checkoutへリダイレクト
-      if (subscriptionStatus !== 'active') {
+      if (!hasValidSubscription) {
         const response = await fetch('/api/stripe/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -501,7 +513,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                 </p>
               </div>
 
-              {subscriptionStatus !== 'active' && (
+              {!hasValidSubscription && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
                   <p className="text-sm text-amber-400">
                     イベントに参加するには月額プランへの登録が必要です。
@@ -527,7 +539,7 @@ export function EntryClient({ event, canInvite, subscriptionStatus }: EntryClien
                   loading={loading}
                   className="w-full"
                 >
-                  {subscriptionStatus !== 'active' ? '決済して参加する' : '参加を確定する'}
+                  {!hasValidSubscription ? '決済して参加する' : '参加を確定する'}
                 </Button>
                 <Button
                   variant="ghost"

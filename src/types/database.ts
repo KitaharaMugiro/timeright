@@ -60,6 +60,13 @@ export interface User {
   created_at: string;
 }
 
+export interface AuthSession {
+  id: string;
+  user_id: string;
+  created_at: string;
+  expires_at: string;
+}
+
 export interface Referral {
   id: string;
   referrer_id: string;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
+import { createSession, deleteSession, SESSION_TTL_SECONDS } from '@/lib/auth';
 import type { User } from '@/types/database';
 
 /**
@@ -49,14 +50,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // user_id Cookieを設定
+    // session_id Cookieを設定
     const cookieStore = await cookies();
-    cookieStore.set('user_id', userId, {
+    const session = await createSession(userId);
+    cookieStore.set('session_id', session.id, {
       httpOnly: false,
       secure: false,
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: SESSION_TTL_SECONDS,
     });
 
     return NextResponse.json({
@@ -93,7 +95,11 @@ export async function DELETE() {
   }
 
   const cookieStore = await cookies();
-  cookieStore.delete('user_id');
+  const sessionId = cookieStore.get('session_id')?.value;
+  if (sessionId) {
+    await deleteSession(sessionId);
+  }
+  cookieStore.delete('session_id');
 
   return NextResponse.json({ success: true });
 }

@@ -79,22 +79,41 @@ export function isToday(dateString: string): boolean {
   );
 }
 
+function getSecureRandomInt(maxExclusive: number): number {
+  const cryptoObj = globalThis.crypto;
+  if (!cryptoObj?.getRandomValues) {
+    throw new Error('Secure random generator is not available');
+  }
+
+  const uint32 = new Uint32Array(1);
+  const maxUint = 0xffffffff;
+  const limit = Math.floor(maxUint / maxExclusive) * maxExclusive;
+
+  let value = 0;
+  do {
+    cryptoObj.getRandomValues(uint32);
+    value = uint32[0];
+  } while (value >= limit);
+
+  return value % maxExclusive;
+}
+
+function generateRandomString(chars: string, length: number): string {
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars[getSecureRandomInt(chars.length)];
+  }
+  return result;
+}
+
 export function generateInviteToken(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let token = '';
-  for (let i = 0; i < 32; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
+  return generateRandomString(chars, 32);
 }
 
 export function generateShortCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluded I, O, 0, 1 to avoid confusion
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
+  return generateRandomString(chars, 6);
 }
 
 export function extractInviteToken(input: string): string | null {

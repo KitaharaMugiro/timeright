@@ -53,5 +53,12 @@ export default async function EntryPage({ params }: EntryPageProps) {
     redirect('/dashboard');
   }
 
-  return <EntryClient event={event} canInvite={canEntry} subscriptionStatus={user.subscription_status} />;
+  return (
+    <EntryClient
+      event={event}
+      canInvite={canEntry}
+      subscriptionStatus={user.subscription_status}
+      subscriptionPeriodEnd={user.subscription_period_end}
+    />
+  );
 }

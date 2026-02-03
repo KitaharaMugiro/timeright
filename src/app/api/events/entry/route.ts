@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { generateInviteToken, generateShortCode, isWithin48Hours } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
-import type { EntryType, User, Event, ParticipationMood, Participation, BudgetLevel } from '@/types/database';
+import type { EntryType, Event, ParticipationMood, Participation, BudgetLevel, User } from '@/types/database';
+import { getCurrentUserId, requireActiveSubscription } from '@/lib/auth';
 
 interface EntryRequest {
   event_id: string;
@@ -15,32 +15,28 @@ interface EntryRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    let user: User;
+    try {
+      user = await requireActiveSubscription();
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Unauthorized') {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+      if (error instanceof Error && error.message === 'Subscription required') {
+        return NextResponse.json(
+          { error: 'Active subscription required' },
+          { status: 403 }
+        );
+      }
+      throw error;
     }
+
+    const userId = user.id;
 
     const supabase = await createServiceClient();
-
-    // Check user subscription
-    const { data: userData } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    const user = userData as User | null;
-    if (!user || user.subscription_status !== 'active') {
-      return NextResponse.json(
-        { error: 'Active subscription required' },
-        { status: 403 }
-      );
-    }
 
     const { event_id, entry_type, mood, mood_text, budget_level }: EntryRequest = await request.json();
 
@@ -155,8 +151,7 @@ interface CancelRequest {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json(

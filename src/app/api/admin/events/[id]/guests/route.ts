@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 import type { User, Guest, Gender } from '@/types/database';
+import { getCurrentUserId } from '@/lib/auth';
 
 interface CreateGuestRequest {
   display_name: string;
@@ -17,8 +17,7 @@ export async function POST(
 ) {
   try {
     const { id: eventId } = await params;
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json(
@@ -128,8 +127,7 @@ export async function DELETE(
 ) {
   try {
     const { id: eventId } = await params;
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json(

@@ -2,10 +2,11 @@ import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { InviteEnterClient } from './client';
 import type { User } from '@/types/database';
+import { getCurrentUserId, hasValidSubscription } from '@/lib/auth';
 
 export default async function InviteEnterPage() {
   const cookieStore = await cookies();
-  const userId = cookieStore.get('user_id')?.value;
+  const userId = await getCurrentUserId();
 
   // Check for pending invite from cookie (from direct link)
   const pendingInvite = cookieStore.get('pending_invite')?.value;
@@ -16,12 +17,12 @@ export default async function InviteEnterPage() {
     const supabase = await createServiceClient();
     const { data: userData } = await supabase
       .from('users')
-      .select('subscription_status')
+      .select('subscription_status, subscription_period_end')
       .eq('id', userId)
       .single();
 
-    const user = userData as Pick<User, 'subscription_status'> | null;
-    hasActiveSubscription = user?.subscription_status === 'active';
+    const user = userData as Pick<User, 'subscription_status' | 'subscription_period_end'> | null;
+    hasActiveSubscription = !!user && hasValidSubscription(user);
   }
 
   return (

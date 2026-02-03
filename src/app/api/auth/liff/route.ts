@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import type { User } from '@/types/database';
+import { createSession, SESSION_TTL_SECONDS } from '@/lib/auth';
 
 interface LineProfile {
   userId: string;
@@ -92,21 +93,22 @@ export async function POST(request: NextRequest) {
       needsOnboarding = true;
     }
 
-    // Set session cookies
+    // Create session and set cookies
     const cookieStore = await cookies();
 
-    cookieStore.set('user_id', userId, {
+    const session = await createSession(userId);
+    cookieStore.set('session_id', session.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      maxAge: SESSION_TTL_SECONDS,
     });
 
     cookieStore.set('line_user_id', profile.userId, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge: SESSION_TTL_SECONDS,
     });
 
     // Check for pending invite token and save to user for coupon application at checkout

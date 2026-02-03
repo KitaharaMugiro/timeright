@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { PersonalityType, Gender } from '@/types/database';
+import { getCurrentUserId } from '@/lib/auth';
 
 interface OnboardingData {
   display_name: string;
@@ -13,8 +13,7 @@ interface OnboardingData {
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json(

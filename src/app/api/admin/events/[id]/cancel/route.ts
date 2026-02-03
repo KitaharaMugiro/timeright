@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { sendCancellationNotificationsToMembers } from '@/lib/line';
 import type { User, Event } from '@/types/database';
+import { getCurrentUserId } from '@/lib/auth';
 
 export async function POST(
   request: NextRequest,
@@ -10,8 +10,7 @@ export async function POST(
 ) {
   try {
     const { id: eventId } = await params;
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json(

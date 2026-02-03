@@ -6,7 +6,7 @@ export async function updateSession(request: NextRequest) {
   });
 
   // Check for custom session cookie (set by LINE auth callback)
-  const userId = request.cookies.get('user_id')?.value;
+  const sessionId = request.cookies.get('session_id')?.value;
 
   // Protected routes
   const protectedPaths = ['/dashboard', '/onboarding', '/events', '/reviews', '/admin'];
@@ -20,7 +20,7 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith('/api/auth')
   );
 
-  if (isProtectedPath && !userId) {
+  if (isProtectedPath && !sessionId) {
     const url = request.nextUrl.clone();
     url.pathname = '/liff';
     url.searchParams.delete('redirect');

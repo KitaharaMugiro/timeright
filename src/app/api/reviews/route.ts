@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import { isReviewAccessible } from '@/lib/utils';
 import { addStagePoints, STAGE_POINTS, getReviewReceivedPoints } from '@/lib/member-stage';
 import type { Match, Event } from '@/types/database';
+import { getCurrentUserId } from '@/lib/auth';
 
 interface ReviewRequest {
   match_id: string;
@@ -18,8 +18,7 @@ const NO_SHOW_PENALTY = -100;
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get('user_id')?.value;
+    const userId = await getCurrentUserId();
 
     if (!userId) {
       return NextResponse.json(

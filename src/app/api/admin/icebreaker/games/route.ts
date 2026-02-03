@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { User } from '@/types/database';
+import { getCurrentUserId } from '@/lib/auth';
 
 async function verifyAdmin() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get('user_id')?.value;
+  const userId = await getCurrentUserId();
 
   if (!userId) {
     return { error: 'Unauthorized', status: 401 };
