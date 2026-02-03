@@ -9,12 +9,17 @@ export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 export function hasValidSubscription(
   user: Pick<User, 'subscription_status' | 'subscription_period_end'>
 ): boolean {
-  return (
-    user.subscription_status === 'active' ||
-    (user.subscription_status === 'canceled' &&
-      user.subscription_period_end &&
-      new Date(user.subscription_period_end) > new Date())
-  );
+  if (user.subscription_status === 'active') {
+    return true;
+  }
+  if (
+    user.subscription_status === 'canceled' &&
+    user.subscription_period_end &&
+    new Date(user.subscription_period_end) > new Date()
+  ) {
+    return true;
+  }
+  return false;
 }
 
 export async function createSession(userId: string): Promise<{ id: string; expiresAt: string }> {
