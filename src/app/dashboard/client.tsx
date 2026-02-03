@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { formatDate, formatTime, getAreaLabel, isReviewAccessible, isToday, isWithin48Hours, isWithinEventWindow } from '@/lib/utils';
 import { Calendar, MapPin, LogOut, Star, ArrowRight, Settings, User as UserIcon, X, Ticket, Clock, Copy, Check, Users, Sparkles, UserPlus } from 'lucide-react';
 import { useState } from 'react';
@@ -25,6 +26,12 @@ interface PairPartner {
 interface DashboardClientProps {
   user: User;
   events: Event[];
+  eventsPagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  };
   participations: (Participation & { events: Event })[];
   matches: (Match & { events: Event })[];
   participantsMap: Record<string, { display_name: string; avatar_url: string | null; job: string }>;
@@ -36,6 +43,7 @@ interface DashboardClientProps {
 export function DashboardClient({
   user,
   events,
+  eventsPagination,
   participations,
   matches,
   participantsMap,
@@ -43,6 +51,8 @@ export function DashboardClient({
   attendanceMap,
   pairPartnersMap,
 }: DashboardClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [localParticipations, setLocalParticipations] = useState(participations);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -72,6 +82,13 @@ export function DashboardClient({
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/';
+  };
+
+  const handleEventsPageChange = (page: number) => {
+    const nextPage = Math.max(1, Math.min(page, eventsPagination.totalPages));
+    const params = new URLSearchParams(searchParams);
+    params.set('eventsPage', String(nextPage));
+    router.push(`/dashboard?${params.toString()}`);
   };
 
   // Get user's participation for a match
@@ -879,6 +896,32 @@ export function DashboardClient({
                   </BlurFade>
                 );
               })}
+            </div>
+          )}
+
+          {eventsPagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 mt-6">
+              <motion.button
+                className="px-4 py-2 rounded-lg border border-white/20 text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
+                onClick={() => handleEventsPageChange(eventsPagination.page - 1)}
+                disabled={eventsPagination.page === 1}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                前へ
+              </motion.button>
+              <span className="text-sm text-slate-400">
+                {eventsPagination.page} / {eventsPagination.totalPages}
+              </span>
+              <motion.button
+                className="px-4 py-2 rounded-lg border border-white/20 text-white/80 hover:bg-white/10 transition-colors disabled:opacity-50"
+                onClick={() => handleEventsPageChange(eventsPagination.page + 1)}
+                disabled={eventsPagination.page === eventsPagination.totalPages}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                次へ
+              </motion.button>
             </div>
           )}
         </section>

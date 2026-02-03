@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { EventStatus } from '@/types/database';
 
 const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
 const VALID_STATUSES: EventStatus[] = ['open', 'matched', 'closed'];
 
 export async function GET(request: NextRequest) {
@@ -11,8 +12,11 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
 
     // Pagination params
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = parseInt(searchParams.get('pageSize') || String(DEFAULT_PAGE_SIZE), 10);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const pageSize = Math.min(
+      MAX_PAGE_SIZE,
+      Math.max(1, parseInt(searchParams.get('pageSize') || String(DEFAULT_PAGE_SIZE), 10))
+    );
     const offset = (page - 1) * pageSize;
 
     // Filter params
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
     // Build events query with filters
     let eventsQuery = supabase
       .from('events')
-      .select('*', { count: 'exact' })
+      .select('id, event_date, area, status', { count: 'exact' })
       .gte('event_date', fromDate.toISOString())
       .order('event_date', { ascending: false })
       .range(offset, offset + pageSize - 1);
@@ -56,13 +60,14 @@ export async function GET(request: NextRequest) {
       const eventIds = events.map(e => e.id);
       const { data: counts } = await supabase
         .from('participations')
-        .select('event_id')
+        .select('event_id, count:count()')
         .in('event_id', eventIds);
 
-      // Count participants per event
       const countMap: Record<string, number> = {};
-      counts?.forEach(p => {
-        countMap[p.event_id] = (countMap[p.event_id] || 0) + 1;
+      counts?.forEach((row: { event_id: string; count: number | null }) => {
+        if (row.event_id) {
+          countMap[row.event_id] = Number(row.count || 0);
+        }
       });
 
       result?.forEach(r => {

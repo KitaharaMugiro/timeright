@@ -4,7 +4,13 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { DashboardClient } from './client';
 import type { Match, Event, Participation } from '@/types/database';
 
-export default async function DashboardPage() {
+const EVENTS_PAGE_SIZE = 20;
+
+interface DashboardPageProps {
+  searchParams?: { eventsPage?: string };
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -24,23 +30,27 @@ export default async function DashboardPage() {
   cutoffDate.setHours(0, 0, 0, 0);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const eventsPage = Math.max(1, parseInt(searchParams?.eventsPage || '1', 10));
+  const eventsOffset = (eventsPage - 1) * EVENTS_PAGE_SIZE;
 
   // First batch: Run independent queries in parallel
   const [eventsResult, participationsResult, matchesResult] = await Promise.all([
     // Get upcoming events (at least 2 days away)
     supabase
       .from('events')
-      .select('*')
+      .select('id, event_date, area, status', { count: 'exact' })
       .eq('status', 'open')
       .gte('event_date', cutoffDate.toISOString())
-      .order('event_date', { ascending: true }),
+      .order('event_date', { ascending: true })
+      .range(eventsOffset, eventsOffset + EVENTS_PAGE_SIZE - 1),
 
     // Get user's participations
     supabase
       .from('participations')
       .select('*, events(*)')
       .eq('user_id', user.id)
-      .neq('status', 'canceled'),
+      .neq('status', 'canceled')
+      .gte('events.event_date', today.toISOString()),
 
     // Get user's matches (today and future only)
     supabase
@@ -153,6 +163,12 @@ export default async function DashboardPage() {
     <DashboardClient
       user={user}
       events={events || []}
+      eventsPagination={{
+        page: eventsPage,
+        pageSize: EVENTS_PAGE_SIZE,
+        totalCount: eventsResult.count || 0,
+        totalPages: Math.ceil((eventsResult.count || 0) / EVENTS_PAGE_SIZE),
+      }}
       participations={participations || []}
       matches={matches || []}
       participantsMap={participantsMap}

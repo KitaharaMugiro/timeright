@@ -17,6 +17,11 @@ export default async function AdminKPIPage() {
 
   const supabase = await createServiceClient();
 
+  const DAILY_WINDOW_DAYS = 90;
+  const since = new Date();
+  since.setDate(since.getDate() - (DAILY_WINDOW_DAYS - 1));
+  const sinceDate = since.toISOString().split('T')[0];
+
   // Fetch all KPI data in parallel
   const [
     { data: userMetrics },
@@ -34,8 +39,16 @@ export default async function AdminKPIPage() {
     supabase.from('kpi_participation_metrics').select('*').single(),
     supabase.from('kpi_review_metrics').select('*').single(),
     supabase.from('kpi_referral_metrics').select('*').single(),
-    supabase.from('kpi_daily_signups').select('*'),
-    supabase.from('kpi_daily_participations').select('*'),
+    supabase
+      .from('kpi_daily_signups')
+      .select('date, signups')
+      .gte('date', sinceDate)
+      .order('date', { ascending: true }),
+    supabase
+      .from('kpi_daily_participations')
+      .select('date, participations, cancellations')
+      .gte('date', sinceDate)
+      .order('date', { ascending: true }),
   ]);
 
   const kpiData: KPIData = {

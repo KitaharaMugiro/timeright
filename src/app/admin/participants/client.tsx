@@ -60,7 +60,8 @@ interface MatchInfo {
 }
 
 // Cache for loaded participants
-const participantsCache = new Map<string, { participants: ParticipantWithData[]; match: MatchInfo | null }>();
+const participantsCache = new Map<string, { participants: ParticipantWithData[]; match: MatchInfo | null; pagination: Pagination | null }>();
+const PARTICIPANTS_PAGE_SIZE = 50;
 
 export function AdminParticipantsClient() {
   const [events, setEvents] = useState<EventSummary[]>([]);
@@ -70,6 +71,8 @@ export function AdminParticipantsClient() {
   const [eventParticipants, setEventParticipants] = useState<ParticipantWithData[]>([]);
   const [eventMatch, setEventMatch] = useState<MatchInfo | null>(null);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [participantsPagination, setParticipantsPagination] = useState<Pagination | null>(null);
+  const [participantsPage, setParticipantsPage] = useState(1);
 
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -114,19 +117,24 @@ export function AdminParticipantsClient() {
     fetchEvents(1);
   }, [fetchEvents]);
 
-  const fetchParticipants = useCallback(async (eventId: string) => {
+  const fetchParticipants = useCallback(async (eventId: string, page: number = 1) => {
     // Check cache first
-    const cacheKey = `${eventId}-${searchQuery}-${filterNoShow}-${filterStatus}`;
+    const cacheKey = `${eventId}-${searchQuery}-${filterNoShow}-${filterStatus}-${page}`;
     const cached = participantsCache.get(cacheKey);
     if (cached) {
       setEventParticipants(cached.participants);
       setEventMatch(cached.match);
+      setParticipantsPagination(cached.pagination);
+      setParticipantsPage(page);
       return;
     }
 
     setLoadingParticipants(true);
     try {
-      const params = new URLSearchParams();
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(PARTICIPANTS_PAGE_SIZE),
+      });
       if (searchQuery) params.set('search', searchQuery);
       if (filterNoShow !== 'all') params.set('noShow', filterNoShow);
       if (filterStatus !== 'all') params.set('status', filterStatus);
@@ -136,15 +144,19 @@ export function AdminParticipantsClient() {
 
       setEventParticipants(data.participants || []);
       setEventMatch(data.match || null);
+      setParticipantsPagination(data.pagination || null);
+      setParticipantsPage(page);
 
       // Cache result
       participantsCache.set(cacheKey, {
         participants: data.participants || [],
         match: data.match || null,
+        pagination: data.pagination || null,
       });
     } catch (error) {
       console.error('Failed to fetch participants:', error);
       setEventParticipants([]);
+      setParticipantsPagination(null);
     } finally {
       setLoadingParticipants(false);
     }
@@ -155,18 +167,24 @@ export function AdminParticipantsClient() {
       setExpandedEvent(null);
       setEventParticipants([]);
       setEventMatch(null);
+      setParticipantsPagination(null);
     } else {
       setExpandedEvent(eventId);
-      await fetchParticipants(eventId);
+      setEventParticipants([]);
+      setEventMatch(null);
+      setParticipantsPagination(null);
+      setParticipantsPage(1);
     }
   };
 
   // Refetch participants when filters change (if event is expanded)
   useEffect(() => {
+    participantsCache.clear();
     if (expandedEvent) {
-      fetchParticipants(expandedEvent);
+      setParticipantsPage(1);
+      fetchParticipants(expandedEvent, 1);
     }
-  }, [expandedEvent, fetchParticipants]);
+  }, [expandedEvent, fetchParticipants, searchQuery, filterNoShow, filterStatus]);
 
   const toggleUserSelect = (lineUserId: string | null, odm: string) => {
     if (!lineUserId) return;
@@ -438,6 +456,7 @@ export function AdminParticipantsClient() {
                         ) : (
                           <>
                             {eventParticipants.length}人表示
+                            {participantsPagination && ` / ${participantsPagination.totalCount}人`}
                             {selectedInEvent > 0 && ` / ${selectedInEvent}人選択中`}
                           </>
                         )}
@@ -608,6 +627,38 @@ export function AdminParticipantsClient() {
                             </div>
                           );
                         })}
+                      </div>
+                    )}
+
+                    {participantsPagination && participantsPagination.totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-4 mt-6">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={participantsPage === 1 || loadingParticipants}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fetchParticipants(event.id, participantsPage - 1);
+                          }}
+                        >
+                          <ChevronLeft className="w-4 h-4 mr-1" />
+                          前へ
+                        </Button>
+                        <span className="text-sm text-slate-400">
+                          {participantsPage} / {participantsPagination.totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={participantsPage === participantsPagination.totalPages || loadingParticipants}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fetchParticipants(event.id, participantsPage + 1);
+                          }}
+                        >
+                          次へ
+                          <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
                       </div>
                     )}
                   </CardContent>

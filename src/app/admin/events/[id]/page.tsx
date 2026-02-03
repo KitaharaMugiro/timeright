@@ -24,7 +24,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   // Get event
   const { data: event } = await supabase
     .from('events')
-    .select('*')
+    .select('id, event_date, area, status')
     .eq('id', eventId)
     .single();
 
@@ -35,7 +35,25 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   // Get participations with user details
   const { data: participations } = await supabase
     .from('participations')
-    .select('*, users(*)')
+    .select(`
+      id,
+      user_id,
+      group_id,
+      status,
+      mood,
+      mood_text,
+      budget_level,
+      users(
+        id,
+        display_name,
+        avatar_url,
+        gender,
+        birth_date,
+        job,
+        personality_type,
+        subscription_status
+      )
+    `)
     .eq('event_id', eventId)
     .neq('status', 'canceled')
     .order('created_at', { ascending: true });
@@ -43,13 +61,13 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   // Get matches
   const { data: matches } = await supabase
     .from('matches')
-    .select('*')
+    .select('id, event_id, restaurant_name, restaurant_url, reservation_name, table_members')
     .eq('event_id', eventId);
 
   // Get guests
   const { data: guests } = await supabase
     .from('guests')
-    .select('*')
+    .select('id, event_id, group_id, display_name, gender')
     .eq('event_id', eventId)
     .order('created_at', { ascending: true });
 

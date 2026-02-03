@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Star, Edit2, Check, X, MapPin, Calendar, Users } from 'lucide-react';
@@ -14,13 +15,31 @@ import type { ConnectionWithDetails } from './page';
 
 interface ConnectionsClientProps {
   connections: ConnectionWithDetails[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  };
 }
 
-export function ConnectionsClient({ connections: initialConnections }: ConnectionsClientProps) {
+export function ConnectionsClient({ connections: initialConnections, pagination }: ConnectionsClientProps) {
+  const router = useRouter();
   const [connections, setConnections] = useState(initialConnections);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editMemo, setEditMemo] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setConnections(initialConnections);
+    setEditingId(null);
+    setEditMemo('');
+  }, [initialConnections]);
+
+  const handlePageChange = (page: number) => {
+    const nextPage = Math.max(1, Math.min(page, pagination.totalPages));
+    router.push(`/connections?page=${nextPage}`);
+  };
 
   const handleStartEdit = (connection: ConnectionWithDetails) => {
     setEditingId(connection.review.id);
@@ -87,7 +106,7 @@ export function ConnectionsClient({ connections: initialConnections }: Connectio
               出会った人たち
             </h1>
             <p className="text-slate-400 mb-6">
-              {connections.length}人の方と出会いました
+              {pagination.totalCount}人の方と出会いました
             </p>
           </motion.div>
 
@@ -234,6 +253,30 @@ export function ConnectionsClient({ connections: initialConnections }: Connectio
                   </motion.div>
                 );
               })}
+            </div>
+          )}
+
+          {pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagination.page === 1}
+                onClick={() => handlePageChange(pagination.page - 1)}
+              >
+                前へ
+              </Button>
+              <span className="text-sm text-slate-400">
+                {pagination.page} / {pagination.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagination.page === pagination.totalPages}
+                onClick={() => handlePageChange(pagination.page + 1)}
+              >
+                次へ
+              </Button>
             </div>
           )}
         </div>

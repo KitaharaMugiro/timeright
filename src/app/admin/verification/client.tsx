@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { UserAvatar } from '@/components/UserAvatar';
 import { formatDate, formatTime } from '@/lib/utils';
@@ -9,12 +10,29 @@ import type { VerificationRequestWithUser } from './page';
 
 interface AdminVerificationClientProps {
   initialRequests: VerificationRequestWithUser[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  };
 }
 
-export function AdminVerificationClient({ initialRequests }: AdminVerificationClientProps) {
+export function AdminVerificationClient({ initialRequests, pagination }: AdminVerificationClientProps) {
+  const router = useRouter();
   const [requests, setRequests] = useState(initialRequests);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setRequests(initialRequests);
+    setLoadingId(null);
+  }, [initialRequests]);
+
+  const handlePageChange = (page: number) => {
+    const nextPage = Math.max(1, Math.min(page, pagination.totalPages));
+    router.push(`/admin/verification?page=${nextPage}`);
+  };
 
   const handleApprove = async (id: string) => {
     if (loadingId) return;
@@ -78,7 +96,7 @@ export function AdminVerificationClient({ initialRequests }: AdminVerificationCl
           <Shield className="w-6 h-6 text-emerald-500" />
           <h1 className="text-2xl font-bold text-white">本人確認</h1>
           <span className="ml-2 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-sm rounded">
-            {requests.length}件待ち
+            {pagination.totalCount}件待ち
           </span>
         </div>
 
@@ -172,6 +190,28 @@ export function AdminVerificationClient({ initialRequests }: AdminVerificationCl
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {pagination.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-6">
+            <button
+              className="px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors disabled:opacity-50"
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.page === 1}
+            >
+              前へ
+            </button>
+            <span className="text-sm text-slate-400">
+              {pagination.page} / {pagination.totalPages}
+            </span>
+            <button
+              className="px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors disabled:opacity-50"
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.page === pagination.totalPages}
+            >
+              次へ
+            </button>
           </div>
         )}
       </div>

@@ -1,7 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
-import { createServiceClient } from '@/lib/supabase/server';
 import { AdminClient } from './client';
 
 export default async function AdminPage() {
@@ -18,13 +17,5 @@ export default async function AdminPage() {
     redirect('/');
   }
 
-  const supabase = await createServiceClient();
-
-  // Get all events
-  const { data: events } = await supabase
-    .from('events')
-    .select('*')
-    .order('event_date', { ascending: false });
-
-  return <AdminClient events={events || []} />;
+  return <AdminClient />;
 }

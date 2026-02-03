@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,10 +12,6 @@ import { formatDate, formatTime, getAreaLabel, isWithin48Hours, AREA_OPTIONS } f
 import { Plus, Calendar, MapPin, Users, AlertCircle } from 'lucide-react';
 import type { Event } from '@/types/database';
 
-interface AdminClientProps {
-  events: Event[];
-}
-
 type EventTab = 'upcoming' | 'matched' | 'closed';
 
 const EVENT_TABS: { id: EventTab; label: string }[] = [
@@ -23,6 +19,15 @@ const EVENT_TABS: { id: EventTab; label: string }[] = [
   { id: 'matched', label: 'マッチング済' },
   { id: 'closed', label: '終了' },
 ];
+
+interface Pagination {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+const PAGE_SIZE = 20;
 
 function needsUrgentMatching(event: Event): boolean {
   return isWithin48Hours(event.event_date) && event.status === 'open';
@@ -48,11 +53,15 @@ function sortEvents(events: Event[]): Event[] {
   });
 }
 
-export function AdminClient({ events: initialEvents }: AdminClientProps) {
-  const [events, setEvents] = useState(() => sortEvents(initialEvents));
+export function AdminClient() {
+  const [events, setEvents] = useState<Event[]>([]);
   const [activeTab, setActiveTab] = useState<EventTab>('upcoming');
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [tabCounts, setTabCounts] = useState({ upcoming: 0, matched: 0, closed: 0 });
 
   const [newEvent, setNewEvent] = useState({
     date: '',
@@ -60,37 +69,42 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
     area: 'shibuya',
   });
 
-  const filteredEvents = useMemo(() => {
-    const now = new Date();
-    return events.filter((event) => {
-      const eventDate = new Date(event.event_date);
-      const isPast = eventDate < now;
+  const fetchEvents = useCallback(async (tab: EventTab, page: number = 1) => {
+    setLoadingEvents(true);
+    try {
+      const params = new URLSearchParams({
+        tab,
+        page: String(page),
+        pageSize: String(PAGE_SIZE),
+      });
 
-      switch (activeTab) {
-        case 'upcoming':
-          return event.status === 'open' && !isPast;
-        case 'matched':
-          return event.status === 'matched' && !isPast;
-        case 'closed':
-          return event.status === 'closed' || isPast;
-        default:
-          return true;
+      const response = await fetch(`/api/admin/events?${params}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch events');
       }
-    });
-  }, [events, activeTab]);
 
-  const tabCounts = useMemo(() => {
-    const now = new Date();
-    return {
-      upcoming: events.filter((e) => e.status === 'open' && new Date(e.event_date) >= now).length,
-      matched: events.filter((e) => e.status === 'matched' && new Date(e.event_date) >= now).length,
-      closed: events.filter((e) => e.status === 'closed' || new Date(e.event_date) < now).length,
-    };
-  }, [events]);
+      setEvents(sortEvents(data.events || []));
+      setPagination(data.pagination || null);
+      setTabCounts(data.counts || { upcoming: 0, matched: 0, closed: 0 });
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Fetch events error:', error);
+      setEvents([]);
+      setPagination(null);
+    } finally {
+      setLoadingEvents(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEvents(activeTab, 1);
+  }, [activeTab, fetchEvents]);
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setCreating(true);
 
     try {
       const eventDate = new Date(`${newEvent.date}T${newEvent.time}:00`);
@@ -110,14 +124,14 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
         throw new Error(data.error || 'Failed to create event');
       }
 
-      setEvents(sortEvents([data.event, ...events]));
+      await fetchEvents(activeTab, 1);
       setShowCreateForm(false);
       setNewEvent({ date: '', time: '19:00', area: 'shibuya' });
     } catch (error) {
       console.error('Create event error:', error);
       alert('イベントの作成に失敗しました');
     } finally {
-      setLoading(false);
+      setCreating(false);
     }
   };
 
@@ -164,7 +178,7 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
                 />
               </div>
               <div className="flex gap-2">
-                <Button type="submit" loading={loading}>
+                <Button type="submit" loading={creating}>
                   作成
                 </Button>
                 <Button type="button" variant="ghost" onClick={() => setShowCreateForm(false)}>
@@ -181,7 +195,10 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
         {EVENT_TABS.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+              setCurrentPage(1);
+            }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
               activeTab === tab.id
                 ? 'bg-rose-500 text-white'
@@ -202,7 +219,13 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
 
       {/* Events list */}
       <div className="space-y-4">
-        {filteredEvents.length === 0 ? (
+        {loadingEvents ? (
+          <Card className="glass-card border-slate-700">
+            <CardContent className="p-6 text-center text-slate-400">
+              読み込み中...
+            </CardContent>
+          </Card>
+        ) : events.length === 0 ? (
           <Card className="glass-card border-slate-700">
             <CardContent className="p-6 text-center text-slate-400">
               {activeTab === 'upcoming' && 'マッチング待ちのイベントはありません'}
@@ -211,7 +234,7 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
             </CardContent>
           </Card>
         ) : (
-          filteredEvents.map((event) => {
+          events.map((event) => {
             const isUrgent = needsUrgentMatching(event);
             return (
               <Card
@@ -270,6 +293,30 @@ export function AdminClient({ events: initialEvents }: AdminClientProps) {
           })
         )}
       </div>
+
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage === 1 || loadingEvents}
+            onClick={() => fetchEvents(activeTab, currentPage - 1)}
+          >
+            前へ
+          </Button>
+          <span className="text-sm text-slate-400">
+            {currentPage} / {pagination.totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage === pagination.totalPages || loadingEvents}
+            onClick={() => fetchEvents(activeTab, currentPage + 1)}
+          >
+            次へ
+          </Button>
+        </div>
+      )}
     </AdminLayout>
   );
 }

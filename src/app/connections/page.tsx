@@ -11,7 +11,13 @@ export interface ConnectionWithDetails {
   match: Pick<Match, 'id' | 'restaurant_name'>;
 }
 
-export default async function ConnectionsPage() {
+const DEFAULT_PAGE_SIZE = 20;
+
+interface ConnectionsPageProps {
+  searchParams?: { page?: string };
+}
+
+export default async function ConnectionsPage({ searchParams }: ConnectionsPageProps) {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -20,16 +26,21 @@ export default async function ConnectionsPage() {
 
   const supabase = await createServiceClient();
 
-  // Get all reviews by this user with related data
-  const { data: reviews } = await supabase
+  const page = Math.max(1, parseInt(searchParams?.page || '1', 10));
+  const pageSize = DEFAULT_PAGE_SIZE;
+  const offset = (page - 1) * pageSize;
+
+  // Get reviews by this user with related data (paged)
+  const { data: reviews, count: totalCount } = await supabase
     .from('reviews')
     .select(`
       *,
       target:users!reviews_target_user_id_fkey(id, display_name, avatar_url, job, gender, personality_type),
       matches!inner(id, restaurant_name, events!inner(id, event_date, area))
-    `)
+    `, { count: 'exact' })
     .eq('reviewer_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(offset, offset + pageSize - 1);
 
   // Transform into ConnectionWithDetails
   const connections: ConnectionWithDetails[] = (reviews || []).map((review: any) => ({
@@ -53,5 +64,15 @@ export default async function ConnectionsPage() {
     },
   }));
 
-  return <ConnectionsClient connections={connections} />;
+  return (
+    <ConnectionsClient
+      connections={connections}
+      pagination={{
+        page,
+        pageSize,
+        totalCount: totalCount || 0,
+        totalPages: Math.ceil((totalCount || 0) / pageSize),
+      }}
+    />
+  );
 }
