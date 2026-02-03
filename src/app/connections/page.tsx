@@ -14,7 +14,7 @@ export interface ConnectionWithDetails {
 const DEFAULT_PAGE_SIZE = 20;
 
 interface ConnectionsPageProps {
-  searchParams?: { page?: string };
+  searchParams?: Promise<{ page?: string }>;
 }
 
 export default async function ConnectionsPage({ searchParams }: ConnectionsPageProps) {
@@ -25,8 +25,9 @@ export default async function ConnectionsPage({ searchParams }: ConnectionsPageP
   }
 
   const supabase = await createServiceClient();
+  const resolvedSearchParams = await searchParams;
 
-  const page = Math.max(1, parseInt(searchParams?.page || '1', 10));
+  const page = Math.max(1, parseInt(resolvedSearchParams?.page || '1', 10));
   const pageSize = DEFAULT_PAGE_SIZE;
   const offset = (page - 1) * pageSize;
 

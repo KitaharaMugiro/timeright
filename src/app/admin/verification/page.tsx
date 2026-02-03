@@ -11,7 +11,7 @@ export type VerificationRequestWithUser = IdentityVerificationRequest & {
 const DEFAULT_PAGE_SIZE = 20;
 
 interface AdminVerificationPageProps {
-  searchParams?: { page?: string };
+  searchParams?: Promise<{ page?: string }>;
 }
 
 export default async function AdminVerificationPage({ searchParams }: AdminVerificationPageProps) {
@@ -26,8 +26,9 @@ export default async function AdminVerificationPage({ searchParams }: AdminVerif
   }
 
   const supabase = await createServiceClient();
+  const resolvedSearchParams = await searchParams;
 
-  const page = Math.max(1, parseInt(searchParams?.page || '1', 10));
+  const page = Math.max(1, parseInt(resolvedSearchParams?.page || '1', 10));
   const pageSize = DEFAULT_PAGE_SIZE;
   const offset = (page - 1) * pageSize;
 

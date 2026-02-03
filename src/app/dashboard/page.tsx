@@ -39,7 +39,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     // Get upcoming events (at least 2 days away)
     supabase
       .from('events')
-      .select('id, event_date, area, status', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .eq('status', 'open')
       .gte('event_date', cutoffDate.toISOString())
       .order('event_date', { ascending: true })
