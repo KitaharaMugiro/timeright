@@ -1,23 +1,15 @@
-import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { getCurrentUser } from '@/lib/auth';
 import { AdminParticipantsClient } from './client';
 
 export default async function AdminParticipantsPage() {
-  const supabase = await createClient();
+  const user = await getCurrentUser();
 
-  // Check admin auth
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/');
   }
 
-  const { data: userData } = await supabase
-    .from('users')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single();
-
-  if (!userData?.is_admin) {
+  if (!user.is_admin) {
     redirect('/dashboard');
   }
 

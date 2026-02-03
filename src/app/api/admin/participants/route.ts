@@ -58,15 +58,17 @@ export async function GET(request: NextRequest) {
     // Get participant counts for these events
     if (events && events.length > 0) {
       const eventIds = events.map(e => e.id);
-      const { data: counts } = await supabase
+      const { data: participations } = await supabase
         .from('participations')
-        .select('event_id, count:count()')
-        .in('event_id', eventIds);
+        .select('event_id')
+        .in('event_id', eventIds)
+        .neq('status', 'canceled');
 
+      // Count participations per event in JavaScript
       const countMap: Record<string, number> = {};
-      counts?.forEach((row: { event_id: string; count: number | null }) => {
+      participations?.forEach((row: { event_id: string }) => {
         if (row.event_id) {
-          countMap[row.event_id] = Number(row.count || 0);
+          countMap[row.event_id] = (countMap[row.event_id] || 0) + 1;
         }
       });
 

@@ -59,6 +59,55 @@ interface MatchInfo {
   restaurant_url?: string | null;
 }
 
+interface ReviewUser {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+  gender: string;
+}
+
+interface ReviewEvent {
+  event_date: string;
+  area: string;
+}
+
+interface ReviewMatch {
+  id: string;
+  event_id: string;
+  events: ReviewEvent;
+}
+
+interface ReviewReceived {
+  id: string;
+  rating: number;
+  comment: string | null;
+  is_no_show: boolean;
+  block_flag: boolean;
+  created_at: string;
+  match_id: string;
+  reviewer: ReviewUser;
+  match: ReviewMatch;
+}
+
+interface ReviewGiven {
+  id: string;
+  rating: number;
+  comment: string | null;
+  memo: string | null;
+  is_no_show: boolean;
+  block_flag: boolean;
+  created_at: string;
+  match_id: string;
+  target: ReviewUser;
+  match: ReviewMatch;
+}
+
+interface UserReviewData {
+  user: ReviewUser | null;
+  reviewsReceived: ReviewReceived[];
+  reviewsGiven: ReviewGiven[];
+}
+
 // Cache for loaded participants
 const participantsCache = new Map<string, { participants: ParticipantWithData[]; match: MatchInfo | null; pagination: Pagination | null }>();
 const PARTICIPANTS_PAGE_SIZE = 50;
@@ -78,6 +127,12 @@ export function AdminParticipantsClient() {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+
+  // Review modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewData, setReviewData] = useState<UserReviewData | null>(null);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [reviewTab, setReviewTab] = useState<'received' | 'given'>('received');
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -222,6 +277,22 @@ export function AdminParticipantsClient() {
       });
       return next;
     });
+  };
+
+  const fetchUserReviews = async (userId: string) => {
+    setLoadingReviews(true);
+    setShowReviewModal(true);
+    setReviewTab('received');
+    try {
+      const res = await fetch(`/api/admin/participants/user/${userId}/reviews`);
+      const data = await res.json();
+      setReviewData(data);
+    } catch (error) {
+      console.error('Failed to fetch user reviews:', error);
+      setReviewData(null);
+    } finally {
+      setLoadingReviews(false);
+    }
   };
 
   const sendMessage = async () => {
@@ -580,8 +651,15 @@ export function AdminParticipantsClient() {
                                 </span>
                               </div>
 
-                              {/* Reviews info */}
-                              <div className="text-right min-w-[120px]">
+                              {/* Reviews info - clickable */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  fetchUserReviews(participant.user.id);
+                                }}
+                                className="text-right min-w-[120px] hover:bg-slate-700/50 rounded p-1 transition-colors cursor-pointer"
+                                title="クリックでレビュー詳細を表示"
+                              >
                                 {participant.reviewStats?.avgRating !== null && participant.reviewStats?.avgRating !== undefined ? (
                                   <div className="flex items-center justify-end gap-2">
                                     {renderStars(Math.round(participant.reviewStats.avgRating))}
@@ -614,7 +692,7 @@ export function AdminParticipantsClient() {
                                     </span>
                                   )}
                                 </div>
-                              </div>
+                              </button>
 
                               {/* LINE status */}
                               <div className="min-w-[60px] text-center">
@@ -731,6 +809,203 @@ export function AdminParticipantsClient() {
                     送信
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Review Modal */}
+        {showReviewModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-2xl glass-card border-slate-700 max-h-[80vh] flex flex-col">
+              <CardHeader className="flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {reviewData?.user && (
+                      <>
+                        <UserAvatar
+                          displayName={reviewData.user.display_name}
+                          avatarUrl={reviewData.user.avatar_url}
+                          gender={reviewData.user.gender as Gender}
+                          size="md"
+                        />
+                        <div>
+                          <h2 className="text-lg font-semibold text-white">
+                            {reviewData.user.display_name}
+                          </h2>
+                          <p className="text-sm text-slate-400">レビュー詳細</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowReviewModal(false);
+                      setReviewData(null);
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => setReviewTab('received')}
+                    className={cn(
+                      'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                      reviewTab === 'received'
+                        ? 'bg-rose-500 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                    )}
+                  >
+                    受けたレビュー ({reviewData?.reviewsReceived.length || 0})
+                  </button>
+                  <button
+                    onClick={() => setReviewTab('given')}
+                    className={cn(
+                      'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                      reviewTab === 'given'
+                        ? 'bg-rose-500 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                    )}
+                  >
+                    書いたレビュー ({reviewData?.reviewsGiven.length || 0})
+                  </button>
+                </div>
+              </CardHeader>
+
+              <CardContent className="flex-1 overflow-y-auto">
+                {loadingReviews ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                  </div>
+                ) : reviewTab === 'received' ? (
+                  <div className="space-y-3">
+                    {reviewData?.reviewsReceived.length === 0 ? (
+                      <p className="text-center text-slate-400 py-4">レビューがありません</p>
+                    ) : (
+                      reviewData?.reviewsReceived.map((review) => (
+                        <div
+                          key={review.id}
+                          className={cn(
+                            'p-3 rounded-lg bg-slate-800/50',
+                            review.is_no_show && 'border-l-4 border-l-warning',
+                            review.block_flag && !review.is_no_show && 'border-l-4 border-l-error'
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              <UserAvatar
+                                displayName={review.reviewer.display_name}
+                                avatarUrl={review.reviewer.avatar_url}
+                                gender={review.reviewer.gender as Gender}
+                                size="sm"
+                              />
+                              <div>
+                                <span className="text-sm font-medium text-white">
+                                  {review.reviewer.display_name}
+                                </span>
+                                <span className="text-xs text-slate-500 ml-2">から</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              {renderStars(review.rating)}
+                              <div className="text-xs text-slate-500 mt-1">
+                                {formatDate(review.match.events.event_date)} {getAreaLabel(review.match.events.area)}
+                              </div>
+                            </div>
+                          </div>
+                          {review.comment && (
+                            <p className="mt-2 text-sm text-slate-300 bg-slate-900/50 p-2 rounded">
+                              {review.comment}
+                            </p>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            {review.is_no_show && (
+                              <span className="flex items-center gap-1 text-xs text-warning bg-warning/10 px-2 py-0.5 rounded">
+                                <UserX className="w-3 h-3" />
+                                No Show報告
+                              </span>
+                            )}
+                            {review.block_flag && (
+                              <span className="flex items-center gap-1 text-xs text-error bg-error/10 px-2 py-0.5 rounded">
+                                <Ban className="w-3 h-3" />
+                                ブロック
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {reviewData?.reviewsGiven.length === 0 ? (
+                      <p className="text-center text-slate-400 py-4">レビューがありません</p>
+                    ) : (
+                      reviewData?.reviewsGiven.map((review) => (
+                        <div
+                          key={review.id}
+                          className={cn(
+                            'p-3 rounded-lg bg-slate-800/50',
+                            review.is_no_show && 'border-l-4 border-l-warning',
+                            review.block_flag && !review.is_no_show && 'border-l-4 border-l-error'
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              <UserAvatar
+                                displayName={review.target.display_name}
+                                avatarUrl={review.target.avatar_url}
+                                gender={review.target.gender as Gender}
+                                size="sm"
+                              />
+                              <div>
+                                <span className="text-sm font-medium text-white">
+                                  {review.target.display_name}
+                                </span>
+                                <span className="text-xs text-slate-500 ml-2">へ</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              {renderStars(review.rating)}
+                              <div className="text-xs text-slate-500 mt-1">
+                                {formatDate(review.match.events.event_date)} {getAreaLabel(review.match.events.area)}
+                              </div>
+                            </div>
+                          </div>
+                          {review.comment && (
+                            <p className="mt-2 text-sm text-slate-300 bg-slate-900/50 p-2 rounded">
+                              {review.comment}
+                            </p>
+                          )}
+                          {review.memo && (
+                            <p className="mt-2 text-sm text-slate-400 italic bg-slate-900/30 p-2 rounded">
+                              メモ: {review.memo}
+                            </p>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            {review.is_no_show && (
+                              <span className="flex items-center gap-1 text-xs text-warning bg-warning/10 px-2 py-0.5 rounded">
+                                <UserX className="w-3 h-3" />
+                                No Show報告
+                              </span>
+                            )}
+                            {review.block_flag && (
+                              <span className="flex items-center gap-1 text-xs text-error bg-error/10 px-2 py-0.5 rounded">
+                                <Ban className="w-3 h-3" />
+                                ブロック
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

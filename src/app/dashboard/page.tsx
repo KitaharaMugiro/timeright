@@ -7,7 +7,7 @@ import type { Match, Event, Participation } from '@/types/database';
 const EVENTS_PAGE_SIZE = 20;
 
 interface DashboardPageProps {
-  searchParams?: { eventsPage?: string };
+  searchParams?: Promise<{ eventsPage?: string }>;
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -30,7 +30,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   cutoffDate.setHours(0, 0, 0, 0);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const eventsPage = Math.max(1, parseInt(searchParams?.eventsPage || '1', 10));
+  const resolvedParams = await searchParams;
+  const eventsPage = Math.max(1, parseInt(resolvedParams?.eventsPage || '1', 10));
   const eventsOffset = (eventsPage - 1) * EVENTS_PAGE_SIZE;
 
   // First batch: Run independent queries in parallel
