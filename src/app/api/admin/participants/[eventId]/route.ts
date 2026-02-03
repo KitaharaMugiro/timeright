@@ -215,7 +215,7 @@ export async function GET(
       .single();
 
     // Build response with filters applied
-    let result = participations.map(p => {
+    const result = participations.map(p => {
       const stats = userStats[p.user_id];
       return {
         ...p,
