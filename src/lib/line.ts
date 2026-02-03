@@ -22,7 +22,6 @@ export interface MatchNotificationData {
   restaurantName: string;
   restaurantUrl?: string | null;
   reservationName?: string | null;
-  memberNames: string[];
 }
 
 /**
@@ -75,8 +74,6 @@ export async function sendMatchNotification(
       message += `\n【予約名】${data.reservationName}`;
     }
 
-    message += `\n\n【メンバー】\n${data.memberNames.join('\n')}`;
-
     message += `\n\n当日をお楽しみに！`;
 
     await client.pushMessage({
@@ -101,14 +98,13 @@ export async function sendMatchNotification(
  * Send match notifications to all members of a match
  */
 export async function sendMatchNotificationsToMembers(
-  members: Array<{ lineUserId: string | null; displayName: string }>,
+  members: Array<{ lineUserId: string | null }>,
   eventDate: string,
   area: string,
   restaurantName: string,
   restaurantUrl?: string | null,
   reservationName?: string | null
 ): Promise<{ sent: number; failed: number; skipped: number }> {
-  const memberNames = members.map(m => m.displayName);
   const results = { sent: 0, failed: 0, skipped: 0 };
 
   for (const member of members) {
@@ -123,7 +119,6 @@ export async function sendMatchNotificationsToMembers(
       restaurantName,
       restaurantUrl,
       reservationName,
-      memberNames,
     });
 
     if (success) {
@@ -354,7 +349,6 @@ export interface ReminderNotificationData {
   restaurantName: string;
   restaurantUrl?: string | null;
   reservationName?: string | null;
-  memberNames: string[];
 }
 
 /**
@@ -409,7 +403,6 @@ export async function sendReminderNotification(
       message += `\n【予約名】${data.reservationName}`;
     }
 
-    message += `\n\n【メンバー】\n${data.memberNames.join('\n')}`;
     message += `\n\n素敵な時間をお過ごしください！`;
 
     await client.pushMessage({
@@ -434,14 +427,13 @@ export async function sendReminderNotification(
  * Send reminder notifications to all members of a match
  */
 export async function sendReminderNotificationsToMembers(
-  members: Array<{ lineUserId: string | null; displayName: string }>,
+  members: Array<{ lineUserId: string | null }>,
   eventDate: string,
   area: string,
   restaurantName: string,
   restaurantUrl?: string | null,
   reservationName?: string | null
 ): Promise<{ sent: number; failed: number; skipped: number }> {
-  const memberNames = members.map(m => m.displayName);
   const results = { sent: 0, failed: 0, skipped: 0 };
 
   for (const member of members) {
@@ -456,7 +448,6 @@ export async function sendReminderNotificationsToMembers(
       restaurantName,
       restaurantUrl,
       reservationName,
-      memberNames,
     });
 
     if (success) {
