@@ -43,12 +43,21 @@ export const metadata: Metadata = {
     siteName: "Dine Tokyo",
     url: "https://dine-tokyo.vercel.app/",
     type: "website",
+    images: [
+      {
+        url: "https://dine-tokyo.vercel.app/twitter_card_cat_1200x630.png",
+        width: 1200,
+        height: 630,
+        alt: "Dine Tokyo - 初対面の男女4-6人とディナーができるアプリ",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Dine Tokyo（ダイントーキョー）",
     description:
       "初対面の男女4-6人とディナーができるアプリ。人生を動かすのは偶然の出会いだ。「はじめまして」に会いに行こう。",
+    images: ["https://dine-tokyo.vercel.app/twitter_card_cat_1200x630.png"],
   },
   verification: {
     google: "nCQXz1fhJHjeKkxo7U2qJDwl1COf_hqg2d0VZyFZUSg",
