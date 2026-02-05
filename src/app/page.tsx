@@ -136,6 +136,10 @@ export default function LandingPage() {
   }, []);
 
   const handleLineOA = () => {
+    // Facebook Pixel: CompleteRegistration event
+    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+      window.fbq('track', 'CompleteRegistration');
+    }
     window.location.href = process.env.NEXT_PUBLIC_LINE_OFFICIAL_ACCOUNT_URL || 'https://lin.ee/5uOPktg';
   };
 
