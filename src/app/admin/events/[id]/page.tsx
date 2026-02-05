@@ -56,12 +56,22 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     .eq('event_id', eventId)
     .order('created_at', { ascending: true });
 
+  // Get block relations for all users in this event
+  // A block relation means reviewer_id has blocked target_user_id
+  const userIds = (participations || []).map(p => p.user_id);
+  const { data: blockRelations } = await supabase
+    .from('reviews')
+    .select('reviewer_id, target_user_id')
+    .eq('block_flag', true)
+    .or(`reviewer_id.in.(${userIds.join(',')}),target_user_id.in.(${userIds.join(',')})`);
+
   return (
     <EventDetailClient
       event={event}
       participations={participations || []}
       matches={matches || []}
       guests={guests || []}
+      blockRelations={blockRelations || []}
     />
   );
 }

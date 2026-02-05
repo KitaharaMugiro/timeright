@@ -24,6 +24,7 @@
   "dependencies": {
     "@line/bot-sdk": "^10.6.0",
     "@line/liff": "^2.27.3",
+    "@sentry/nextjs": "^10.38.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.78.0",
     "class-variance-authority": "^0.7.1",

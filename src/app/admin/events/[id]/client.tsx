@@ -13,11 +13,18 @@ import { ArrowLeft, Plus, X, Users, Store, Check, Trash2, UserPlus, Ban, Bell, W
 import { ReminderConfirmationDialog } from '@/components/admin/ReminderConfirmationDialog';
 import type { Event, Participation, User, Match, Guest, Gender, ParticipationMood, BudgetLevel } from '@/types/database';
 
+// Block relation between users (reviewer blocked target)
+interface BlockRelation {
+  reviewer_id: string;
+  target_user_id: string;
+}
+
 interface EventDetailClientProps {
   event: Event;
   participations: (Participation & { users: User })[];
   matches: Match[];
   guests: Guest[];
+  blockRelations: BlockRelation[];
 }
 
 interface TableGroup {
@@ -75,6 +82,7 @@ export function EventDetailClient({
   participations,
   matches: initialMatches,
   guests: initialGuests,
+  blockRelations,
 }: EventDetailClientProps) {
   // Initialize tables from existing matches
   const initialTables: TableGroup[] = initialMatches.map((m, idx) => ({
@@ -237,33 +245,248 @@ export function EventDetailClient({
     setTables([...tables, newTable]);
   };
 
+  // ==========================================================================
+  // テーブル割り当て条件
+  // ==========================================================================
+  //
+  // 【必須条件】（自動・手動問わず必ず守るルール）
+  // 1. ブロックした人が同じテーブルにいない
+  // 2. 友達と参加している人（同じgroup_id）は必ず同じテーブル
+  //
+  // 【マッチング推奨条件】（自動割り当て時に考慮、UIでも表示）
+  // 1. 男女比が1:1に近い
+  // 2. 今回のテーブルに求めるmoodがなるべく同じ
+  // 3. レストランの価格(budget_level)がなるべく同じ（星1と星3が混ざることは避けたい）
+  // 4. 各参加者の性格(personality)の相性がいい
+  // ==========================================================================
+
+  // ブロック関係をSetで管理（高速ルックアップ用）
+  // 形式: "userId1-userId2" (両方向でチェックするため双方向で登録)
+  const blockSet = useMemo(() => {
+    const set = new Set<string>();
+    blockRelations.forEach(br => {
+      // 双方向でブロック関係を登録（どちらがブロックしても同テーブルNG）
+      set.add(`${br.reviewer_id}-${br.target_user_id}`);
+      set.add(`${br.target_user_id}-${br.reviewer_id}`);
+    });
+    return set;
+  }, [blockRelations]);
+
+  // 【必須条件1】ブロック関係チェック
+  // 2人のユーザー間にブロック関係があるかどうかを確認
+  const hasBlockRelation = (userId1: string, userId2: string): boolean => {
+    return blockSet.has(`${userId1}-${userId2}`);
+  };
+
+  // テーブル内にブロック関係があるかチェック
+  // ゲストはブロック対象外なのでuser_idのみチェック
+  const hasBlockConflictInTable = (memberIds: string[]): boolean => {
+    const userIds = memberIds.filter(id => !isGuestId(id));
+    for (let i = 0; i < userIds.length; i++) {
+      for (let j = i + 1; j < userIds.length; j++) {
+        if (hasBlockRelation(userIds[i], userIds[j])) {
+          return true; // ブロック関係あり
+        }
+      }
+    }
+    return false;
+  };
+
+  // 【推奨条件1】男女比スコア計算
+  // 1:1に近いほど高スコア（最大100）
+  const calculateGenderBalanceScore = (maleCount: number, femaleCount: number): number => {
+    const total = maleCount + femaleCount;
+    if (total === 0) return 100;
+    const ratio = Math.min(maleCount, femaleCount) / Math.max(maleCount, femaleCount);
+    return Math.round(ratio * 100);
+  };
+
+  // 【推奨条件2】Moodマッチスコア計算
+  // 同じmoodが多いほど高スコア（最大100）
+  const calculateMoodMatchScore = (memberIds: string[]): number => {
+    const moods = memberIds
+      .filter(id => !isGuestId(id))
+      .map(id => getParticipantInfo(id)?.mood)
+      .filter((m): m is ParticipationMood => m !== undefined);
+
+    if (moods.length === 0) return 100;
+
+    // 最も多いmoodの割合を計算
+    const moodCounts = moods.reduce((acc, mood) => {
+      acc[mood] = (acc[mood] || 0) + 1;
+      return acc;
+    }, {} as Record<ParticipationMood, number>);
+
+    const maxCount = Math.max(...Object.values(moodCounts));
+    return Math.round((maxCount / moods.length) * 100);
+  };
+
+  // 【推奨条件3】Budget(価格帯)マッチスコア計算
+  // 同じ価格帯が多いほど高スコア、差が大きいとペナルティ（最大100）
+  const calculateBudgetMatchScore = (memberIds: string[]): number => {
+    const budgets = memberIds
+      .filter(id => !isGuestId(id))
+      .map(id => getParticipantInfo(id)?.budget_level)
+      .filter((b): b is number => b !== undefined);
+
+    if (budgets.length === 0) return 100;
+
+    const minBudget = Math.min(...budgets);
+    const maxBudget = Math.max(...budgets);
+    const budgetRange = maxBudget - minBudget;
+
+    // 星1と星3が混在（差が2）の場合は大きくペナルティ
+    if (budgetRange === 2) return 20;
+    // 星1つ差の場合は中程度のスコア
+    if (budgetRange === 1) return 70;
+    // 全員同じ価格帯なら最高スコア
+    return 100;
+  };
+
+  // 【推奨条件4】性格相性スコア計算
+  // 性格タイプの組み合わせに基づいてスコアを計算（最大100）
+  // 相性の良い組み合わせ: Leader-Supporter, Analyst-Entertainer
+  // バランスが取れている（多様性がある）と高スコア
+  const calculatePersonalityScore = (memberIds: string[]): number => {
+    const personalities = memberIds
+      .filter(id => !isGuestId(id))
+      .map(id => getParticipantInfo(id)?.users.personality_type)
+      .filter((p): p is NonNullable<typeof p> => p !== null && p !== undefined);
+
+    if (personalities.length <= 1) return 100;
+
+    // 性格タイプのカウント
+    const typeCounts: Record<string, number> = {};
+    for (const type of personalities) {
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
+    }
+
+    // 多様性スコア（異なる性格タイプが多いほど高い）
+    const uniqueTypes = Object.keys(typeCounts).length;
+    const diversityScore = (uniqueTypes / 4) * 50; // 最大50点
+
+    // 相性ボーナス
+    let compatibilityBonus = 0;
+    // Leader + Supporter の組み合わせがあればボーナス
+    if (typeCounts['Leader'] && typeCounts['Supporter']) {
+      compatibilityBonus += 25;
+    }
+    // Analyst + Entertainer の組み合わせがあればボーナス
+    if (typeCounts['Analyst'] && typeCounts['Entertainer']) {
+      compatibilityBonus += 25;
+    }
+
+    return Math.min(100, Math.round(diversityScore + compatibilityBonus));
+  };
+
+  // 【推奨条件5】本人確認マッチスコア計算
+  // 本人確認済みの人同士が同じテーブルにいるほど高スコア（最大100）
+  // 本人確認済みの人が未確認の人と混在すると低スコア
+  const calculateVerificationMatchScore = (memberIds: string[]): number => {
+    const verificationStatuses = memberIds
+      .filter(id => !isGuestId(id))
+      .map(id => getParticipantInfo(id)?.users.is_identity_verified)
+      .filter((v): v is boolean => v !== undefined);
+
+    if (verificationStatuses.length === 0) return 100;
+
+    const verifiedCount = verificationStatuses.filter(v => v).length;
+    const unverifiedCount = verificationStatuses.filter(v => !v).length;
+
+    // 全員が同じステータス（全員確認済み or 全員未確認）なら100点
+    if (verifiedCount === 0 || unverifiedCount === 0) return 100;
+
+    // 本人確認済みの人が多い場合、未確認の人が混じると減点
+    // 本人確認済み率が高いほどスコアが高い
+    const verifiedRatio = verifiedCount / verificationStatuses.length;
+    return Math.round(verifiedRatio * 100);
+  };
+
+  // テーブル全体の推奨スコアを計算（0-100）
+  const calculateTableRecommendationScore = (memberIds: string[]): {
+    total: number;
+    genderBalance: number;
+    moodMatch: number;
+    budgetMatch: number;
+    personality: number;
+    verificationMatch: number;
+    hasBlockConflict: boolean;
+  } => {
+    const userIds = memberIds.filter(id => !isGuestId(id));
+    const users = userIds.map(id => getParticipantInfo(id)).filter((p): p is ParticipantInfo => p !== undefined);
+    const guestIds = memberIds.filter(id => isGuestId(id));
+    const guestList = guestIds.map(id => getGuestInfo(fromGuestId(id))).filter((g): g is Guest => g !== undefined);
+
+    const maleCount = users.filter(u => u.users.gender === 'male').length +
+                      guestList.filter(g => g.gender === 'male').length;
+    const femaleCount = users.filter(u => u.users.gender === 'female').length +
+                        guestList.filter(g => g.gender === 'female').length;
+
+    const genderBalance = calculateGenderBalanceScore(maleCount, femaleCount);
+    const moodMatch = calculateMoodMatchScore(memberIds);
+    const budgetMatch = calculateBudgetMatchScore(memberIds);
+    const personality = calculatePersonalityScore(memberIds);
+    const verificationMatch = calculateVerificationMatchScore(memberIds);
+    const hasBlockConflict = hasBlockConflictInTable(memberIds);
+
+    // 総合スコア（各項目を均等に加重）
+    // ブロック関係がある場合は0点
+    const total = hasBlockConflict ? 0 : Math.round((genderBalance + moodMatch + budgetMatch + personality + verificationMatch) / 5);
+
+    return { total, genderBalance, moodMatch, budgetMatch, personality, verificationMatch, hasBlockConflict };
+  };
+
   // Auto-assign participants to tables
+  // ==========================================================================
+  // 自動割り当てアルゴリズム
+  //
+  // 【必須条件】を満たしながら【推奨条件】のスコアが最大化するように割り当て
+  //
+  // 1. 全グループを収集（友達参加は同じgroup_idで管理 → 必須条件2を自動的に満たす）
+  // 2. ブロック関係のあるグループ同士を特定
+  // 3. 各テーブルにグループを割り当てる際:
+  //    - 必須条件1: ブロック関係がないかチェック
+  //    - 推奨条件: スコアが最大化するテーブルを選択
+  // ==========================================================================
   const autoAssign = () => {
-    // Collect all members (participants + guests) grouped by their group_id
+    // グループ情報の拡張インターフェース
     interface GroupInfo {
       groupId: string;
       memberIds: string[]; // user_id or guest:guest_id
       maleCount: number;
       femaleCount: number;
       size: number;
+      // 推奨条件用の追加情報
+      moods: ParticipationMood[];       // グループメンバーのmood一覧
+      budgetLevels: number[];           // グループメンバーのbudget_level一覧
+      personalityTypes: string[];       // グループメンバーの性格タイプ一覧
+      verifiedCount: number;            // 本人確認済みの人数
+      userIds: string[];                // ブロックチェック用（ゲスト除外）
     }
 
     const groups: GroupInfo[] = [];
 
     // Process registered participants
+    // 【必須条件2】友達と参加している人は同じgroup_idでグループ化されている
     for (const [groupId, members] of Object.entries(groupedParticipations)) {
       const maleCount = members.filter(m => m.users.gender === 'male').length;
       const femaleCount = members.filter(m => m.users.gender === 'female').length;
+      const verifiedCount = members.filter(m => m.users.is_identity_verified).length;
       groups.push({
         groupId,
         memberIds: members.map(m => m.user_id),
         maleCount,
         femaleCount,
         size: members.length,
+        moods: members.map(m => m.mood),
+        budgetLevels: members.map(m => m.budget_level),
+        personalityTypes: members.map(m => m.users.personality_type).filter((p): p is NonNullable<typeof p> => p !== null),
+        verifiedCount,
+        userIds: members.map(m => m.user_id),
       });
     }
 
-    // Process guests
+    // Process guests (ゲストはブロック対象外、本人確認も対象外)
     for (const [groupId, members] of Object.entries(groupedGuests)) {
       const maleCount = members.filter(g => g.gender === 'male').length;
       const femaleCount = members.filter(g => g.gender === 'female').length;
@@ -273,10 +496,44 @@ export function EventDetailClient({
         maleCount,
         femaleCount,
         size: members.length,
+        moods: [],
+        budgetLevels: [],
+        personalityTypes: [],
+        verifiedCount: 0, // ゲストは本人確認対象外
+        userIds: [], // ゲストはブロックチェック対象外
       });
     }
 
     if (groups.length === 0) return;
+
+    // 【必須条件1】グループ間のブロック関係をマッピング
+    // どのグループ同士が同じテーブルに配置できないかを事前計算
+    const groupBlockMap = new Map<string, Set<string>>();
+    for (const group of groups) {
+      groupBlockMap.set(group.groupId, new Set());
+    }
+
+    for (let i = 0; i < groups.length; i++) {
+      for (let j = i + 1; j < groups.length; j++) {
+        const groupA = groups[i];
+        const groupB = groups[j];
+        // 両グループのユーザー間にブロック関係があるかチェック
+        let hasBlock = false;
+        for (const userA of groupA.userIds) {
+          for (const userB of groupB.userIds) {
+            if (hasBlockRelation(userA, userB)) {
+              hasBlock = true;
+              break;
+            }
+          }
+          if (hasBlock) break;
+        }
+        if (hasBlock) {
+          groupBlockMap.get(groupA.groupId)?.add(groupB.groupId);
+          groupBlockMap.get(groupB.groupId)?.add(groupA.groupId);
+        }
+      }
+    }
 
     // Calculate total people
     const totalPeople = groups.reduce((sum, g) => sum + g.size, 0);
@@ -305,10 +562,29 @@ export function EventDetailClient({
       members: [],
     }));
 
-    // Track gender counts per table
-    const tableStats = newTables.map(() => ({ male: 0, female: 0, total: 0 }));
+    // テーブルごとの統計情報（推奨条件スコア計算用）
+    interface TableStats {
+      male: number;
+      female: number;
+      total: number;
+      moods: ParticipationMood[];
+      budgetLevels: number[];
+      personalityTypes: string[];
+      verifiedCount: number;          // 本人確認済みの人数
+      assignedGroupIds: Set<string>;  // 【必須条件1】ブロックチェック用
+    }
+    const tableStats: TableStats[] = newTables.map(() => ({
+      male: 0,
+      female: 0,
+      total: 0,
+      moods: [],
+      budgetLevels: [],
+      personalityTypes: [],
+      verifiedCount: 0,
+      assignedGroupIds: new Set(),
+    }));
 
-    // Sort groups: larger groups first, then by gender balance preference
+    // Sort groups: larger groups first (harder to place), then by count
     const sortedGroups = [...groups].sort((a, b) => {
       // Larger groups first (harder to place)
       if (b.size !== a.size) return b.size - a.size;
@@ -316,10 +592,14 @@ export function EventDetailClient({
       return (b.maleCount + b.femaleCount) - (a.maleCount + a.femaleCount);
     });
 
-    // Assign groups to tables
+    // ==========================================================================
+    // グループをテーブルに割り当て
+    // 【必須条件1】ブロック関係がないテーブルのみ候補
+    // 【推奨条件】スコアが最大化するテーブルを選択
+    // ==========================================================================
     for (const group of sortedGroups) {
       // Find the best table for this group
-      let bestTableIdx = 0;
+      let bestTableIdx = -1;
       let bestScore = -Infinity;
 
       for (let i = 0; i < newTables.length; i++) {
@@ -329,24 +609,119 @@ export function EventDetailClient({
         // Skip if would exceed max size
         if (newTotal > 8) continue;
 
-        // Calculate score based on:
-        // 1. Gender balance improvement
-        // 2. Table size balance
-        const currentGenderDiff = Math.abs(stats.male - stats.female);
+        // 【必須条件1】ブロック関係チェック
+        // このテーブルに既に割り当てられているグループとブロック関係がないかチェック
+        const blockedGroups = groupBlockMap.get(group.groupId) || new Set();
+        let hasBlockConflict = false;
+        for (const assignedGroupId of stats.assignedGroupIds) {
+          if (blockedGroups.has(assignedGroupId)) {
+            hasBlockConflict = true;
+            break;
+          }
+        }
+        // ブロック関係があるテーブルはスキップ
+        if (hasBlockConflict) continue;
+
+        // ==========================================================================
+        // 【推奨条件】スコア計算
+        // ==========================================================================
+
+        // 【推奨条件1】男女比スコア（1:1に近いほど高スコア）
         const newMale = stats.male + group.maleCount;
         const newFemale = stats.female + group.femaleCount;
-        const newGenderDiff = Math.abs(newMale - newFemale);
-        const genderBalanceImprovement = currentGenderDiff - newGenderDiff;
+        const genderBalanceScore = calculateGenderBalanceScore(newMale, newFemale);
 
-        // Prefer tables with fewer people (balance table sizes)
-        const sizeBalanceScore = (8 - stats.total) * 2;
+        // 【推奨条件2】Moodマッチスコア
+        const newMoods = [...stats.moods, ...group.moods];
+        let moodScore = 100;
+        if (newMoods.length > 0) {
+          const moodCounts = newMoods.reduce((acc, mood) => {
+            acc[mood] = (acc[mood] || 0) + 1;
+            return acc;
+          }, {} as Record<ParticipationMood, number>);
+          const maxMoodCount = Math.max(...Object.values(moodCounts));
+          moodScore = Math.round((maxMoodCount / newMoods.length) * 100);
+        }
 
-        // Bonus for keeping groups together and improving balance
-        const score = genderBalanceImprovement * 10 + sizeBalanceScore;
+        // 【推奨条件3】Budget(価格帯)マッチスコア
+        const newBudgets = [...stats.budgetLevels, ...group.budgetLevels];
+        let budgetScore = 100;
+        if (newBudgets.length > 0) {
+          const minBudget = Math.min(...newBudgets);
+          const maxBudget = Math.max(...newBudgets);
+          const budgetRange = maxBudget - minBudget;
+          if (budgetRange === 2) budgetScore = 20;       // 星1と星3混在 = NG
+          else if (budgetRange === 1) budgetScore = 70;  // 1つ差 = 中程度
+          else budgetScore = 100;                         // 同じ = OK
+        }
 
-        if (score > bestScore) {
-          bestScore = score;
+        // 【推奨条件4】性格相性スコア
+        const newPersonalities = [...stats.personalityTypes, ...group.personalityTypes];
+        let personalityScore = 100;
+        if (newPersonalities.length > 1) {
+          const typeCounts = newPersonalities.reduce((acc, type) => {
+            acc[type] = (acc[type] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+          const uniqueTypes = Object.keys(typeCounts).length;
+          const diversityScore = (uniqueTypes / 4) * 50;
+          let compatibilityBonus = 0;
+          if (typeCounts['Leader'] && typeCounts['Supporter']) compatibilityBonus += 25;
+          if (typeCounts['Analyst'] && typeCounts['Entertainer']) compatibilityBonus += 25;
+          personalityScore = Math.min(100, Math.round(diversityScore + compatibilityBonus));
+        }
+
+        // 【推奨条件5】本人確認マッチスコア
+        // 本人確認済みの人同士、未確認の人同士がグループになるほど高スコア
+        const newVerifiedCount = stats.verifiedCount + group.verifiedCount;
+        const newUnverifiedCount = (stats.total + group.size) - newVerifiedCount;
+        let verificationScore = 100;
+        if (newVerifiedCount > 0 && newUnverifiedCount > 0) {
+          // 混在している場合、本人確認済みの割合でスコア計算
+          verificationScore = Math.round((newVerifiedCount / (stats.total + group.size)) * 100);
+        }
+
+        // テーブルサイズのバランススコア（空いているテーブルを優先）
+        const sizeBalanceScore = (8 - stats.total) * 5;
+
+        // 総合スコア計算（推奨条件を均等に加重 + サイズバランス）
+        const totalScore = genderBalanceScore + moodScore + budgetScore + personalityScore + verificationScore + sizeBalanceScore;
+
+        if (totalScore > bestScore) {
+          bestScore = totalScore;
           bestTableIdx = i;
+        }
+      }
+
+      // 【フォールバック】全テーブルがブロック関係で不可の場合、最も空いているテーブルを選択
+      if (bestTableIdx === -1) {
+        let minOccupancy = Infinity;
+        for (let i = 0; i < newTables.length; i++) {
+          if (tableStats[i].total + group.size <= 8 && tableStats[i].total < minOccupancy) {
+            minOccupancy = tableStats[i].total;
+            bestTableIdx = i;
+          }
+        }
+        // それでも見つからない場合はテーブルを追加
+        if (bestTableIdx === -1) {
+          bestTableIdx = newTables.length;
+          newTables.push({
+            id: `auto-${Date.now()}-overflow-${bestTableIdx}`,
+            restaurant_name: '',
+            restaurant_url: '',
+            reservation_name: '',
+            members: [],
+          });
+          tableStats.push({
+            male: 0,
+            female: 0,
+            total: 0,
+            moods: [],
+            budgetLevels: [],
+            personalityTypes: [],
+            verifiedCount: 0,
+            assignedGroupIds: new Set(),
+          });
         }
       }
 
@@ -355,6 +730,11 @@ export function EventDetailClient({
       tableStats[bestTableIdx].male += group.maleCount;
       tableStats[bestTableIdx].female += group.femaleCount;
       tableStats[bestTableIdx].total += group.size;
+      tableStats[bestTableIdx].moods.push(...group.moods);
+      tableStats[bestTableIdx].budgetLevels.push(...group.budgetLevels);
+      tableStats[bestTableIdx].personalityTypes.push(...group.personalityTypes);
+      tableStats[bestTableIdx].verifiedCount += group.verifiedCount;
+      tableStats[bestTableIdx].assignedGroupIds.add(group.groupId);
     }
 
     // Remove empty tables
@@ -503,22 +883,30 @@ export function EventDetailClient({
 
   // Validation
   const isValid = useMemo(() => {
-    // Check for split pairs
+    // 【必須条件2】Check for split pairs (友達と参加している人は同じテーブル)
     if (splitPairs.length > 0) return false;
 
     for (const table of tables) {
+      // 【必須条件1】ブロック関係チェック
+      if (hasBlockConflictInTable(table.members)) return false;
       if (!table.restaurant_name.trim()) return false;
       if (table.members.length < 3) return false;
       if (table.members.length > 8) return false;
     }
     return tables.length > 0;
-  }, [tables, splitPairs]);
+  }, [tables, splitPairs, hasBlockConflictInTable]);
 
   // Get validation messages
-  const getTableValidation = (table: TableGroup): string | null => {
-    if (!table.restaurant_name.trim()) return 'お店を入力してください';
-    if (table.members.length < 3) return `${3 - table.members.length}人以上追加してください`;
-    if (table.members.length > 8) return `最大8人までです（現在${table.members.length}人）`;
+  // 【必須条件】のバリデーション
+  // ブロック関係がある場合はエラーとして表示
+  const getTableValidation = (table: TableGroup): { message: string; isBlockError: boolean } | null => {
+    // 【必須条件1】ブロック関係チェック
+    if (hasBlockConflictInTable(table.members)) {
+      return { message: '⚠️ ブロック関係のあるユーザーがいます', isBlockError: true };
+    }
+    if (!table.restaurant_name.trim()) return { message: 'お店を入力してください', isBlockError: false };
+    if (table.members.length < 3) return { message: `${3 - table.members.length}人以上追加してください`, isBlockError: false };
+    if (table.members.length > 8) return { message: `最大8人までです（現在${table.members.length}人）`, isBlockError: false };
     return null;
   };
 
@@ -917,10 +1305,13 @@ export function EventDetailClient({
   }, [participations, guests]);
 
   // Calculate table statistics
+  // テーブルの統計情報と【推奨条件】スコアを取得
   const getTableStats = (table: TableGroup) => {
     let male = 0, female = 0;
     const personalities: string[] = [];
     const ages: number[] = [];
+    const moods: ParticipationMood[] = [];
+    const budgets: number[] = [];
 
     table.members.forEach(memberId => {
       if (isGuestId(memberId)) {
@@ -938,13 +1329,51 @@ export function EventDetailClient({
             personalities.push(participant.users.personality_type);
           }
           ages.push(calculateAge(participant.users.birth_date));
+          moods.push(participant.mood);
+          budgets.push(participant.budget_level);
         }
       }
     });
 
     const avgAge = ages.length > 0 ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : 0;
 
-    return { male, female, personalities, avgAge };
+    // 【推奨条件】スコア計算
+    const recommendationScore = table.members.length > 0
+      ? calculateTableRecommendationScore(table.members)
+      : { total: 100, genderBalance: 100, moodMatch: 100, budgetMatch: 100, personality: 100, verificationMatch: 100, hasBlockConflict: false };
+
+    // Mood分布（最も多いmoodを表示用に）
+    const moodCounts = moods.reduce((acc, m) => {
+      acc[m] = (acc[m] || 0) + 1;
+      return acc;
+    }, {} as Record<ParticipationMood, number>);
+    const dominantMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] as ParticipationMood | undefined;
+
+    // Budget分布
+    const minBudget = budgets.length > 0 ? Math.min(...budgets) : 0;
+    const maxBudget = budgets.length > 0 ? Math.max(...budgets) : 0;
+    const budgetRange = maxBudget - minBudget;
+
+    // 本人確認済みの人数
+    const verifiedCount = table.members
+      .filter(id => !isGuestId(id))
+      .filter(id => getParticipantInfo(id)?.users.is_identity_verified)
+      .length;
+    const userCount = table.members.filter(id => !isGuestId(id)).length;
+
+    return {
+      male,
+      female,
+      personalities,
+      avgAge,
+      recommendationScore,
+      dominantMood,
+      budgetRange,
+      moods,
+      budgets,
+      verifiedCount,
+      userCount,
+    };
   };
 
   return (
@@ -1251,7 +1680,26 @@ export function EventDetailClient({
                     >
                       <CardHeader className="p-4 pb-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-sm text-white">テーブル {idx + 1}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm text-white">テーブル {idx + 1}</span>
+                            {/* 【推奨条件】総合スコア表示 */}
+                            {table.members.length > 0 && (
+                              <span
+                                className={`text-xs px-1.5 py-0.5 rounded ${
+                                  tableStats.recommendationScore.hasBlockConflict
+                                    ? 'bg-error/20 text-error'
+                                    : tableStats.recommendationScore.total >= 70
+                                    ? 'bg-success/20 text-success'
+                                    : tableStats.recommendationScore.total >= 50
+                                    ? 'bg-warning/20 text-warning'
+                                    : 'bg-slate-700 text-slate-400'
+                                }`}
+                                title={`男女比:${tableStats.recommendationScore.genderBalance}% Mood:${tableStats.recommendationScore.moodMatch}% 価格帯:${tableStats.recommendationScore.budgetMatch}% 性格:${tableStats.recommendationScore.personality}% 本人確認:${tableStats.recommendationScore.verificationMatch}%`}
+                              >
+                                {tableStats.recommendationScore.hasBlockConflict ? '⚠️' : `${tableStats.recommendationScore.total}点`}
+                              </span>
+                            )}
+                          </div>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1291,28 +1739,100 @@ export function EventDetailClient({
                               メンバー ({table.members.length}/3-8人)
                             </span>
                             {validation && (
-                              <span className="text-xs text-warning">{validation}</span>
+                              <span className={`text-xs ${validation.isBlockError ? 'text-error font-semibold' : 'text-warning'}`}>
+                                {validation.message}
+                              </span>
                             )}
                           </div>
 
                           {/* Table composition summary */}
                           {table.members.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-2 text-xs">
-                              <span className="bg-slate-800 px-2 py-0.5 rounded">
+                            <div className="flex flex-wrap gap-1.5 mb-2 text-xs">
+                              {/* 男女比 */}
+                              <span
+                                className={`px-2 py-0.5 rounded ${
+                                  tableStats.recommendationScore.genderBalance >= 80
+                                    ? 'bg-success/20 text-success'
+                                    : tableStats.recommendationScore.genderBalance >= 50
+                                    ? 'bg-slate-800 text-slate-300'
+                                    : 'bg-warning/20 text-warning'
+                                }`}
+                                title={`男女比スコア: ${tableStats.recommendationScore.genderBalance}%`}
+                              >
                                 <span className="text-gender-male">男{tableStats.male}</span>
                                 <span className="mx-1 text-slate-500">/</span>
                                 <span className="text-gender-female">女{tableStats.female}</span>
                               </span>
+
+                              {/* 平均年齢 */}
                               {tableStats.avgAge > 0 && (
                                 <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                                  平均{tableStats.avgAge}歳
+                                  {tableStats.avgAge}歳
                                 </span>
                               )}
+
+                              {/* Mood - 推奨条件2 */}
+                              {tableStats.dominantMood && (
+                                <span
+                                  className={`px-2 py-0.5 rounded ${
+                                    tableStats.recommendationScore.moodMatch >= 80
+                                      ? 'bg-success/20 text-success'
+                                      : tableStats.recommendationScore.moodMatch >= 50
+                                      ? 'bg-slate-800 text-slate-300'
+                                      : 'bg-warning/20 text-warning'
+                                  }`}
+                                  title={`Moodマッチ: ${tableStats.recommendationScore.moodMatch}%`}
+                                >
+                                  {moodLabels[tableStats.dominantMood]?.emoji}
+                                </span>
+                              )}
+
+                              {/* Budget - 推奨条件3 */}
+                              {tableStats.budgets.length > 0 && (
+                                <span
+                                  className={`px-2 py-0.5 rounded ${
+                                    tableStats.budgetRange === 0
+                                      ? 'bg-success/20 text-success'
+                                      : tableStats.budgetRange === 1
+                                      ? 'bg-slate-800 text-slate-300'
+                                      : 'bg-error/20 text-error'
+                                  }`}
+                                  title={`価格帯マッチ: ${tableStats.recommendationScore.budgetMatch}%${tableStats.budgetRange === 2 ? ' (星1と星3が混在)' : ''}`}
+                                >
+                                  {tableStats.budgetRange === 0 ? budgetLabels[tableStats.budgets[0]]?.short :
+                                   tableStats.budgetRange === 2 ? '⭐~⭐⭐⭐' : '⭐~⭐⭐'}
+                                </span>
+                              )}
+
+                              {/* Personality - 推奨条件4 */}
                               {tableStats.personalities.length > 0 && (
-                                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+                                <span
+                                  className={`px-2 py-0.5 rounded ${
+                                    tableStats.recommendationScore.personality >= 70
+                                      ? 'bg-success/20 text-success'
+                                      : 'bg-slate-800 text-slate-300'
+                                  }`}
+                                  title={`性格相性: ${tableStats.recommendationScore.personality}%`}
+                                >
                                   {[...new Set(tableStats.personalities)].map(p =>
                                     personalityLabels[p]?.charAt(0) || p.charAt(0)
                                   ).join('')}
+                                </span>
+                              )}
+
+                              {/* 本人確認 - 推奨条件5 */}
+                              {tableStats.userCount > 0 && (
+                                <span
+                                  className={`px-2 py-0.5 rounded ${
+                                    tableStats.recommendationScore.verificationMatch >= 100
+                                      ? 'bg-success/20 text-success'
+                                      : tableStats.recommendationScore.verificationMatch >= 70
+                                      ? 'bg-slate-800 text-slate-300'
+                                      : 'bg-warning/20 text-warning'
+                                  }`}
+                                  title={`本人確認マッチ: ${tableStats.recommendationScore.verificationMatch}% (${tableStats.verifiedCount}/${tableStats.userCount}人確認済み)`}
+                                >
+                                  ✓{tableStats.verifiedCount}
                                 </span>
                               )}
                             </div>
@@ -1342,7 +1862,7 @@ export function EventDetailClient({
           <CardContent className="p-4">
             <h3 className="font-semibold mb-2 text-white">使い方</h3>
             <ul className="text-sm text-slate-400 space-y-1">
-              <li>• <strong className="text-info">自動割り当て</strong>：参加者を性別バランスを考慮して自動でテーブルに振り分けます</li>
+              <li>• <strong className="text-info">自動割り当て</strong>：下記の条件を考慮して自動でテーブルに振り分けます</li>
               <li>• 参加者をクリックして選択し、テーブルをクリックして手動で割り当てることもできます</li>
               <li>• グループで参加している人は一緒に移動します</li>
               <li>• 「ゲスト追加」で登録していない外部参加者を追加できます</li>
@@ -1350,6 +1870,27 @@ export function EventDetailClient({
               <li>• お店の名前は必須です</li>
               <li>• マッチング確定後、登録ユーザーにはLINE通知が送信されます（外部ゲストには通知されません）</li>
             </ul>
+
+            <h4 className="font-semibold mt-4 mb-2 text-white text-sm">テーブル割り当て条件</h4>
+            <div className="text-sm text-slate-400 space-y-2">
+              <div>
+                <span className="text-error font-medium">【必須条件】</span>
+                <ul className="ml-4 mt-1 space-y-0.5">
+                  <li>• ブロックした人が同じテーブルにいない</li>
+                  <li>• 友達と参加している人は必ず同じテーブル</li>
+                </ul>
+              </div>
+              <div>
+                <span className="text-info font-medium">【推奨条件】</span>（スコア表示）
+                <ul className="ml-4 mt-1 space-y-0.5">
+                  <li>• <span className="text-gender-male">男</span>/<span className="text-gender-female">女</span>：男女比が1:1に近い</li>
+                  <li>• 🎉☕💡：今回求めるムードがなるべく同じ</li>
+                  <li>• ⭐：レストランの価格帯がなるべく同じ</li>
+                  <li>• 性格：参加者の性格(personality)の相性がいい</li>
+                  <li>• ✓：本人確認済みの人同士がなるべく同じテーブル</li>
+                </ul>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
