@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, Star, TrendingUp, Gamepad2, Shield, Settings2, Users } from 'lucide-react';
+import { Calendar, Star, TrendingUp, Gamepad2, Shield, Settings2, Users, UserSearch } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -10,6 +10,7 @@ interface AdminLayoutProps {
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'イベント管理', icon: Calendar },
+  { href: '/admin/users', label: 'ユーザ一覧', icon: UserSearch },
   { href: '/admin/participants', label: '参加者一覧', icon: Users },
   { href: '/admin/reviews', label: 'レビュー管理', icon: Star },
   { href: '/admin/verification', label: '本人確認', icon: Shield },
