@@ -65,7 +65,7 @@ export function AdminClient() {
 
   const [newEvent, setNewEvent] = useState({
     date: '',
-    time: '19:00',
+    time: '19:30',
     area: 'shibuya',
   });
 
@@ -126,7 +126,7 @@ export function AdminClient() {
 
       await fetchEvents(activeTab, 1);
       setShowCreateForm(false);
-      setNewEvent({ date: '', time: '19:00', area: 'shibuya' });
+      setNewEvent({ date: '', time: '19:30', area: 'shibuya' });
     } catch (error) {
       console.error('Create event error:', error);
       alert('イベントの作成に失敗しました');
