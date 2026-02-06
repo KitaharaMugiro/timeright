@@ -6,6 +6,7 @@ import { generateInviteToken, generateShortCode } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import Stripe from 'stripe';
 import type { User, EntryType, ParticipationMood, BudgetLevel, Participation, Event } from '@/types/database';
+import { logActivity } from '@/lib/activity-log';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -61,6 +62,8 @@ export async function POST(request: NextRequest) {
                 : null,
             })
             .eq('id', userId);
+
+          logActivity(userId, 'subscription_start', { stripe_customer_id: customerId });
 
           // Award founding member badge (Gold Badge)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -269,6 +272,7 @@ export async function POST(request: NextRequest) {
           await (supabase.from('users') as any)
             .update({ subscription_status: 'past_due' })
             .eq('id', user.id);
+          logActivity(user.id, 'payment_failed', { stripe_customer_id: customerId });
         }
         break;
       }
@@ -291,6 +295,7 @@ export async function POST(request: NextRequest) {
               subscription_period_end: null,
             })
             .eq('id', user.id);
+          logActivity(user.id, 'subscription_cancel', { stripe_customer_id: customerId });
         }
         break;
       }

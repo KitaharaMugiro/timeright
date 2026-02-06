@@ -175,11 +175,12 @@ export function createPairs(playerIds: string[]): [string, string][] {
     pairs.push([shuffled[i], shuffled[i + 1]]);
   }
 
-  // If odd number of players, last person joins the last pair
+  // If odd number of players, add the remaining person to the last pair as a 3rd member
   if (shuffled.length % 2 === 1 && pairs.length > 0) {
     const lastPerson = shuffled[shuffled.length - 1];
     const lastPair = pairs[pairs.length - 1];
-    pairs[pairs.length - 1] = [lastPair[0], lastPair[1]];
+    // Create two pairs from the 3-person group so everyone interacts
+    pairs[pairs.length - 1] = [lastPair[0], lastPerson];
     pairs.push([lastPair[1], lastPerson]);
   }
 

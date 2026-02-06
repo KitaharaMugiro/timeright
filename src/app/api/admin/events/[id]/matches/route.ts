@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { sendMatchNotificationsToMembers } from '@/lib/line';
 import type { User, Match, Event } from '@/types/database';
 import { getCurrentUserId } from '@/lib/auth';
+import { logAdminActivity } from '@/lib/activity-log';
 
 interface MatchData {
   table_id: string;
@@ -89,6 +90,12 @@ export async function POST(
         { error: 'Failed to create matches' },
         { status: 500 }
       );
+    }
+
+    // Log admin action for each matched user
+    const allUserMemberIds = matchData.flatMap((m) => m.members).filter(id => !id.startsWith('guest:'));
+    for (const memberId of allUserMemberIds) {
+      logAdminActivity(memberId, 'admin_match_create', userId, { event_id: eventId });
     }
 
     // Update event status to matched

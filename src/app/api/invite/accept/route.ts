@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { generateInviteToken, generateShortCode, isWithin48Hours } from '@/lib/utils';
 import type { Participation, Event, ParticipationMood, BudgetLevel, User } from '@/types/database';
 import { requireActiveSubscription } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-log';
 
 interface AcceptRequest {
   token: string;
@@ -133,6 +134,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      logActivity(userId, 'invite_accept', {
+        event_id: originalParticipation.event_id,
+        inviter_user_id: originalParticipation.user_id,
+      });
+
       return NextResponse.json({ success: true, linked: true });
     }
 
@@ -172,6 +178,11 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    logActivity(userId, 'invite_accept', {
+      event_id: originalParticipation.event_id,
+      inviter_user_id: originalParticipation.user_id,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

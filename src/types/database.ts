@@ -19,6 +19,37 @@ export type ReferralStatus = 'pending' | 'completed' | 'expired';
 export type MemberStage = 'bronze' | 'silver' | 'gold' | 'platinum';
 export type StagePointReason = 'participation' | 'review_sent' | 'review_received' | 'cancel' | 'late_cancel' | 'no_show';
 export type VerificationStatus = 'pending' | 'approved' | 'rejected';
+
+export type ActivityAction =
+  | 'signup'
+  | 'login'
+  | 'event_join'
+  | 'event_cancel'
+  | 'review_submit'
+  | 'attendance_late'
+  | 'attendance_cancel'
+  | 'subscription_start'
+  | 'subscription_cancel'
+  | 'payment_failed'
+  | 'account_delete'
+  | 'profile_update'
+  | 'avatar_upload'
+  | 'onboarding_complete'
+  | 'invite_accept'
+  | 'verification_submit'
+  | 'admin_match_create'
+  | 'admin_event_cancel'
+  | 'admin_verification_approve'
+  | 'admin_verification_reject'
+  | 'admin_message_send';
+
+export interface UserActivityLog {
+  id: string;
+  user_id: string;
+  action: ActivityAction;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
 export type IcebreakerGameType =
   | 'questions'
   | 'would_you_rather'
@@ -494,6 +525,16 @@ export interface Database {
           created_at?: string | null;
           updated_at?: string | null;
         };
+        Relationships: [];
+      };
+    };
+      user_activity_logs: {
+        Row: UserActivityLog;
+        Insert: Partial<UserActivityLog> & {
+          user_id: string;
+          action: string;
+        };
+        Update: Partial<UserActivityLog>;
         Relationships: [];
       };
     };

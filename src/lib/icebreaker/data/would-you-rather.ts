@@ -1,4 +1,5 @@
 import type { WouldYouRatherChoice } from '../types';
+import { shuffleArray } from '../games';
 
 export const WOULD_YOU_RATHER: WouldYouRatherChoice[] = [
   { id: 'w1', optionA: '時間を止められる', optionB: '空を飛べる' },
@@ -54,7 +55,7 @@ export const WOULD_YOU_RATHER: WouldYouRatherChoice[] = [
 ];
 
 export function getRandomChoices(count: number): WouldYouRatherChoice[] {
-  const shuffled = [...WOULD_YOU_RATHER].sort(() => Math.random() - 0.5);
+  const shuffled = shuffleArray(WOULD_YOU_RATHER);
   return shuffled.slice(0, count);
 }
 

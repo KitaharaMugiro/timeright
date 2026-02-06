@@ -4,6 +4,7 @@ import { isReviewAccessible } from '@/lib/utils';
 import { addStagePoints, STAGE_POINTS, getReviewReceivedPoints } from '@/lib/member-stage';
 import type { Match, Event } from '@/types/database';
 import { getCurrentUserId } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-log';
 
 interface ReviewRequest {
   match_id: string;
@@ -128,6 +129,14 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    logActivity(userId, 'review_submit', {
+      match_id,
+      target_user_id,
+      rating,
+      block_flag,
+      is_no_show: is_no_show || false,
+    });
 
     // ステージポイント付与（非同期で実行、エラーがあってもレビュー自体は成功）
     try {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
+import { logActivity } from '@/lib/activity-log';
 
 export async function PUT(request: Request) {
   try {
@@ -56,6 +57,11 @@ export async function PUT(request: Request) {
         { status: 500 }
       );
     }
+
+    logActivity(user.id, 'profile_update', {
+      display_name: updateData.display_name,
+      job: updateData.job,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

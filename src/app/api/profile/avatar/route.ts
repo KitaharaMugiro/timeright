@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
+import { logActivity } from '@/lib/activity-log';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -83,6 +84,8 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    logActivity(user.id, 'avatar_upload');
 
     return NextResponse.json({
       success: true,

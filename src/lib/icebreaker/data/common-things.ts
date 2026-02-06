@@ -1,4 +1,5 @@
 import type { CommonThingsCategory } from '../types';
+import { shuffleArray } from '../games';
 
 export const COMMON_THINGS_CATEGORIES: CommonThingsCategory[] = [
   {
@@ -96,7 +97,7 @@ export const COMMON_THINGS_CATEGORIES: CommonThingsCategory[] = [
 
 export function getRandomPrompts(count: number): string[] {
   const allPrompts = COMMON_THINGS_CATEGORIES.flatMap((c) => c.prompts);
-  const shuffled = [...allPrompts].sort(() => Math.random() - 0.5);
+  const shuffled = shuffleArray(allPrompts);
   return shuffled.slice(0, count);
 }
 

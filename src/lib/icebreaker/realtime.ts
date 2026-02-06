@@ -134,14 +134,23 @@ export function useIcebreakerRealtime({
 
   // Subscribe to scores realtime changes (match-level, stable for entire component lifetime)
   useEffect(() => {
+    let cancelled = false;
+
     // Fetch initial scores
     const fetchScores = async () => {
-      const { data } = await supabase
-        .from('icebreaker_scores')
-        .select('*')
-        .eq('match_id', matchId);
-      if (data) {
-        setScores(data as IcebreakerScore[]);
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('icebreaker_scores')
+          .select('*')
+          .eq('match_id', matchId);
+        if (fetchError) throw fetchError;
+        if (!cancelled && data) {
+          setScores(data as IcebreakerScore[]);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Failed to fetch scores:', err);
+        }
       }
     };
     fetchScores();
@@ -174,6 +183,7 @@ export function useIcebreakerRealtime({
       .subscribe();
 
     return () => {
+      cancelled = true;
       supabase.removeChannel(scoresChannel);
     };
   }, [matchId, supabase]);

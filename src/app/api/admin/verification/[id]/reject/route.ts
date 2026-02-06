@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { IdentityVerificationRequest } from '@/types/database';
+import { logAdminActivity } from '@/lib/activity-log';
 
 export async function POST(
   request: NextRequest,
@@ -23,11 +24,11 @@ export async function POST(
   // Get the verification request
   const { data, error: fetchError } = await supabase
     .from('identity_verification_requests')
-    .select('status')
+    .select('user_id, status')
     .eq('id', id)
     .single();
 
-  const verificationRequest = data as Pick<IdentityVerificationRequest, 'status'> | null;
+  const verificationRequest = data as Pick<IdentityVerificationRequest, 'user_id' | 'status'> | null;
 
   if (fetchError || !verificationRequest) {
     return NextResponse.json({ error: 'Request not found' }, { status: 404 });
@@ -54,6 +55,10 @@ export async function POST(
     return NextResponse.json({ error: 'Failed to update request' }, { status: 500 });
   }
 
+  logAdminActivity(verificationRequest.user_id, 'admin_verification_reject', admin.id, {
+    verification_request_id: id,
+    note,
+  });
   console.log(`[Admin Verification] Rejected request ${id}`);
 
   return NextResponse.json({ success: true });

@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { sendCancellationNotificationsToMembers } from '@/lib/line';
 import type { User, Event } from '@/types/database';
 import { getCurrentUserId } from '@/lib/auth';
+import { logAdminActivity } from '@/lib/activity-log';
 
 export async function POST(
   request: NextRequest,
@@ -80,6 +81,11 @@ export async function POST(
         .update({ status: 'canceled' })
         .eq('event_id', eventId)
         .in('user_id', userIds);
+    }
+
+    // Log admin action for each affected user
+    for (const affectedUserId of userIds) {
+      logAdminActivity(affectedUserId, 'admin_event_cancel', userId, { event_id: eventId });
     }
 
     // Send LINE cancellation notifications

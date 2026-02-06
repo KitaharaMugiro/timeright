@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createHmac } from 'crypto';
 import { messagingApi } from '@line/bot-sdk';
 import { createServiceClient } from '@/lib/supabase/server';
+import { logActivity } from '@/lib/activity-log';
 
 const { MessagingApiClient } = messagingApi;
 
@@ -164,6 +165,7 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
+    logActivity(user.id, 'verification_submit', { line_message_id: messageId });
     console.log(`[LINE Webhook] Created verification request for user ${user.id}`);
 
     // Send confirmation message

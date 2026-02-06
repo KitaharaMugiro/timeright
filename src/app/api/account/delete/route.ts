@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { createServiceClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
+import { logActivity } from '@/lib/activity-log';
 
 export async function DELETE() {
   try {
@@ -32,6 +33,9 @@ export async function DELETE() {
         // Continue with account deletion even if Stripe fails
       }
     }
+
+    // Log before deletion (cascade will remove the log row too)
+    await logActivity(user.id, 'account_delete');
 
     // Delete user's reviews (as reviewer)
     await supabase

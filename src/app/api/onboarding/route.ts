@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { PersonalityType, Gender } from '@/types/database';
 import { getCurrentUserId } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-log';
 
 interface OnboardingData {
   display_name: string;
@@ -51,6 +52,11 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    logActivity(userId, 'onboarding_complete', {
+      gender: data.gender,
+      personality_type: data.personality_type,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

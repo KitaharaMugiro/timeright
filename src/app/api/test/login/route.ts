@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const session = await createSession(userId);
     cookieStore.set('session_id', session.id, {
-      httpOnly: false,
+      httpOnly: true,
       secure: false,
       sameSite: 'lax',
       path: '/',

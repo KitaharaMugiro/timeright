@@ -4,6 +4,7 @@ import { generateInviteToken, generateShortCode, isWithin48Hours } from '@/lib/u
 import { v4 as uuidv4 } from 'uuid';
 import type { EntryType, Event, ParticipationMood, Participation, BudgetLevel, User } from '@/types/database';
 import { getCurrentUserId, requireActiveSubscription } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-log';
 
 interface EntryRequest {
   event_id: string;
@@ -131,6 +132,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    logActivity(userId, 'event_join', { event_id, entry_type, mood });
+
     return NextResponse.json({
       success: true,
       invite_token: entry_type === 'pair' ? inviteToken : null,
@@ -217,6 +220,11 @@ export async function DELETE(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    logActivity(userId, 'event_cancel', {
+      participation_id,
+      event_id: participation.event_id,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

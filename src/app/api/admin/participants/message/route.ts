@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { messagingApi } from '@line/bot-sdk';
+import { requireAdmin } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-log';
 
 const { MessagingApiClient } = messagingApi;
 
@@ -18,6 +20,7 @@ function getLineClient(): messagingApi.MessagingApiClient | null {
 
 export async function POST(request: NextRequest) {
   try {
+    const admin = await requireAdmin();
     const body = await request.json();
     const { lineUserIds, message } = body;
 
@@ -60,12 +63,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    logActivity(admin.id, 'admin_message_send', {
+      recipient_count: lineUserIds.length,
+      message_preview: message.trim().substring(0, 100),
+      results,
+    });
+
     return NextResponse.json({
       success: true,
       results,
     });
   } catch (error) {
     console.error('Error sending LINE messages:', error);
+    if ((error as Error).message === 'Unauthorized' || (error as Error).message === 'Admin access required') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

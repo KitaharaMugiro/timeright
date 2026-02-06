@@ -4,10 +4,36 @@ import { createServiceClient } from '@/lib/supabase/server';
 
 interface ActivityItem {
   id: string;
-  type: 'participation' | 'cancel' | 'review_sent' | 'review_received' | 'signup';
+  type: string;
   date: string;
   detail: string;
   meta?: Record<string, unknown>;
+}
+
+// Action types that are already covered by legacy queries with rich joined data
+const LEGACY_ACTION_TYPES = ['signup', 'event_join', 'event_cancel', 'review_submit'];
+
+function getActivityDetail(action: string, metadata: Record<string, unknown>): string {
+  switch (action) {
+    case 'login': return 'ログイン';
+    case 'attendance_late': return `遅刻連絡 (${metadata.late_minutes}分)`;
+    case 'attendance_cancel': return '当日キャンセル';
+    case 'subscription_start': return 'サブスクリプション開始';
+    case 'subscription_cancel': return 'サブスクリプション解約';
+    case 'payment_failed': return '支払い失敗';
+    case 'account_delete': return 'アカウント削除';
+    case 'profile_update': return 'プロフィール更新';
+    case 'avatar_upload': return 'アバター変更';
+    case 'onboarding_complete': return 'オンボーディング完了';
+    case 'invite_accept': return '招待を承諾';
+    case 'verification_submit': return '本人確認書類を提出';
+    case 'admin_match_create': return 'マッチング確定 (管理者)';
+    case 'admin_event_cancel': return 'イベントキャンセル (管理者)';
+    case 'admin_verification_approve': return '本人確認承認 (管理者)';
+    case 'admin_verification_reject': return '本人確認却下 (管理者)';
+    case 'admin_message_send': return 'メッセージ送信 (管理者)';
+    default: return action;
+  }
 }
 
 export async function GET(
@@ -31,6 +57,28 @@ export async function GET(
     }
 
     const activities: ActivityItem[] = [];
+
+    // === NEW: Fetch from user_activity_logs (for new action types) ===
+    const { data: logEntries } = await supabase
+      .from('user_activity_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .not('action', 'in', `(${LEGACY_ACTION_TYPES.join(',')})`)
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    logEntries?.forEach(entry => {
+      const metadata = (entry.metadata || {}) as Record<string, unknown>;
+      activities.push({
+        id: `log-${entry.id}`,
+        type: entry.action,
+        date: entry.created_at,
+        detail: getActivityDetail(entry.action, metadata),
+        meta: metadata,
+      });
+    });
+
+    // === LEGACY: Reconstruct from existing tables (rich joined data) ===
 
     // 1. Signup
     activities.push({

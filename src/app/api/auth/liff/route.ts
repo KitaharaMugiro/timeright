@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import type { User } from '@/types/database';
 import { createSession, SESSION_TTL_SECONDS } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-log';
 
 interface LineProfile {
   userId: string;
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
       }
       // Check if onboarding is complete
       needsOnboarding = !existingUser.personality_type;
+      logActivity(userId, 'login');
     } else {
       // Create new user with minimal data - rest will be filled in onboarding
       const { data: newUserData, error: insertError } = await (supabase
@@ -91,6 +93,7 @@ export async function POST(request: NextRequest) {
       const newUser = newUserData as User;
       userId = newUser.id;
       needsOnboarding = true;
+      logActivity(userId, 'signup');
     }
 
     // Create session and set cookies

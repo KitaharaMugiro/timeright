@@ -44,17 +44,17 @@ export async function GET(request: NextRequest) {
 
     const userIds = users.map(u => u.id);
 
-    // Fetch participations for counts and last activity
-    const { data: participations } = await supabase
-      .from('participations')
-      .select('user_id, created_at, status')
-      .in('user_id', userIds);
-
-    // Fetch reviews (as reviewer) for last activity
-    const { data: reviews } = await supabase
-      .from('reviews')
-      .select('reviewer_id, created_at')
-      .in('reviewer_id', userIds);
+    // Fetch participations and reviews concurrently
+    const [{ data: participations }, { data: reviews }] = await Promise.all([
+      supabase
+        .from('participations')
+        .select('user_id, created_at, status')
+        .in('user_id', userIds),
+      supabase
+        .from('reviews')
+        .select('reviewer_id, created_at')
+        .in('reviewer_id', userIds),
+    ]);
 
     // Build maps
     const lastActivityMap: Record<string, string> = {};

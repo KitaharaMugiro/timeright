@@ -1,4 +1,5 @@
 import { messagingApi } from '@line/bot-sdk';
+import { getAreaLabel } from '@/lib/utils';
 
 const { MessagingApiClient } = messagingApi;
 
@@ -50,14 +51,7 @@ export async function sendMatchNotification(
       minute: '2-digit',
     });
 
-    const areaLabels: Record<string, string> = {
-      shibuya: '渋谷',
-      ebisu: '恵比寿',
-      roppongi: '六本木',
-      ginza: '銀座',
-      shinjuku: '新宿',
-    };
-    const areaLabel = areaLabels[data.area] || data.area;
+    const areaLabel = getAreaLabel(data.area);
 
     // Build message text
     const message = `マッチングが確定しました！
@@ -106,30 +100,32 @@ export async function sendMatchNotificationsToMembers(
   restaurantUrl?: string | null,
   reservationName?: string | null
 ): Promise<{ sent: number; failed: number; skipped: number }> {
-  const results = { sent: 0, failed: 0, skipped: 0 };
+  const validMembers = members.filter((m): m is { lineUserId: string } => !!m.lineUserId);
+  const skipped = members.length - validMembers.length;
 
-  for (const member of members) {
-    if (!member.lineUserId) {
-      results.skipped++;
-      continue;
-    }
+  const settled = await Promise.allSettled(
+    validMembers.map((member) =>
+      sendMatchNotification(member.lineUserId, {
+        eventDate,
+        area,
+        restaurantName,
+        restaurantUrl,
+        reservationName,
+      })
+    )
+  );
 
-    const success = await sendMatchNotification(member.lineUserId, {
-      eventDate,
-      area,
-      restaurantName,
-      restaurantUrl,
-      reservationName,
-    });
-
-    if (success) {
-      results.sent++;
+  let sent = 0;
+  let failed = 0;
+  for (const result of settled) {
+    if (result.status === 'fulfilled' && result.value) {
+      sent++;
     } else {
-      results.failed++;
+      failed++;
     }
   }
 
-  return results;
+  return { sent, failed, skipped };
 }
 
 export interface CancellationNotificationData {
@@ -159,14 +155,7 @@ export async function sendCancellationNotification(
       day: 'numeric',
     });
 
-    const areaLabels: Record<string, string> = {
-      shibuya: '渋谷',
-      ebisu: '恵比寿',
-      roppongi: '六本木',
-      ginza: '銀座',
-      shinjuku: '新宿',
-    };
-    const areaLabel = areaLabels[data.area] || data.area;
+    const areaLabel = getAreaLabel(data.area);
 
     const message = `【イベントキャンセルのお知らせ】
 
@@ -202,27 +191,26 @@ export async function sendCancellationNotificationsToMembers(
   eventDate: string,
   area: string
 ): Promise<{ sent: number; failed: number; skipped: number }> {
-  const results = { sent: 0, failed: 0, skipped: 0 };
+  const validMembers = members.filter((m): m is { lineUserId: string } => !!m.lineUserId);
+  const skipped = members.length - validMembers.length;
 
-  for (const member of members) {
-    if (!member.lineUserId) {
-      results.skipped++;
-      continue;
-    }
+  const settled = await Promise.allSettled(
+    validMembers.map((member) =>
+      sendCancellationNotification(member.lineUserId, { eventDate, area })
+    )
+  );
 
-    const success = await sendCancellationNotification(member.lineUserId, {
-      eventDate,
-      area,
-    });
-
-    if (success) {
-      results.sent++;
+  let sent = 0;
+  let failed = 0;
+  for (const result of settled) {
+    if (result.status === 'fulfilled' && result.value) {
+      sent++;
     } else {
-      results.failed++;
+      failed++;
     }
   }
 
-  return results;
+  return { sent, failed, skipped };
 }
 
 export interface MemberCancelNotificationData {
@@ -378,14 +366,7 @@ export async function sendReminderNotification(
       minute: '2-digit',
     });
 
-    const areaLabels: Record<string, string> = {
-      shibuya: '渋谷',
-      ebisu: '恵比寿',
-      roppongi: '六本木',
-      ginza: '銀座',
-      shinjuku: '新宿',
-    };
-    const areaLabel = areaLabels[data.area] || data.area;
+    const areaLabel = getAreaLabel(data.area);
 
     let message = `【本日のディナーリマインダー】
 
@@ -435,28 +416,30 @@ export async function sendReminderNotificationsToMembers(
   restaurantUrl?: string | null,
   reservationName?: string | null
 ): Promise<{ sent: number; failed: number; skipped: number }> {
-  const results = { sent: 0, failed: 0, skipped: 0 };
+  const validMembers = members.filter((m): m is { lineUserId: string } => !!m.lineUserId);
+  const skipped = members.length - validMembers.length;
 
-  for (const member of members) {
-    if (!member.lineUserId) {
-      results.skipped++;
-      continue;
-    }
+  const settled = await Promise.allSettled(
+    validMembers.map((member) =>
+      sendReminderNotification(member.lineUserId, {
+        eventDate,
+        area,
+        restaurantName,
+        restaurantUrl,
+        reservationName,
+      })
+    )
+  );
 
-    const success = await sendReminderNotification(member.lineUserId, {
-      eventDate,
-      area,
-      restaurantName,
-      restaurantUrl,
-      reservationName,
-    });
-
-    if (success) {
-      results.sent++;
+  let sent = 0;
+  let failed = 0;
+  for (const result of settled) {
+    if (result.status === 'fulfilled' && result.value) {
+      sent++;
     } else {
-      results.failed++;
+      failed++;
     }
   }
 
-  return results;
+  return { sent, failed, skipped };
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import type { AttendanceStatus, Event, Participation, StagePointReason } from '@/types/database';
 import { getCurrentUserId } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-log';
 
 interface AttendanceRequest {
   participation_id: string;
@@ -125,6 +126,12 @@ export async function PATCH(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    logActivity(userId, action === 'cancel' ? 'attendance_cancel' : 'attendance_late', {
+      participation_id,
+      event_id: participation.event_id,
+      ...(action === 'late' ? { late_minutes } : { penalty_points: penaltyPoints }),
+    });
 
     // Apply penalty points for cancel
     if (penaltyPoints !== 0 && penaltyReason) {

@@ -4,6 +4,7 @@ import type { User } from '@/types/database';
 import { decodeReferralCode } from '@/lib/referral';
 import { createSession, SESSION_TTL_SECONDS } from '@/lib/auth';
 import { sanitizeInternalRedirectPath } from '@/lib/utils';
+import { logActivity } from '@/lib/activity-log';
 
 interface LineTokenResponse {
   access_token: string;
@@ -145,6 +146,7 @@ export async function GET(request: NextRequest) {
       }
       // Check if onboarding is complete
       needsOnboarding = !existingUser.personality_type;
+      logActivity(userId, 'login');
     } else {
       // Create new user with minimal data - rest will be filled in onboarding
       const email = idTokenPayload.email || `${profile.userId}@line.dinetokyo.app`;
@@ -193,6 +195,8 @@ export async function GET(request: NextRequest) {
       const newUser = newUserData as User;
       userId = newUser.id;
       needsOnboarding = true;
+
+      logActivity(userId, 'signup', referrerId ? { referred_by: referrerId } : undefined);
 
       // Create referral record if referred
       if (referrerId) {

@@ -130,18 +130,21 @@ export default function LandingPage() {
   const [nextEvent, setNextEvent] = useState<{ area: string; date: string } | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchNextEvent = async () => {
       try {
         const res = await fetch('/api/next-event');
+        if (!res.ok) return;
         const { nextEvent } = await res.json();
-        if (nextEvent) {
+        if (!cancelled && nextEvent) {
           setNextEvent(nextEvent);
         }
       } catch {
-        // Ignore fetch errors
+        // Landing page - silently ignore fetch errors
       }
     };
     fetchNextEvent();
+    return () => { cancelled = true; };
   }, []);
 
   const handleLineOA = () => {

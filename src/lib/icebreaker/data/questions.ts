@@ -1,4 +1,5 @@
 import type { GetToKnowQuestion } from '../types';
+import { shuffleArray } from '../games';
 
 export const QUESTIONS: GetToKnowQuestion[] = [
   // Casual questions
@@ -58,7 +59,7 @@ export function getRandomQuestions(count: number, category?: 'casual' | 'deep' |
   if (category) {
     filtered = QUESTIONS.filter((q) => q.category === category);
   }
-  const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+  const shuffled = shuffleArray(filtered);
   return shuffled.slice(0, count);
 }
 
