@@ -92,6 +92,20 @@ export function GameLobby({
         </ul>
       </div>
 
+      {/* Host banner */}
+      {(() => {
+        const hostMember = members.find((m) => m.id === session.host_user_id);
+        const hostName = hostMember?.display_name ?? '参加者';
+        return (
+          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+            <Crown className="w-5 h-5 text-amber-400 shrink-0" />
+            <span className="text-amber-300 text-sm font-medium">
+              {isHost ? 'あなたがホストです（ゲームの進行を担当します）' : `${hostName}さんがホストです`}
+            </span>
+          </div>
+        );
+      })()}
+
       {/* Players */}
       <div>
         <h3 className="font-medium text-white mb-3">
@@ -101,6 +115,7 @@ export function GameLobby({
           {players.map((player) => {
             const member = getMemberInfo(player.user_id);
             const playerIsHost = player.user_id === session.host_user_id;
+            const isMe = player.user_id === userId;
             const displayName = member?.display_name ?? '参加者';
 
             return (
@@ -108,7 +123,11 @@ export function GameLobby({
                 key={player.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center justify-between bg-slate-800/30 border border-slate-700 rounded-lg p-3"
+                className={`flex items-center justify-between rounded-lg p-3 ${
+                  playerIsHost
+                    ? 'bg-amber-500/10 border border-amber-500/30'
+                    : 'bg-slate-800/30 border border-slate-700'
+                }`}
               >
                 <div className="flex items-center gap-3">
                   <UserAvatar
@@ -121,9 +140,13 @@ export function GameLobby({
                     <div className="flex items-center gap-2">
                       <span className="text-white font-medium">
                         {displayName}
+                        {isMe && <span className="text-slate-400 text-xs ml-1">(あなた)</span>}
                       </span>
                       {playerIsHost && (
-                        <Crown className="w-4 h-4 text-amber-400" />
+                        <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-400 text-xs font-bold px-2 py-0.5 rounded-full">
+                          <Crown className="w-3 h-3" />
+                          ホスト
+                        </span>
                       )}
                     </div>
                   </div>

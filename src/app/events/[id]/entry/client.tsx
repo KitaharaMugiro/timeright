@@ -78,6 +78,7 @@ export function EntryClient({
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const hasValidSubscription =
     subscriptionStatus === 'active' ||
@@ -211,13 +212,46 @@ export function EntryClient({
   return (
     <div className="min-h-screen bg-slate-900 py-8 px-4">
       <div className="max-w-md mx-auto">
-        <Link
-          href="/dashboard"
+        <button
+          onClick={() => {
+            if (mode === 'select') {
+              router.push('/dashboard');
+            } else {
+              setShowExitConfirm(true);
+            }
+          }}
           className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           戻る
-        </Link>
+        </button>
+
+        {/* Exit confirmation dialog */}
+        {showExitConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+            <Card className="w-full max-w-sm bg-slate-800 border-white/10">
+              <CardContent className="p-6 text-center space-y-4">
+                <p className="text-white font-semibold">入力内容が破棄されます。<br />本当に戻りますか？</p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowExitConfirm(false)}
+                    className="flex-1 text-slate-400 hover:text-white"
+                  >
+                    キャンセル
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/dashboard')}
+                    className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                  >
+                    戻る
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Event info */}
         <Card className="mb-6 bg-white/5 border-white/10">
@@ -460,7 +494,7 @@ export function EntryClient({
               >
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-xl">
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-sm">
                       {option.stars}
                     </div>
                     <div>
