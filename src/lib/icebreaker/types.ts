@@ -64,6 +64,8 @@ export interface GameData {
   wolfId?: string;
   discussionEndTime?: string;
   votingPhase?: boolean;
+  resultRevealed?: boolean;
+  pointsAwarded?: boolean;
 
   // Common Things
   pairs?: [string, string][];
@@ -81,6 +83,8 @@ export interface GameData {
   guessingPhase?: boolean;
 
   // Peer Intro
+  peerIntroPhase?: 'pairing' | 'interview' | 'presentation';
+  interviewEndTime?: string;
   interviewPairs?: [string, string][];
   currentPairIndex2?: number;
   introductions?: { aboutUserId: string; byUserId: string; text: string }[];

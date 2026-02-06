@@ -88,13 +88,24 @@ export function QuestionsGame({
   useEffect(() => {
     if (isHost && !currentQuestion && !initialLoadDone.current) {
       initialLoadDone.current = true;
-      fetchQuestions(category).then((pool) => {
+      fetchQuestions(category).then(async (pool) => {
         if (pool.length > 0) {
-          handleNewQuestion();
+          const firstQuestion = pool[0]?.question;
+          if (!firstQuestion) return;
+
+          const newGameData: GameData = {
+            ...gameData,
+            currentQuestion: firstQuestion,
+            questionHistory: gameData.questionHistory || [],
+          };
+          await onUpdateSession({
+            game_data: newGameData as unknown as IcebreakerSession['game_data'],
+          });
+          setPoolIndex(1);
         }
       });
     }
-  }, []);
+  }, [isHost, currentQuestion, fetchQuestions, category, gameData, onUpdateSession]);
 
   const categories = [
     { id: 'casual', label: 'カジュアル', emoji: '💬' },

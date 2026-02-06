@@ -103,13 +103,25 @@ export function WouldYouRatherGame({
   useEffect(() => {
     if (isHost && !gameData.optionA && !initialLoadDone.current) {
       initialLoadDone.current = true;
-      fetchChoices().then((pool) => {
+      fetchChoices().then(async (pool) => {
         if (pool.length > 0) {
-          handleNewChoice();
+          const firstChoice = pool[0];
+          if (!firstChoice) return;
+
+          const newGameData: GameData = {
+            ...gameData,
+            optionA: firstChoice.option_a,
+            optionB: firstChoice.option_b,
+          };
+          await onUpdateSession({
+            game_data: newGameData as unknown as IcebreakerSession['game_data'],
+            current_round: session.current_round + 1,
+          });
+          setPoolIndex(1);
         }
       });
     }
-  }, []);
+  }, [isHost, gameData, fetchChoices, onUpdateSession, session.current_round]);
 
   return (
     <div className="space-y-6">

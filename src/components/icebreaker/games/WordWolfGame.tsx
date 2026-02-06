@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { XCircle, Eye, Timer, Vote, RefreshCw, Loader2, Check } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -35,13 +35,10 @@ export function WordWolfGame({
   onAwardPoints,
 }: WordWolfGameProps) {
   const gameData = session.game_data as GameData;
-
-  const [phase, setPhase] = useState<Phase>('setup');
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
   const [showWord, setShowWord] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const pointsAwardedRef = useRef(false);
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
@@ -65,6 +62,21 @@ export function WordWolfGame({
     return null;
   }, []);
 
+  const phase: Phase = !gameData.wolfId
+    ? 'setup'
+    : gameData.resultRevealed
+    ? 'result'
+    : gameData.votingPhase
+    ? 'voting'
+    : 'discussion';
+
+  useEffect(() => {
+    if (phase === 'setup') {
+      setSelectedVote(null);
+      setShowWord(false);
+    }
+  }, [phase, session.current_round]);
+
   const handleStartGame = async () => {
     const topic = await fetchTopic();
     if (!topic) {
@@ -85,17 +97,17 @@ export function WordWolfGame({
       wolfId,
       discussionEndTime,
       votingPhase: false,
+      resultRevealed: false,
+      pointsAwarded: false,
     };
 
     await onUpdateSession({
       game_data: newGameData as unknown as IcebreakerSession['game_data'],
       current_round: session.current_round + 1,
     });
-
-    setPhase('discussion');
   };
 
-  const handleStartVoting = async () => {
+  const handleStartVoting = useCallback(async () => {
     if (isLoading) return;
     setIsLoading(true);
     try {
@@ -106,11 +118,10 @@ export function WordWolfGame({
       await onUpdateSession({
         game_data: newGameData as unknown as IcebreakerSession['game_data'],
       });
-      setPhase('voting');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, gameData, onUpdateSession]);
 
   const handleVote = async (targetId: string) => {
     if (isLoading) return;
@@ -127,11 +138,16 @@ export function WordWolfGame({
     if (isLoading) return;
     setIsLoading(true);
     try {
-      setPhase('result');
+      const revealedGameData: GameData = {
+        ...gameData,
+        resultRevealed: true,
+      };
+      await onUpdateSession({
+        game_data: revealedGameData as unknown as IcebreakerSession['game_data'],
+      });
 
       // Award points to players who correctly voted for the wolf
-      if (!pointsAwardedRef.current && gameData.wolfId) {
-        pointsAwardedRef.current = true;
+      if (!gameData.pointsAwarded && gameData.wolfId) {
         const correctVoters = players.filter((p) => {
           const pd = p.player_data as PlayerData;
           return pd.vote === gameData.wolfId;
@@ -141,6 +157,13 @@ export function WordWolfGame({
             correctVoters.map((p) => ({ user_id: p.user_id, points: 1 }))
           );
         }
+
+        await onUpdateSession({
+          game_data: {
+            ...revealedGameData,
+            pointsAwarded: true,
+          } as unknown as IcebreakerSession['game_data'],
+        });
       }
     } finally {
       setIsLoading(false);
@@ -151,10 +174,8 @@ export function WordWolfGame({
     if (isLoading) return;
     setIsLoading(true);
     try {
-      setPhase('setup');
       setSelectedVote(null);
       setShowWord(false);
-      pointsAwardedRef.current = false;
       await onUpdateSession({
         game_data: {} as unknown as IcebreakerSession['game_data'],
       });
@@ -174,25 +195,14 @@ export function WordWolfGame({
       setTimeLeft(remaining);
 
       if (remaining === 0 && isHost) {
-        handleStartVoting();
+        void handleStartVoting();
       }
     };
 
     updateTimer();
     const timer = setInterval(updateTimer, 1000);
     return () => clearInterval(timer);
-  }, [phase, gameData.discussionEndTime, isHost]);
-
-  // Sync phase with game data
-  useEffect(() => {
-    if (gameData.wolfId) {
-      if (gameData.votingPhase) {
-        setPhase('voting');
-      } else if (gameData.discussionEndTime) {
-        setPhase('discussion');
-      }
-    }
-  }, [gameData.wolfId, gameData.votingPhase, gameData.discussionEndTime]);
+  }, [phase, gameData.discussionEndTime, isHost, handleStartVoting]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

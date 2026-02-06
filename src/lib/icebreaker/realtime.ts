@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IcebreakerSession, IcebreakerPlayer, IcebreakerScore, PlayerData } from './types';
@@ -41,7 +41,7 @@ export function useIcebreakerRealtime({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = getClient();
+  const supabase = useMemo(() => getClient(), []);
 
   // Fetch current session and players (SELECT is allowed by RLS)
   const fetchData = useCallback(async (sessionId: string) => {
@@ -108,7 +108,10 @@ export function useIcebreakerRealtime({
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setPlayers((prev) => [...prev, payload.new as IcebreakerPlayer]);
+            const inserted = payload.new as IcebreakerPlayer;
+            setPlayers((prev) =>
+              prev.some((player) => player.id === inserted.id) ? prev : [...prev, inserted]
+            );
           } else if (payload.eventType === 'UPDATE') {
             setPlayers((prev) =>
               prev.map((p) =>
@@ -155,7 +158,10 @@ export function useIcebreakerRealtime({
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setScores((prev) => [...prev, payload.new as IcebreakerScore]);
+            const inserted = payload.new as IcebreakerScore;
+            setScores((prev) =>
+              prev.some((score) => score.id === inserted.id) ? prev : [...prev, inserted]
+            );
           } else if (payload.eventType === 'UPDATE') {
             setScores((prev) =>
               prev.map((s) =>

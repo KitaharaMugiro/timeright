@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, XCircle, Users, Mic, Loader2 } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -31,63 +31,114 @@ export function PeerIntroGame({
   onEndGame,
 }: PeerIntroGameProps) {
   const gameData = session.game_data as GameData;
-  const [phase, setPhase] = useState<Phase>('pairing');
-  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes
+  const [timeLeft, setTimeLeft] = useState(180);
   const [isLoading, setIsLoading] = useState(false);
+  const autoTransitionTriggeredRef = useRef(false);
+
+  const phase = (gameData.peerIntroPhase as Phase | undefined) || 'pairing';
+  const interviewEndTime = gameData.interviewEndTime as string | undefined;
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
   };
 
-  // Initialize pairs
+  // Initialize pairs once per round.
   useEffect(() => {
-    if (isHost && !gameData.interviewPairs) {
-      const playerIds = players.map((p) => p.user_id);
-      const pairs = createPairs(playerIds);
+    if (!isHost || gameData.interviewPairs) {
+      return;
+    }
+
+    const playerIds = players.map((p) => p.user_id);
+    const pairs = createPairs(playerIds);
+    const newGameData: GameData = {
+      ...gameData,
+      peerIntroPhase: 'pairing',
+      interviewPairs: pairs,
+      currentPairIndex2: 0,
+      interviewEndTime: undefined,
+    };
+
+    void onUpdateSession({
+      game_data: newGameData as unknown as IcebreakerSession['game_data'],
+    });
+  }, [isHost, players, gameData, onUpdateSession]);
+
+  // Keep interview timer synchronized for all players from shared end time.
+  useEffect(() => {
+    if (phase !== 'interview' || !interviewEndTime) {
+      return;
+    }
+
+    const updateTimer = () => {
+      const endTime = new Date(interviewEndTime).getTime();
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+      setTimeLeft(remaining);
+    };
+
+    updateTimer();
+    const timer = setInterval(updateTimer, 1000);
+    return () => clearInterval(timer);
+  }, [phase, interviewEndTime]);
+
+  useEffect(() => {
+    autoTransitionTriggeredRef.current = false;
+  }, [interviewEndTime]);
+
+  const handleStartInterview = useCallback(async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const interviewDurationSeconds = 180;
+      const endTime = new Date(Date.now() + interviewDurationSeconds * 1000).toISOString();
       const newGameData: GameData = {
         ...gameData,
-        interviewPairs: pairs,
-        currentPairIndex2: 0,
+        peerIntroPhase: 'interview',
+        interviewEndTime: endTime,
       };
-      onUpdateSession({
+      await onUpdateSession({
         game_data: newGameData as unknown as IcebreakerSession['game_data'],
       });
+    } finally {
+      setIsLoading(false);
     }
-  }, [isHost, players]);
+  }, [isLoading, gameData, onUpdateSession]);
 
-  // Timer for interview phase
-  useEffect(() => {
-    if (phase !== 'interview') return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
+  const handleStartPresentation = useCallback(async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const newGameData: GameData = {
+        ...gameData,
+        peerIntroPhase: 'presentation',
+      };
+      await onUpdateSession({
+        game_data: newGameData as unknown as IcebreakerSession['game_data'],
       });
-    }, 1000);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoading, gameData, onUpdateSession]);
 
-    return () => clearInterval(timer);
-  }, [phase]);
-
-  const handleStartInterview = () => {
-    setPhase('interview');
-    setTimeLeft(180);
-  };
-
-  const handleStartPresentation = () => {
-    setPhase('presentation');
-  };
+  // Host auto-advances to presentation when interview timer reaches 0.
+  useEffect(() => {
+    if (
+      isHost &&
+      phase === 'interview' &&
+      timeLeft === 0 &&
+      !autoTransitionTriggeredRef.current
+    ) {
+      autoTransitionTriggeredRef.current = true;
+      void handleStartPresentation();
+    }
+  }, [isHost, phase, timeLeft, handleStartPresentation]);
 
   const handleNextPair = async () => {
     if (isLoading) return;
     const currentIndex = gameData.currentPairIndex2 || 0;
-    const pairs = gameData.interviewPairs || [];
+    const pairs = (gameData.interviewPairs as [string, string][] | undefined) || [];
 
     if (currentIndex + 1 >= pairs.length) {
-      // All pairs have presented
       return;
     }
 
@@ -105,7 +156,7 @@ export function PeerIntroGame({
     }
   };
 
-  const pairs = gameData.interviewPairs || [];
+  const pairs = (gameData.interviewPairs as [string, string][] | undefined) || [];
   const currentPairIndex = gameData.currentPairIndex2 || 0;
   const myPair = pairs.find((pair) => pair.includes(userId));
   const myPartner = myPair?.find((id) => id !== userId);
@@ -118,7 +169,6 @@ export function PeerIntroGame({
 
   return (
     <div className="space-y-6">
-      {/* Title */}
       <div className="text-center">
         <h2 className="text-xl font-bold text-white">他己紹介</h2>
         <p className="text-slate-400 text-sm mt-1">
@@ -126,7 +176,6 @@ export function PeerIntroGame({
         </p>
       </div>
 
-      {/* Phase: Pairing */}
       {phase === 'pairing' && (
         <>
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
@@ -185,10 +234,8 @@ export function PeerIntroGame({
         </>
       )}
 
-      {/* Phase: Interview */}
       {phase === 'interview' && (
         <>
-          {/* Timer */}
           <motion.div
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
@@ -200,7 +247,6 @@ export function PeerIntroGame({
             </p>
           </motion.div>
 
-          {/* Partner info */}
           {myPartner && (
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-center">
               <p className="text-slate-400 text-sm mb-3">あなたのパートナー</p>
@@ -218,7 +264,6 @@ export function PeerIntroGame({
             </div>
           )}
 
-          {/* Interview tips */}
           <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-4">
             <p className="text-sm text-slate-400 mb-2">聞いてみよう</p>
             <ul className="space-y-1 text-sm text-slate-300">
@@ -242,7 +287,6 @@ export function PeerIntroGame({
         </>
       )}
 
-      {/* Phase: Presentation */}
       {phase === 'presentation' && (
         <>
           <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-2xl p-6 text-center">
@@ -272,7 +316,6 @@ export function PeerIntroGame({
         </>
       )}
 
-      {/* End button (host only) */}
       {isHost && (
         <button
           onClick={onEndGame}

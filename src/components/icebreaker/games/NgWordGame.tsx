@@ -45,21 +45,21 @@ export function NgWordGame({
 }: NgWordGameProps) {
   const gameData = session.game_data as GameData;
 
-  const [phase, setPhase] = useState<Phase>('setup');
   const [showOthersWords, setShowOthersWords] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const ngWordAssignments = (gameData.ngWordAssignments || []) as NgWordAssignment[];
   const eliminatedPlayers = (gameData.eliminatedPlayers || []) as string[];
   const discussionTopic = gameData.discussionTopic || '';
+  const activePlayers = players.filter((p) => !eliminatedPlayers.includes(p.user_id));
+  const phase: Phase = ngWordAssignments.length === 0
+    ? 'setup'
+    : gameData.resultRevealed || activePlayers.length <= 1
+    ? 'result'
+    : 'playing';
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
-  };
-
-  const getMyNgWord = () => {
-    const assignment = ngWordAssignments.find((a) => a.userId === userId);
-    return assignment?.ngWord || '';
   };
 
   const getOthersNgWords = () => {
@@ -126,8 +126,6 @@ export function NgWordGame({
         game_data: newGameData as unknown as IcebreakerSession['game_data'],
         current_round: session.current_round + 1,
       });
-
-      setPhase('playing');
     } finally {
       setIsLoading(false);
     }
@@ -138,34 +136,42 @@ export function NgWordGame({
     setIsLoading(true);
     try {
       const newEliminated = [...eliminatedPlayers, targetUserId];
+      const activePlayersAfterUpdate = players.filter(
+        (player) => !newEliminated.includes(player.user_id)
+      ).length;
       const newGameData: GameData = {
         ...gameData,
         eliminatedPlayers: newEliminated,
+        resultRevealed: activePlayersAfterUpdate <= 1 ? true : gameData.resultRevealed,
       };
 
       await onUpdateSession({
         game_data: newGameData as unknown as IcebreakerSession['game_data'],
       });
-
-      // Check if game should end (only 1 player left)
-      const activePlayers = players.filter((p) => !newEliminated.includes(p.user_id));
-      if (activePlayers.length <= 1) {
-        setPhase('result');
-      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleShowResult = async () => {
-    setPhase('result');
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      await onUpdateSession({
+        game_data: {
+          ...gameData,
+          resultRevealed: true,
+        } as unknown as IcebreakerSession['game_data'],
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNewRound = async () => {
     if (isLoading) return;
     setIsLoading(true);
     try {
-      setPhase('setup');
       setShowOthersWords(false);
       await onUpdateSession({
         game_data: {} as unknown as IcebreakerSession['game_data'],
@@ -175,17 +181,11 @@ export function NgWordGame({
     }
   };
 
-  // Sync phase with game data
   useEffect(() => {
-    if (ngWordAssignments.length > 0) {
-      const activePlayers = players.filter((p) => !eliminatedPlayers.includes(p.user_id));
-      if (activePlayers.length <= 1) {
-        setPhase('result');
-      } else {
-        setPhase('playing');
-      }
+    if (phase === 'setup') {
+      setShowOthersWords(false);
     }
-  }, [ngWordAssignments.length, eliminatedPlayers.length, players]);
+  }, [phase, session.current_round]);
 
   const winner = players.find((p) => !eliminatedPlayers.includes(p.user_id));
   const winnerMember = winner ? getMemberInfo(winner.user_id) : null;
