@@ -26,17 +26,12 @@ interface NgWordAssignment {
   ngWord: string;
 }
 
-const DISCUSSION_TOPICS = [
+const FALLBACK_TOPICS = [
   '最近ハマっていること',
   '週末の過ごし方',
   '好きな食べ物・料理',
   '行ってみたい場所',
-  '子供の頃の思い出',
-  '最近見た映画やドラマ',
   '趣味について',
-  '仕事で大変だったこと',
-  '理想のデートプラン',
-  '最近買ってよかったもの',
 ];
 
 export function NgWordGame({
@@ -92,6 +87,21 @@ export function NgWordGame({
     ]).slice(0, count);
   }, []);
 
+  const fetchDiscussionTopic = useCallback(async (): Promise<string> => {
+    try {
+      const response = await fetch('/api/icebreaker/content/ng-word-topics?limit=1&random=true');
+      if (response.ok) {
+        const { data } = await response.json();
+        if (data.length > 0) {
+          return data[0].topic;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch discussion topic:', error);
+    }
+    return FALLBACK_TOPICS[Math.floor(Math.random() * FALLBACK_TOPICS.length)];
+  }, []);
+
   const handleStartGame = async () => {
     setIsLoading(true);
     try {
@@ -104,7 +114,7 @@ export function NgWordGame({
         ngWord: shuffledWords[index] || `NGワード${index + 1}`,
       }));
 
-      const topic = DISCUSSION_TOPICS[Math.floor(Math.random() * DISCUSSION_TOPICS.length)];
+      const topic = await fetchDiscussionTopic();
 
       const newGameData: GameData = {
         ngWordAssignments: assignments,

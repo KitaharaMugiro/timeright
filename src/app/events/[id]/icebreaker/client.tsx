@@ -187,7 +187,7 @@ export function IcebreakerClient({
       case 'whodunit':
         return <WhodunitGame {...gameProps} />;
       case 'guess_favorite':
-        return <GuessFavoriteGame {...gameProps} />;
+        return <GuessFavoriteGame {...scoringProps} />;
       case 'peer_intro':
         return <PeerIntroGame {...gameProps} />;
       case 'ng_word':

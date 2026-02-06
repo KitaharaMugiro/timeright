@@ -77,6 +77,7 @@ export interface GameData {
   // Guess Favorite
   category?: string;
   answers?: { userId: string; answer: string }[];
+  shuffledPlayerIds?: string[];
   guessingPhase?: boolean;
 
   // Peer Intro

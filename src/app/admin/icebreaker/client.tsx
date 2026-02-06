@@ -11,13 +11,14 @@ import type {
   IcebreakerWordWolf,
   IcebreakerCommonThings,
   IcebreakerNgWord,
+  IcebreakerNgWordTopic,
   IcebreakerQuestionCategory,
   IcebreakerWordWolfCategory,
   IcebreakerCommonThingsCategory,
   IcebreakerNgWordCategory,
 } from '@/types/database';
 
-type TabType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things' | 'ng-word';
+type TabType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things' | 'ng-word' | 'ng-word-topics';
 
 const TABS: { id: TabType; label: string }[] = [
   { id: 'questions', label: '質問タイム' },
@@ -25,6 +26,7 @@ const TABS: { id: TabType; label: string }[] = [
   { id: 'word-wolf', label: 'ワードウルフ' },
   { id: 'common-things', label: '10の共通点' },
   { id: 'ng-word', label: 'NGワード' },
+  { id: 'ng-word-topics', label: 'NGワード話題' },
 ];
 
 const QUESTION_CATEGORIES: { value: IcebreakerQuestionCategory; label: string }[] = [
@@ -68,6 +70,7 @@ interface Props {
   wordWolf: IcebreakerWordWolf[];
   commonThings: IcebreakerCommonThings[];
   ngWord: IcebreakerNgWord[];
+  ngWordTopics: IcebreakerNgWordTopic[];
 }
 
 export function IcebreakerAdminClient({
@@ -76,6 +79,7 @@ export function IcebreakerAdminClient({
   wordWolf: initialWordWolf,
   commonThings: initialCommonThings,
   ngWord: initialNgWord,
+  ngWordTopics: initialNgWordTopics,
 }: Props) {
   const [activeTab, setActiveTab] = useState<TabType>('questions');
   const [questions, setQuestions] = useState(initialQuestions);
@@ -83,6 +87,7 @@ export function IcebreakerAdminClient({
   const [wordWolf, setWordWolf] = useState(initialWordWolf);
   const [commonThings, setCommonThings] = useState(initialCommonThings);
   const [ngWord, setNgWord] = useState(initialNgWord);
+  const [ngWordTopics, setNgWordTopics] = useState(initialNgWordTopics);
 
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -94,6 +99,7 @@ export function IcebreakerAdminClient({
   const [newWordWolf, setNewWordWolf] = useState({ majority_word: '', minority_word: '', category: 'food' as IcebreakerWordWolfCategory });
   const [newCommonThings, setNewCommonThings] = useState({ prompt: '', category: 'food' as IcebreakerCommonThingsCategory });
   const [newNgWord, setNewNgWord] = useState({ word: '', category: 'daily' as IcebreakerNgWordCategory });
+  const [newNgWordTopic, setNewNgWordTopic] = useState({ topic: '' });
 
   // フィルター
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -125,6 +131,9 @@ export function IcebreakerAdminClient({
           break;
         case 'ng-word':
           setNgWord(ngWord.map((n) => (n.id === id ? data : n)));
+          break;
+        case 'ng-word-topics':
+          setNgWordTopics(ngWordTopics.map((t) => (t.id === id ? data : t)));
           break;
       }
     } catch (error) {
@@ -159,6 +168,9 @@ export function IcebreakerAdminClient({
         case 'ng-word':
           setNgWord(ngWord.filter((n) => n.id !== id));
           break;
+        case 'ng-word-topics':
+          setNgWordTopics(ngWordTopics.filter((t) => t.id !== id));
+          break;
       }
     } catch (error) {
       console.error('Error:', error);
@@ -185,6 +197,9 @@ export function IcebreakerAdminClient({
           break;
         case 'ng-word':
           payload = newNgWord;
+          break;
+        case 'ng-word-topics':
+          payload = newNgWordTopic;
           break;
       }
 
@@ -221,6 +236,10 @@ export function IcebreakerAdminClient({
         case 'ng-word':
           setNgWord([data, ...ngWord]);
           setNewNgWord({ word: '', category: 'daily' });
+          break;
+        case 'ng-word-topics':
+          setNgWordTopics([data, ...ngWordTopics]);
+          setNewNgWordTopic({ topic: '' });
           break;
       }
 
@@ -264,6 +283,9 @@ export function IcebreakerAdminClient({
         case 'ng-word':
           setNgWord(ngWord.map((n) => (n.id === data.id ? data : n)));
           break;
+        case 'ng-word-topics':
+          setNgWordTopics(ngWordTopics.map((t) => (t.id === data.id ? data : t)));
+          break;
       }
 
       setEditingItem(null);
@@ -306,6 +328,8 @@ export function IcebreakerAdminClient({
         return filterCategory === 'all'
           ? ngWord
           : ngWord.filter((n) => n.category === filterCategory);
+      case 'ng-word-topics':
+        return ngWordTopics;
     }
   };
 
@@ -411,6 +435,7 @@ export function IcebreakerAdminClient({
                     )}
                     {activeTab === 'common-things' && item.prompt}
                     {activeTab === 'ng-word' && item.word}
+                    {activeTab === 'ng-word-topics' && item.topic}
                   </td>
                   {(activeTab === 'questions' ||
                     activeTab === 'word-wolf' ||
@@ -609,6 +634,21 @@ export function IcebreakerAdminClient({
                           })
                     }
                     options={NG_WORD_CATEGORIES}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'ng-word-topics' && (
+                <div className="space-y-4">
+                  <Input
+                    label="話題"
+                    value={editingItem ? editingItem.topic : newNgWordTopic.topic}
+                    onChange={(e) =>
+                      editingItem
+                        ? setEditingItem({ ...editingItem, topic: e.target.value })
+                        : setNewNgWordTopic({ ...newNgWordTopic, topic: e.target.value })
+                    }
+                    required
                   />
                 </div>
               )}

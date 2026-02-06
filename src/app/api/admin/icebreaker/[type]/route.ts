@@ -3,8 +3,8 @@ import { createServiceClient } from '@/lib/supabase/server';
 import type { User } from '@/types/database';
 import { getCurrentUserId } from '@/lib/auth';
 
-type ContentType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things' | 'ng-word';
-type TableName = 'icebreaker_questions' | 'icebreaker_would_you_rather' | 'icebreaker_word_wolf' | 'icebreaker_common_things' | 'icebreaker_ng_word';
+type ContentType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things' | 'ng-word' | 'ng-word-topics';
+type TableName = 'icebreaker_questions' | 'icebreaker_would_you_rather' | 'icebreaker_word_wolf' | 'icebreaker_common_things' | 'icebreaker_ng_word' | 'icebreaker_ng_word_topics';
 
 const TABLE_MAP: Record<ContentType, TableName> = {
   questions: 'icebreaker_questions',
@@ -12,6 +12,7 @@ const TABLE_MAP: Record<ContentType, TableName> = {
   'word-wolf': 'icebreaker_word_wolf',
   'common-things': 'icebreaker_common_things',
   'ng-word': 'icebreaker_ng_word',
+  'ng-word-topics': 'icebreaker_ng_word_topics',
 };
 
 async function verifyAdmin() {
@@ -230,6 +231,9 @@ function validatePayload(type: ContentType, payload: any): string | null {
       ) {
         return 'category must be food, daily, emotion, action, place, or other';
       }
+      break;
+    case 'ng-word-topics':
+      if (!payload.topic) return 'topic is required';
       break;
   }
   return null;

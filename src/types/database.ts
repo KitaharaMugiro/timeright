@@ -229,6 +229,14 @@ export interface IcebreakerNgWord {
   updated_at: string;
 }
 
+export interface IcebreakerNgWordTopic {
+  id: string;
+  topic: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface IcebreakerGameCategory {
   id: string;
   slug: GameCategorySlug;

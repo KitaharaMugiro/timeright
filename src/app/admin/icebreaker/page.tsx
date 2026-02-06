@@ -8,6 +8,7 @@ import type {
   IcebreakerWordWolf,
   IcebreakerCommonThings,
   IcebreakerNgWord,
+  IcebreakerNgWordTopic,
 } from '@/types/database';
 
 export default async function IcebreakerAdminPage() {
@@ -24,12 +25,13 @@ export default async function IcebreakerAdminPage() {
   const supabase = await createServiceClient();
 
   // 全データを並行取得
-  const [questionsRes, wyrRes, wordWolfRes, commonThingsRes, ngWordRes] = await Promise.all([
+  const [questionsRes, wyrRes, wordWolfRes, commonThingsRes, ngWordRes, ngWordTopicsRes] = await Promise.all([
     supabase.from('icebreaker_questions').select('*').order('created_at', { ascending: false }),
     supabase.from('icebreaker_would_you_rather').select('*').order('created_at', { ascending: false }),
     supabase.from('icebreaker_word_wolf').select('*').order('created_at', { ascending: false }),
     supabase.from('icebreaker_common_things').select('*').order('created_at', { ascending: false }),
     supabase.from('icebreaker_ng_word').select('*').order('created_at', { ascending: false }),
+    supabase.from('icebreaker_ng_word_topics').select('*').order('created_at', { ascending: false }),
   ]);
 
   return (
@@ -39,6 +41,7 @@ export default async function IcebreakerAdminPage() {
       wordWolf={(wordWolfRes.data || []) as IcebreakerWordWolf[]}
       commonThings={(commonThingsRes.data || []) as IcebreakerCommonThings[]}
       ngWord={(ngWordRes.data || []) as IcebreakerNgWord[]}
+      ngWordTopics={(ngWordTopicsRes.data || []) as IcebreakerNgWordTopic[]}
     />
   );
 }

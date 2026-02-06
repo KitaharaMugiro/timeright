@@ -294,6 +294,30 @@ export type Database = {
         }
         Relationships: []
       }
+      icebreaker_ng_word_topics: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          topic: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          topic: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          topic?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       icebreaker_players: {
         Row: {
           id: string

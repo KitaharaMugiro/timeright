@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 
-type ContentType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things' | 'ng-word';
-type TableName = 'icebreaker_questions' | 'icebreaker_would_you_rather' | 'icebreaker_word_wolf' | 'icebreaker_common_things' | 'icebreaker_ng_word';
+type ContentType = 'questions' | 'would-you-rather' | 'word-wolf' | 'common-things' | 'ng-word' | 'ng-word-topics';
+type TableName = 'icebreaker_questions' | 'icebreaker_would_you_rather' | 'icebreaker_word_wolf' | 'icebreaker_common_things' | 'icebreaker_ng_word' | 'icebreaker_ng_word_topics';
 
 const TABLE_MAP: Record<ContentType, TableName> = {
   questions: 'icebreaker_questions',
@@ -10,6 +10,7 @@ const TABLE_MAP: Record<ContentType, TableName> = {
   'word-wolf': 'icebreaker_word_wolf',
   'common-things': 'icebreaker_common_things',
   'ng-word': 'icebreaker_ng_word',
+  'ng-word-topics': 'icebreaker_ng_word_topics',
 };
 
 // GET - アクティブなお題を取得
