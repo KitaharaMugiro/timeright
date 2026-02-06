@@ -389,6 +389,14 @@ export function DashboardClient({
                     />
                   </div>
 
+                  {/* Reservation name */}
+                  {todayDinner.reservation_name && (
+                    <div className="flex items-center gap-2 mb-6 px-4 py-3 rounded-xl bg-white/5 border border-white/10">
+                      <span className="text-sm text-slate-400">予約名:</span>
+                      <span className="text-sm font-medium text-white">{todayDinner.reservation_name}</span>
+                    </div>
+                  )}
+
                   {/* Action buttons */}
                   <div className="flex flex-wrap items-center gap-4">
                     {todayDinner.restaurant_url && (
@@ -544,6 +552,14 @@ export function DashboardClient({
                           <span className="text-sm">{formatTime(match.events.event_date)}</span>
                         </div>
                       </div>
+
+                      {/* Reservation name */}
+                      {match.reservation_name && (
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="text-xs text-slate-400">予約名:</span>
+                          <span className="text-xs font-medium text-white">{match.reservation_name}</span>
+                        </div>
+                      )}
 
                       {/* Divider with ticket punch effect */}
                       <div className="ticket-divider my-4" />

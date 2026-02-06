@@ -60,21 +60,21 @@ export async function sendMatchNotification(
     const areaLabel = areaLabels[data.area] || data.area;
 
     // Build message text
-    let message = `マッチングが確定しました！
+    const message = `マッチングが確定しました！
 
 【日時】${dateStr} ${timeStr}〜
 【エリア】${areaLabel}
-【お店】${data.restaurantName}`;
 
-    if (data.restaurantUrl) {
-      message += `\n${data.restaurantUrl}`;
-    }
+【当日の流れ】
+① 店に行く (お店のURLや予約名はアプリ内に記載)
+↓
+② みんなが集まったら自己紹介
+↓
+③ 話題に困ったらゲームをしよう！ (アプリに今日だけ表示されます)
+↓
+④ 仲が深まったら連絡先などを交換しましょう
 
-    if (data.reservationName) {
-      message += `\n【予約名】${data.reservationName}`;
-    }
-
-    message += `\n\n当日をお楽しみに！`;
+当日をお楽しみに！`;
 
     await client.pushMessage({
       to: lineUserId,
