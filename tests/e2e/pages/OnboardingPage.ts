@@ -29,6 +29,7 @@ export class OnboardingPage {
   readonly maleButton: Locator;
   readonly femaleButton: Locator;
   readonly birthDatePicker: Locator;
+  readonly birthDateInput: Locator;
   readonly jobInput: Locator;
   readonly profileNextButton: Locator;
 
@@ -61,6 +62,8 @@ export class OnboardingPage {
     this.femaleButton = page.locator('button', { hasText: '女性' });
     // BirthdatePicker component - uses aria-labels to find selects
     this.birthDatePicker = page.locator('select[aria-label="年"]');
+    // Backward-compatible alias for older specs
+    this.birthDateInput = this.birthDatePicker;
     this.jobInput = page.locator('input[placeholder*="エンジニア"]');
     this.profileNextButton = page.locator('button[type="submit"]', { hasText: '次へ' });
 

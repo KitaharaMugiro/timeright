@@ -132,3 +132,28 @@ export function extractInviteToken(input: string): string | null {
   }
   return null;
 }
+
+export function sanitizeInternalRedirectPath(
+  redirectPath: string | null | undefined,
+  fallback: string = '/dashboard'
+): string {
+  if (!redirectPath) {
+    return fallback;
+  }
+
+  const trimmed = redirectPath.trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) {
+    return fallback;
+  }
+
+  // Normalize the path while keeping query/hash, and reject protocol-based redirects.
+  try {
+    const normalized = new URL(trimmed, 'http://localhost');
+    if (normalized.origin !== 'http://localhost') {
+      return fallback;
+    }
+    return `${normalized.pathname}${normalized.search}${normalized.hash}`;
+  } catch {
+    return fallback;
+  }
+}

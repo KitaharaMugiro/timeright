@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import { sanitizeInternalRedirectPath } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   const state = uuidv4();
@@ -9,7 +10,10 @@ export async function GET(request: NextRequest) {
   const referralCode = request.nextUrl.searchParams.get('ref');
 
   // Get redirect URL from query parameter
-  const redirectTo = request.nextUrl.searchParams.get('redirect');
+  const redirectTo = sanitizeInternalRedirectPath(
+    request.nextUrl.searchParams.get('redirect'),
+    ''
+  );
 
   const params = new URLSearchParams({
     response_type: 'code',

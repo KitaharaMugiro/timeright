@@ -319,10 +319,14 @@ test.describe('Flow 2: Unsubscribed User Event Entry (Payment Required)', () => 
 
       // Verify all expected fields in request
       expect(capturedRequestBody).not.toBeNull();
-      expect(capturedRequestBody?.event_id).toBe(eventId);
-      expect(capturedRequestBody?.entry_type).toBe('pair');
-      expect(capturedRequestBody?.mood).toBe('other');
-      expect(capturedRequestBody?.mood_text).toBe('仕事仲間と交流したい');
+      if (!capturedRequestBody) {
+        throw new Error('Checkout request body was not captured');
+      }
+      const requestBody = capturedRequestBody;
+      expect(requestBody['event_id'] as string).toBe(eventId);
+      expect(requestBody['entry_type'] as string).toBe('pair');
+      expect(requestBody['mood'] as string).toBe('other');
+      expect(requestBody['mood_text'] as string).toBe('仕事仲間と交流したい');
     });
   });
 

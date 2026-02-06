@@ -166,33 +166,33 @@ export const test = base.extend<{
   /**
    * Page with basic authentication (active subscriber)
    */
-  authenticatedPage: async ({ page, context }, use) => {
+  authenticatedPage: async ({ page, context }, runPage) => {
     await setupMockAuth(context, 'active', authPresets.activeSubscriber);
-    await use(page);
+    await runPage(page);
   },
 
   /**
    * Page with active subscription
    */
-  activeSubscriberPage: async ({ page, context }, use) => {
+  activeSubscriberPage: async ({ page, context }, runPage) => {
     await setupMockAuth(context, 'active', authPresets.activeSubscriber);
-    await use(page);
+    await runPage(page);
   },
 
   /**
    * Page with canceled subscription but valid period
    */
-  canceledSubscriberPage: async ({ page, context }, use) => {
+  canceledSubscriberPage: async ({ page, context }, runPage) => {
     await setupMockAuth(context, 'canceled', authPresets.canceledWithAccess);
-    await use(page);
+    await runPage(page);
   },
 
   /**
    * Page with expired subscription
    */
-  expiredSubscriberPage: async ({ page, context }, use) => {
+  expiredSubscriberPage: async ({ page, context }, runPage) => {
     await setupMockAuth(context, 'canceled', authPresets.canceledNoAccess);
-    await use(page);
+    await runPage(page);
   },
 });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -85,13 +85,7 @@ export function InviteEnterClient({
   const [showOtherInput, setShowOtherInput] = useState(false);
 
   // Auto-resolve pending invite token if available
-  useEffect(() => {
-    if (pendingInviteToken && !inviteInfo) {
-      resolveInvite(pendingInviteToken);
-    }
-  }, [pendingInviteToken]);
-
-  const resolveInvite = async (input: string) => {
+  const resolveInvite = useCallback(async (input: string) => {
     setLoading(true);
     setError(null);
 
@@ -115,7 +109,13 @@ export function InviteEnterClient({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (pendingInviteToken && !inviteInfo) {
+      resolveInvite(pendingInviteToken);
+    }
+  }, [pendingInviteToken, inviteInfo, resolveInvite]);
 
   const handleSubmitCode = async (e: React.FormEvent) => {
     e.preventDefault();

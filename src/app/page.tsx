@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Users,
   Calendar,
@@ -19,10 +20,18 @@ import {
   ShimmerButton,
   GlassCard,
   AnimatedGradientText,
-  Particles,
   BlurFade,
-  Marquee,
 } from '@/components/ui/magicui';
+
+const Particles = dynamic(
+  () => import('@/components/ui/magicui/particles').then((mod) => mod.Particles),
+  { ssr: false }
+);
+
+const Marquee = dynamic(
+  () => import('@/components/ui/magicui/marquee').then((mod) => mod.Marquee),
+  { ssr: false }
+);
 
 const steps = [
   {
@@ -178,7 +187,7 @@ export default function LandingPage() {
 
         <Particles
           className="absolute inset-0"
-          quantity={40}
+          quantity={24}
           color="#f59e0b"
           staticity={50}
         />
@@ -245,6 +254,8 @@ export default function LandingPage() {
             alt="Dine Tokyo マスコット"
             width={280}
             height={280}
+            priority
+            sizes="(min-width: 1024px) 288px, (min-width: 768px) 208px, 160px"
             className="w-40 h-40 md:w-52 md:h-52 lg:w-72 lg:h-72 object-contain"
           />
         </motion.div>
@@ -497,7 +508,7 @@ export default function LandingPage() {
 
         <Particles
           className="absolute inset-0"
-          quantity={25}
+          quantity={16}
           color="#f59e0b"
           staticity={50}
         />

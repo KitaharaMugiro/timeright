@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import type { User } from '@/types/database';
 import { decodeReferralCode } from '@/lib/referral';
 import { createSession, SESSION_TTL_SECONDS } from '@/lib/auth';
+import { sanitizeInternalRedirectPath } from '@/lib/utils';
 
 interface LineTokenResponse {
   access_token: string;
@@ -222,7 +223,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine redirect URL
-    const authRedirect = request.cookies.get('auth_redirect')?.value;
+    const authRedirect = sanitizeInternalRedirectPath(
+      request.cookies.get('auth_redirect')?.value,
+      '/dashboard'
+    );
     let redirectUrl: string;
     if (needsOnboarding) {
       redirectUrl = '/onboarding';

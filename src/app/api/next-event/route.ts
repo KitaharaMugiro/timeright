@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAreaLabel } from '@/lib/utils';
 
+const CACHE_CONTROL_HEADER = {
+  'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
+};
+
 export async function GET() {
   const supabase = await createClient();
 
@@ -19,11 +23,14 @@ export async function GET() {
     .returns<{ area: string; event_date: string }[]>();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500, headers: CACHE_CONTROL_HEADER }
+    );
   }
 
   if (!data || data.length === 0) {
-    return NextResponse.json({ nextEvent: null });
+    return NextResponse.json({ nextEvent: null }, { headers: CACHE_CONTROL_HEADER });
   }
 
   const event = data[0];
@@ -37,5 +44,5 @@ export async function GET() {
       area: getAreaLabel(event.area),
       date: `${month}/${day}(${weekday})`,
     },
-  });
+  }, { headers: CACHE_CONTROL_HEADER });
 }
