@@ -18,6 +18,7 @@ import { WhodunitGame } from '@/components/icebreaker/games/WhodunitGame';
 import { GuessFavoriteGame } from '@/components/icebreaker/games/GuessFavoriteGame';
 import { PeerIntroGame } from '@/components/icebreaker/games/PeerIntroGame';
 import { NgWordGame } from '@/components/icebreaker/games/NgWordGame';
+import { Scoreboard } from '@/components/icebreaker/Scoreboard';
 
 interface IcebreakerClientProps {
   matchId: string;
@@ -44,6 +45,7 @@ export function IcebreakerClient({
   const {
     session,
     players,
+    scores,
     isLoading,
     error,
     createSession,
@@ -53,6 +55,7 @@ export function IcebreakerClient({
     updatePlayerData,
     setReady,
     endSession,
+    awardPoints,
   } = useIcebreakerRealtime({ matchId, userId });
 
   // Calculate remaining time
@@ -164,15 +167,21 @@ export function IcebreakerClient({
       onEndGame: handleEndGame,
     };
 
+    const scoringProps = {
+      ...gameProps,
+      scores,
+      onAwardPoints: awardPoints,
+    };
+
     switch (session.game_type) {
       case 'questions':
         return <QuestionsGame {...gameProps} />;
       case 'would_you_rather':
         return <WouldYouRatherGame {...gameProps} />;
       case 'two_truths':
-        return <TwoTruthsGame {...gameProps} />;
+        return <TwoTruthsGame {...scoringProps} />;
       case 'word_wolf':
-        return <WordWolfGame {...gameProps} />;
+        return <WordWolfGame {...scoringProps} />;
       case 'common_things':
         return <CommonThingsGame {...gameProps} />;
       case 'whodunit':
@@ -269,6 +278,7 @@ export function IcebreakerClient({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
+              <Scoreboard scores={scores} members={members} currentUserId={userId} />
               {renderGameComponent()}
             </motion.div>
           )}

@@ -121,6 +121,18 @@ export interface PlayerData {
   // NG Word
   myNgWord?: string;
   isEliminated?: boolean;
+
+  // Two Truths - guess which statement is the lie
+  lieGuess?: number;
+}
+
+// Icebreaker scores (match-level, persists across games)
+export interface IcebreakerScore {
+  id: string;
+  match_id: string;
+  user_id: string;
+  points: number;
+  updated_at: string;
 }
 
 // Question types for data files

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { IcebreakerSession, IcebreakerPlayer, PlayerData } from './types';
+import type { IcebreakerSession, IcebreakerPlayer, IcebreakerScore, PlayerData } from './types';
 
 interface UseIcebreakerRealtimeProps {
   matchId: string;
@@ -13,6 +13,7 @@ interface UseIcebreakerRealtimeProps {
 interface UseIcebreakerRealtimeReturn {
   session: IcebreakerSession | null;
   players: IcebreakerPlayer[];
+  scores: IcebreakerScore[];
   isLoading: boolean;
   error: string | null;
   createSession: (gameType: string) => Promise<IcebreakerSession | null>;
@@ -22,6 +23,7 @@ interface UseIcebreakerRealtimeReturn {
   updatePlayerData: (data: Partial<PlayerData>) => Promise<void>;
   setReady: (ready: boolean) => Promise<void>;
   endSession: () => Promise<void>;
+  awardPoints: (awards: { user_id: string; points: number }[]) => Promise<void>;
 }
 
 // Helper to get untyped supabase client for new tables
@@ -35,6 +37,7 @@ export function useIcebreakerRealtime({
 }: UseIcebreakerRealtimeProps): UseIcebreakerRealtimeReturn {
   const [session, setSession] = useState<IcebreakerSession | null>(null);
   const [players, setPlayers] = useState<IcebreakerPlayer[]>([]);
+  const [scores, setScores] = useState<IcebreakerScore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -125,6 +128,49 @@ export function useIcebreakerRealtime({
       supabase.removeChannel(newChannel);
     };
   }, [session?.id, supabase]);
+
+  // Subscribe to scores realtime changes (match-level, stable for entire component lifetime)
+  useEffect(() => {
+    // Fetch initial scores
+    const fetchScores = async () => {
+      const { data } = await supabase
+        .from('icebreaker_scores')
+        .select('*')
+        .eq('match_id', matchId);
+      if (data) {
+        setScores(data as IcebreakerScore[]);
+      }
+    };
+    fetchScores();
+
+    const scoresChannel = supabase
+      .channel(`icebreaker-scores:${matchId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'icebreaker_scores',
+          filter: `match_id=eq.${matchId}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setScores((prev) => [...prev, payload.new as IcebreakerScore]);
+          } else if (payload.eventType === 'UPDATE') {
+            setScores((prev) =>
+              prev.map((s) =>
+                s.id === payload.new.id ? (payload.new as IcebreakerScore) : s
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(scoresChannel);
+    };
+  }, [matchId, supabase]);
 
   // Initial fetch for active session and auto-join (SELECT is allowed by RLS)
   useEffect(() => {
@@ -336,9 +382,33 @@ export function useIcebreakerRealtime({
     }
   }, [session]);
 
+  // Award points (via API)
+  const awardPoints = useCallback(
+    async (awards: { user_id: string; points: number }[]): Promise<void> => {
+      if (awards.length === 0) return;
+
+      try {
+        const res = await fetch('/api/icebreaker/score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ match_id: matchId, awards }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'ポイント付与に失敗しました');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'ポイント付与に失敗しました');
+      }
+    },
+    [matchId]
+  );
+
   return {
     session,
     players,
+    scores,
     isLoading,
     error,
     createSession,
@@ -348,5 +418,6 @@ export function useIcebreakerRealtime({
     updatePlayerData,
     setReady,
     endSession,
+    awardPoints,
   };
 }

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { XCircle, Eye, Timer, Vote, RefreshCw, Loader2 } from 'lucide-react';
+import { XCircle, Eye, Timer, Vote, RefreshCw, Loader2, Check } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import { selectWolf } from '@/lib/icebreaker/games';
-import type { IcebreakerSession, IcebreakerPlayer, GameData, PlayerData } from '@/lib/icebreaker/types';
+import type { IcebreakerSession, IcebreakerPlayer, IcebreakerScore, GameData, PlayerData } from '@/lib/icebreaker/types';
 import type { User, IcebreakerWordWolf } from '@/types/database';
 
 interface WordWolfGameProps {
@@ -14,9 +14,11 @@ interface WordWolfGameProps {
   members: Pick<User, 'id' | 'display_name' | 'avatar_url' | 'gender'>[];
   userId: string;
   isHost: boolean;
+  scores: IcebreakerScore[];
   onUpdateSession: (updates: Partial<IcebreakerSession>) => Promise<void>;
   onUpdatePlayerData: (data: Record<string, unknown>) => Promise<void>;
   onEndGame: () => Promise<void>;
+  onAwardPoints: (awards: { user_id: string; points: number }[]) => Promise<void>;
 }
 
 type Phase = 'setup' | 'discussion' | 'voting' | 'result';
@@ -30,6 +32,7 @@ export function WordWolfGame({
   onUpdateSession,
   onUpdatePlayerData,
   onEndGame,
+  onAwardPoints,
 }: WordWolfGameProps) {
   const gameData = session.game_data as GameData;
 
@@ -38,6 +41,7 @@ export function WordWolfGame({
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
   const [showWord, setShowWord] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const pointsAwardedRef = useRef(false);
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
@@ -124,6 +128,20 @@ export function WordWolfGame({
     setIsLoading(true);
     try {
       setPhase('result');
+
+      // Award points to players who correctly voted for the wolf
+      if (!pointsAwardedRef.current && gameData.wolfId) {
+        pointsAwardedRef.current = true;
+        const correctVoters = players.filter((p) => {
+          const pd = p.player_data as PlayerData;
+          return pd.vote === gameData.wolfId;
+        });
+        if (correctVoters.length > 0) {
+          await onAwardPoints(
+            correctVoters.map((p) => ({ user_id: p.user_id, points: 1 }))
+          );
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -136,6 +154,7 @@ export function WordWolfGame({
       setPhase('setup');
       setSelectedVote(null);
       setShowWord(false);
+      pointsAwardedRef.current = false;
       await onUpdateSession({
         game_data: {} as unknown as IcebreakerSession['game_data'],
       });
@@ -399,6 +418,48 @@ export function WordWolfGame({
               <p className="text-lg font-bold text-red-400">{gameData.minorityWord}</p>
             </div>
           </div>
+
+          {/* Show who voted correctly */}
+          {(() => {
+            const correctVoters = players.filter((p) => {
+              const pd = p.player_data as PlayerData;
+              return pd.vote === gameData.wolfId;
+            });
+            if (correctVoters.length > 0) {
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="bg-green-500/10 border border-green-500/30 rounded-xl p-3"
+                >
+                  <p className="text-green-400 text-sm font-medium mb-2">
+                    <Check className="w-4 h-4 inline mr-1" />
+                    正解者 (+1pt)
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {correctVoters.map((p) => {
+                      const member = getMemberInfo(p.user_id);
+                      return (
+                        <div key={p.id} className="flex items-center gap-1.5 px-2 py-1 bg-green-500/20 rounded-full">
+                          <UserAvatar
+                            displayName={member?.display_name || ''}
+                            avatarUrl={member?.avatar_url}
+                            gender={member?.gender || 'male'}
+                            size="xs"
+                          />
+                          <span className="text-xs text-green-400 font-medium">
+                            {member?.display_name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              );
+            }
+            return null;
+          })()}
 
           {isHost && (
             <button

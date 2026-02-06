@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, XCircle, Send, Eye, Loader2 } from 'lucide-react';
+import { RefreshCw, XCircle, Send, Eye, Loader2, Check, X } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
-import type { IcebreakerSession, IcebreakerPlayer, GameData, PlayerData } from '@/lib/icebreaker/types';
+import type { IcebreakerSession, IcebreakerPlayer, IcebreakerScore, GameData, PlayerData } from '@/lib/icebreaker/types';
 import type { User as UserType } from '@/types/database';
 
 interface TwoTruthsGameProps {
@@ -13,9 +13,11 @@ interface TwoTruthsGameProps {
   members: Pick<UserType, 'id' | 'display_name' | 'avatar_url' | 'gender'>[];
   userId: string;
   isHost: boolean;
+  scores: IcebreakerScore[];
   onUpdateSession: (updates: Partial<IcebreakerSession>) => Promise<void>;
   onUpdatePlayerData: (data: Record<string, unknown>) => Promise<void>;
   onEndGame: () => Promise<void>;
+  onAwardPoints: (awards: { user_id: string; points: number }[]) => Promise<void>;
 }
 
 type Phase = 'setup' | 'playing' | 'reveal';
@@ -29,6 +31,7 @@ export function TwoTruthsGame({
   onUpdateSession,
   onUpdatePlayerData,
   onEndGame,
+  onAwardPoints,
 }: TwoTruthsGameProps) {
   const gameData = session.game_data as GameData;
   const currentPlayer = players.find((p) => p.user_id === userId);
@@ -38,6 +41,7 @@ export function TwoTruthsGame({
   const [statements, setStatements] = useState(['', '', '']);
   const [lieIndex, setLieIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
+  const pointsAwardedRef = useRef(false);
 
   const getMemberInfo = (memberId: string) => {
     return members.find((m) => m.id === memberId);
@@ -67,16 +71,13 @@ export function TwoTruthsGame({
       const originalStatements = presenterData.myStatements || [];
       const originalLieIndex = presenterData.myLieIndex ?? 0;
 
-      // シャッフル用のインデックス配列を作成
       const indices = [0, 1, 2];
       for (let i = indices.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [indices[i], indices[j]] = [indices[j], indices[i]];
       }
 
-      // シャッフルされた順番で並び替え
       const shuffledStatements = indices.map((i) => originalStatements[i]);
-      // 新しい嘘の位置を計算
       const newLieIndex = indices.indexOf(originalLieIndex);
 
       const newGameData: GameData = {
@@ -86,11 +87,22 @@ export function TwoTruthsGame({
         lieIndex: newLieIndex,
         revealed: false,
       };
+      pointsAwardedRef.current = false;
       await onUpdateSession({
         game_data: newGameData as unknown as IcebreakerSession['game_data'],
         current_round: session.current_round + 1,
       });
       setPhase('playing');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGuess = async (guessIndex: number) => {
+    if (isLoading || isPresenter || myPlayerData?.lieGuess !== undefined) return;
+    setIsLoading(true);
+    try {
+      await onUpdatePlayerData({ lieGuess: guessIndex });
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +119,21 @@ export function TwoTruthsGame({
       await onUpdateSession({
         game_data: newGameData as unknown as IcebreakerSession['game_data'],
       });
+
+      // Award points to correct guessers
+      if (!pointsAwardedRef.current) {
+        pointsAwardedRef.current = true;
+        const correctGuessers = players.filter((p) => {
+          const pd = p.player_data as PlayerData;
+          return p.user_id !== gameData.currentPlayerId && pd.lieGuess === gameData.lieIndex;
+        });
+        if (correctGuessers.length > 0) {
+          await onAwardPoints(
+            correctGuessers.map((p) => ({ user_id: p.user_id, points: 1 }))
+          );
+        }
+      }
+
       setPhase('reveal');
     } finally {
       setIsLoading(false);
@@ -123,6 +150,7 @@ export function TwoTruthsGame({
         lieIndex: undefined,
         revealed: false,
       };
+      pointsAwardedRef.current = false;
       await onUpdateSession({
         game_data: newGameData as unknown as IcebreakerSession['game_data'],
       });
@@ -140,12 +168,22 @@ export function TwoTruthsGame({
       setPhase('playing');
     } else {
       setPhase('setup');
+      pointsAwardedRef.current = false;
     }
   }, [gameData.currentPlayerId, gameData.revealed]);
 
   const hasSubmitted = !!myPlayerData?.myStatements;
   const isPresenter = gameData.currentPlayerId === userId;
   const presenterMember = gameData.currentPlayerId ? getMemberInfo(gameData.currentPlayerId) : null;
+  const myGuess = myPlayerData?.lieGuess;
+  const hasGuessed = myGuess !== undefined;
+
+  // Count guessers for playing phase
+  const guessersCount = players.filter((p) => {
+    const pd = p.player_data as PlayerData;
+    return p.user_id !== gameData.currentPlayerId && pd.lieGuess !== undefined;
+  }).length;
+  const nonPresenterCount = players.filter((p) => p.user_id !== gameData.currentPlayerId).length;
 
   return (
     <div className="space-y-6">
@@ -268,27 +306,63 @@ export function TwoTruthsGame({
             </span>
           </div>
 
-          {/* Statements */}
+          {/* Statements - tappable for non-presenters */}
           <div className="space-y-3">
-            {gameData.statements.map((statement, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.2 }}
-                className="bg-slate-800/50 border border-slate-700 rounded-xl p-4"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold text-amber-400">{index + 1}</span>
-                  <p className="text-white flex-1">{statement}</p>
-                </div>
-              </motion.div>
-            ))}
+            {gameData.statements.map((statement, index) => {
+              const isSelected = myGuess === index;
+              const canGuess = !isPresenter && !hasGuessed && !isLoading;
+
+              return (
+                <motion.button
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.2 }}
+                  onClick={() => canGuess && handleGuess(index)}
+                  disabled={!canGuess}
+                  className={`w-full text-left rounded-xl p-4 border transition-colors ${
+                    isSelected
+                      ? 'bg-amber-500/20 border-amber-500/60'
+                      : canGuess
+                      ? 'bg-slate-800/50 border-slate-700 hover:border-amber-500/40'
+                      : 'bg-slate-800/50 border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`text-2xl font-bold ${isSelected ? 'text-amber-400' : 'text-amber-400'}`}>
+                      {index + 1}
+                    </span>
+                    <p className="text-white flex-1">{statement}</p>
+                    {isSelected && (
+                      <span className="px-2 py-0.5 bg-amber-500 text-slate-900 rounded-full text-xs font-bold">
+                        嘘？
+                      </span>
+                    )}
+                  </div>
+                </motion.button>
+              );
+            })}
           </div>
 
-          <p className="text-center text-slate-400">
-            どれが嘘でしょう？みんなで話し合ってください！
-          </p>
+          {/* Guess status */}
+          {!isPresenter && (
+            <p className="text-center text-slate-400 text-sm">
+              {hasGuessed
+                ? '回答済み！正解発表を待っています...'
+                : '嘘だと思う文をタップ！'}
+            </p>
+          )}
+
+          {isPresenter && (
+            <p className="text-center text-slate-400">
+              みんなが嘘を予想中です...
+            </p>
+          )}
+
+          {/* Guess progress */}
+          <div className="text-center text-xs text-slate-500">
+            回答: {guessersCount}/{nonPresenterCount}人
+          </div>
 
           {isHost && (
             <button
@@ -324,6 +398,10 @@ export function TwoTruthsGame({
           <div className="space-y-3">
             {gameData.statements.map((statement, index) => {
               const isLie = index === gameData.lieIndex;
+              const iGuessedThis = myGuess === index;
+              const iGotItRight = iGuessedThis && isLie;
+              const iGotItWrong = iGuessedThis && !isLie;
+
               return (
                 <motion.div
                   key={index}
@@ -341,16 +419,78 @@ export function TwoTruthsGame({
                       {index + 1}
                     </span>
                     <p className="text-white flex-1">{statement}</p>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      isLie ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
-                    }`}>
-                      {isLie ? '嘘！' : '本当'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {iGotItRight && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 bg-green-500/30 text-green-400 rounded-full text-xs font-bold">
+                          <Check className="w-3 h-3" /> +1pt
+                        </span>
+                      )}
+                      {iGotItWrong && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 bg-slate-700/50 text-slate-400 rounded-full text-xs">
+                          <X className="w-3 h-3" />
+                        </span>
+                      )}
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        isLie ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+                      }`}>
+                        {isLie ? '嘘！' : '本当'}
+                      </span>
+                    </div>
                   </div>
                 </motion.div>
               );
             })}
           </div>
+
+          {/* Show who guessed correctly */}
+          {(() => {
+            const correctGuessers = players.filter((p) => {
+              const pd = p.player_data as PlayerData;
+              return p.user_id !== gameData.currentPlayerId && pd.lieGuess === gameData.lieIndex;
+            });
+            if (correctGuessers.length > 0) {
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1 }}
+                  className="bg-green-500/10 border border-green-500/30 rounded-xl p-3"
+                >
+                  <p className="text-green-400 text-sm font-medium mb-2">
+                    正解者 (+1pt)
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {correctGuessers.map((p) => {
+                      const member = getMemberInfo(p.user_id);
+                      return (
+                        <div key={p.id} className="flex items-center gap-1.5 px-2 py-1 bg-green-500/20 rounded-full">
+                          <UserAvatar
+                            displayName={member?.display_name || ''}
+                            avatarUrl={member?.avatar_url}
+                            gender={member?.gender || 'male'}
+                            size="xs"
+                          />
+                          <span className="text-xs text-green-400 font-medium">
+                            {member?.display_name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              );
+            }
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 }}
+                className="text-center text-slate-500 text-sm"
+              >
+                誰も正解できませんでした
+              </motion.div>
+            );
+          })()}
 
           {isHost && (
             <button
