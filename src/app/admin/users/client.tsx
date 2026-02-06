@@ -24,6 +24,18 @@ import {
   Ban,
   UserX,
   Briefcase,
+  LogIn,
+  CreditCard,
+  AlertTriangle,
+  Trash2,
+  Settings,
+  Image,
+  CheckCircle,
+  UserPlus2,
+  ShieldCheck,
+  FileCheck,
+  FileX,
+  Send,
 } from 'lucide-react';
 import type { Gender } from '@/types/database';
 
@@ -46,7 +58,7 @@ interface UserWithActivity {
 
 interface ActivityItem {
   id: string;
-  type: 'participation' | 'cancel' | 'review_sent' | 'review_received' | 'signup';
+  type: string;
   date: string;
   detail: string;
   meta?: Record<string, unknown>;
@@ -76,19 +88,65 @@ interface Pagination {
 }
 
 const ACTIVITY_ICONS: Record<string, typeof Calendar> = {
+  // Legacy types
   participation: Calendar,
   cancel: XCircle,
   review_sent: Star,
   review_received: MessageSquare,
   signup: UserPlus,
+  // User actions
+  login: LogIn,
+  event_join: Calendar,
+  event_cancel: XCircle,
+  review_submit: Star,
+  attendance_late: Clock,
+  attendance_cancel: XCircle,
+  subscription_start: CreditCard,
+  subscription_cancel: CreditCard,
+  payment_failed: AlertTriangle,
+  account_delete: Trash2,
+  profile_update: Settings,
+  avatar_upload: Image,
+  onboarding_complete: CheckCircle,
+  invite_accept: UserPlus2,
+  verification_submit: ShieldCheck,
+  // Admin actions
+  admin_match_create: Calendar,
+  admin_event_cancel: XCircle,
+  admin_verification_approve: FileCheck,
+  admin_verification_reject: FileX,
+  admin_message_send: Send,
 };
 
 const ACTIVITY_COLORS: Record<string, string> = {
+  // Legacy types
   participation: 'text-success',
   cancel: 'text-error',
   review_sent: 'text-amber-400',
   review_received: 'text-info',
   signup: 'text-rose-400',
+  // User actions
+  login: 'text-slate-400',
+  event_join: 'text-success',
+  event_cancel: 'text-error',
+  review_submit: 'text-amber-400',
+  attendance_late: 'text-warning',
+  attendance_cancel: 'text-error',
+  subscription_start: 'text-success',
+  subscription_cancel: 'text-warning',
+  payment_failed: 'text-error',
+  account_delete: 'text-error',
+  profile_update: 'text-slate-400',
+  avatar_upload: 'text-slate-400',
+  onboarding_complete: 'text-success',
+  invite_accept: 'text-info',
+  verification_submit: 'text-info',
+  // Admin actions (purple to distinguish)
+  admin_match_create: 'text-purple-400',
+  admin_event_cancel: 'text-purple-400',
+  admin_verification_approve: 'text-purple-400',
+  admin_verification_reject: 'text-purple-400',
+  admin_message_send: 'text-purple-400',
 };
 
 function getAge(birthDate: string) {
@@ -353,6 +411,9 @@ export function AdminUsersClient() {
                             </span>
                           ) : null}
                         </div>
+                      ) : null}
+                      {activity.meta?.admin_user_id ? (
+                        <p className="text-xs text-purple-400 mt-1">管理者による操作</p>
                       ) : null}
                     </div>
                   </div>

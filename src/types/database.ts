@@ -527,7 +527,6 @@ export interface Database {
         };
         Relationships: [];
       };
-    };
       user_activity_logs: {
         Row: UserActivityLog;
         Insert: Partial<UserActivityLog> & {

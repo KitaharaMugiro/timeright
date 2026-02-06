@@ -59,7 +59,8 @@ export async function GET(
     const activities: ActivityItem[] = [];
 
     // === NEW: Fetch from user_activity_logs (for new action types) ===
-    const { data: logEntries } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: logEntries } = await (supabase as any)
       .from('user_activity_logs')
       .select('*')
       .eq('user_id', userId)
@@ -67,7 +68,8 @@ export async function GET(
       .order('created_at', { ascending: false })
       .limit(200);
 
-    logEntries?.forEach(entry => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    logEntries?.forEach((entry: any) => {
       const metadata = (entry.metadata || {}) as Record<string, unknown>;
       activities.push({
         id: `log-${entry.id}`,
