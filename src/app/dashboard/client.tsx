@@ -34,6 +34,7 @@ interface DashboardClientProps {
   };
   participations: (Participation & { events: Event })[];
   matches: (Match & { events: Event })[];
+  pendingReviewMatches: (Match & { events: Event })[];
   participantsMap: Record<string, { display_name: string; avatar_url: string | null; job: string }>;
   guestsMap: Record<string, { display_name: string; gender: string }>;
   attendanceMap: Record<string, Record<string, { attendance_status: string; late_minutes: number | null }>>;
@@ -46,6 +47,7 @@ export function DashboardClient({
   eventsPagination,
   participations,
   matches,
+  pendingReviewMatches,
   participantsMap,
   guestsMap,
   attendanceMap,
@@ -692,6 +694,81 @@ export function DashboardClient({
                       </div>
                     </div>
                   </div>
+                </BlurFade>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Pending review matches (past events with incomplete reviews) */}
+        {pendingReviewMatches.length > 0 && (
+          <section className="mb-8">
+            <BlurFade>
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="w-5 h-5 text-amber-500" />
+                <h2 className="text-lg font-semibold text-white">レビュー未完了</h2>
+              </div>
+            </BlurFade>
+            <div className="space-y-4">
+              {pendingReviewMatches.map((match, index) => (
+                <BlurFade key={match.id} delay={index * 0.1}>
+                  <GlassCard className="border-amber-500/20">
+                    <div className="p-5">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="font-serif text-lg text-white">
+                            {match.restaurant_name}
+                          </h3>
+                          <div className="flex items-center gap-4 mt-2 text-sm text-slate-400">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4 text-amber-500/70" />
+                              {formatDate(match.events.event_date)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4 text-amber-500/70" />
+                              {getAreaLabel(match.events.area)}
+                            </span>
+                          </div>
+                        </div>
+                        <Link href={`/reviews/${match.id}`}>
+                          <motion.button
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <Star className="w-4 h-4" />
+                            レビューを書く
+                          </motion.button>
+                        </Link>
+                      </div>
+
+                      {/* Participants */}
+                      <AvatarCircles
+                        avatarUrls={((match.table_members as string[]) || [])
+                          .filter((id) => id !== user.id)
+                          .map((memberId) => {
+                            const isGuest = memberId.startsWith('guest:');
+                            if (isGuest) {
+                              const guest = guestsMap[memberId];
+                              return {
+                                imageUrl: '/default-avatar.png',
+                                job: guest?.display_name || 'ゲスト',
+                                attendanceStatus: 'attending' as AttendanceStatus,
+                                lateMinutes: undefined,
+                              };
+                            }
+                            return {
+                              imageUrl: participantsMap[memberId]?.avatar_url || '/default-avatar.png',
+                              job: participantsMap[memberId]?.job || '',
+                              attendanceStatus: 'attending' as AttendanceStatus,
+                              lateMinutes: undefined,
+                            };
+                          })}
+                        showJob
+                        noOverlap
+                      />
+                    </div>
+                  </GlassCard>
                 </BlurFade>
               ))}
             </div>

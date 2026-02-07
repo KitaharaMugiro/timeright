@@ -35,7 +35,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const eventsOffset = (eventsPage - 1) * EVENTS_PAGE_SIZE;
 
   // First batch: Run independent queries in parallel
-  const [eventsResult, participationsResult, matchesResult] = await Promise.all([
+  const [eventsResult, participationsResult, matchesResult, pastMatchesResult, userReviewsResult] = await Promise.all([
     // Get upcoming events (at least 2 days away)
     supabase
       .from('events')
@@ -59,11 +59,37 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       .select('*, events!inner(*)')
       .contains('table_members', JSON.stringify([user.id]))
       .gte('events.event_date', today.toISOString()),
+
+    // Get user's past matches (for pending reviews)
+    supabase
+      .from('matches')
+      .select('*, events!inner(*)')
+      .contains('table_members', JSON.stringify([user.id]))
+      .lt('events.event_date', today.toISOString())
+      .order('events(event_date)', { ascending: false }),
+
+    // Get all reviews submitted by user
+    supabase
+      .from('reviews')
+      .select('match_id, target_user_id')
+      .eq('reviewer_id', user.id),
   ]);
 
   const events = eventsResult.data;
   const participations = participationsResult.data as (Participation & { events: Event })[] | null;
   const matches = matchesResult.data as (Match & { events: Event })[] | null;
+  const pastMatches = pastMatchesResult.data as (Match & { events: Event })[] | null;
+  const userReviews = userReviewsResult.data as { match_id: string; target_user_id: string }[] | null;
+
+  // Filter past matches to only those with incomplete reviews
+  const reviewedSet = new Set(
+    (userReviews || []).map((r) => `${r.match_id}:${r.target_user_id}`)
+  );
+  const pendingReviewMatches = (pastMatches || []).filter((match) => {
+    const members = (match.table_members as string[]) || [];
+    const reviewableMembers = members.filter((id) => id !== user.id && !id.startsWith('guest:'));
+    return reviewableMembers.some((memberId) => !reviewedSet.has(`${match.id}:${memberId}`));
+  });
 
   // Prepare data for second batch of queries
   type PairPartner = {
@@ -75,7 +101,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const pairParticipations = (participations || []).filter((p) => p.entry_type === 'pair');
   const groupIds = pairParticipations.map((p) => p.group_id);
 
-  const allMemberIds = [...new Set((matches || []).flatMap((m) => (m.table_members as string[]) || []))].filter((id): id is string => typeof id === 'string');
+  const allMemberIds = [...new Set([...(matches || []), ...pendingReviewMatches].flatMap((m) => (m.table_members as string[]) || []))].filter((id): id is string => typeof id === 'string');
   const realUserIds = allMemberIds.filter((id) => !id.startsWith('guest:'));
   const guestIds = allMemberIds
     .filter((id) => id.startsWith('guest:'))
@@ -172,6 +198,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       }}
       participations={participations || []}
       matches={matches || []}
+      pendingReviewMatches={pendingReviewMatches}
       participantsMap={participantsMap}
       guestsMap={guestsMap}
       attendanceMap={attendanceMap}
