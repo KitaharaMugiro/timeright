@@ -84,7 +84,7 @@ const features = [
   {
     icon: CreditCard,
     title: 'シンプルな料金',
-    description: '定額サブスクリプションで参加し放題。食事代は当日割り勘のみ。',
+    description: '定額サブスクリプションで参加し放題。当日の食事代は各自でお支払いください。',
   },
   {
     icon: Clock,
