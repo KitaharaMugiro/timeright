@@ -95,6 +95,19 @@ export default function RootLayout({
         className={`${shipporiMincho.variable} ${notoSansJP.variable} ${inter.variable} antialiased`}
       >
         {children}
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-3T97L1CLJJ"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-3T97L1CLJJ');
+          `}
+        </Script>
         {/* Facebook Pixel */}
         <Script id="facebook-pixel" strategy="lazyOnload">
           {`
