@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { getLineUrl } from '@/lib/line-urls';
 import {
   Users,
   Calendar,
@@ -127,7 +129,10 @@ const testimonials = [
 ];
 
 export default function LandingPage() {
+  const searchParams = useSearchParams();
   const [nextEvent, setNextEvent] = useState<{ area: string; date: string } | null>(null);
+
+  const lineUrl = getLineUrl(searchParams.get('s'));
 
   useEffect(() => {
     let cancelled = false;
@@ -152,7 +157,7 @@ export default function LandingPage() {
     if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
       window.fbq('track', 'CompleteRegistration');
     }
-    window.location.href = process.env.NEXT_PUBLIC_LINE_OFFICIAL_ACCOUNT_URL || 'https://lin.ee/5uOPktg';
+    window.location.href = lineUrl;
   };
 
   return (
