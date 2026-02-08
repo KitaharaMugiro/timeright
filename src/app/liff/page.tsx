@@ -68,7 +68,7 @@ export default function LiffPage() {
   }, []);
 
   const statusMessages: Record<LiffStatus, string> = {
-    initializing: 'LINEでログイン中・・・ちょっと待ってね',
+    initializing: 'LINEでログイン中...ちょっと待ってね',
     logging_in: 'LINEにログイン中...',
     authenticating: '認証中...',
     redirecting: 'リダイレクト中...',
