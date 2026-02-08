@@ -116,6 +116,11 @@ export function generateShortCode(): string {
   return generateRandomString(chars, 6);
 }
 
+export function generateAffiliateCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 8 chars to distinguish from 6-char invite codes
+  return generateRandomString(chars, 8);
+}
+
 export function extractInviteToken(input: string): string | null {
   // If input looks like a URL, extract the token
   const urlMatch = input.match(/\/invite\/([A-Za-z0-9]+)/);

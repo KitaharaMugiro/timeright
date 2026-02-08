@@ -14,6 +14,7 @@ import {
   Trash2,
   ChevronRight,
   AlertTriangle,
+  Tag,
 } from 'lucide-react';
 import {
   MagicCard,
@@ -33,6 +34,7 @@ const menuItems = [
     items: [
       { label: 'プロフィール', href: '/profile', icon: User },
       { label: 'サブスクリプション管理', href: '/settings/subscription', icon: CreditCard },
+      { label: 'アフィリエイトコード', href: '/settings/affiliate', icon: Tag },
     ],
   },
   {

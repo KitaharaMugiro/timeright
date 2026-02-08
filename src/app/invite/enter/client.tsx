@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { formatDate, formatTime, getAreaLabel } from '@/lib/utils';
-import { Calendar, MapPin, UserPlus, MessageSquare, ArrowLeft, Gift, Users, Link2, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, UserPlus, MessageSquare, ArrowLeft, Gift, Users, Link2, Loader2, Info } from 'lucide-react';
 import type { ParticipationMood, BudgetLevel } from '@/types/database';
 
 interface InviteEnterClientProps {
@@ -80,6 +80,7 @@ export function InviteEnterClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
+  const [affiliateHint, setAffiliateHint] = useState<string | null>(null);
   const [mood, setMood] = useState<ParticipationMood>('lively');
   const [moodText, setMoodText] = useState('');
   const [showOtherInput, setShowOtherInput] = useState(false);
@@ -88,6 +89,7 @@ export function InviteEnterClient({
   const resolveInvite = useCallback(async (input: string) => {
     setLoading(true);
     setError(null);
+    setAffiliateHint(null);
 
     try {
       const response = await fetch('/api/invite/resolve', {
@@ -99,6 +101,11 @@ export function InviteEnterClient({
       const data = await response.json();
 
       if (!response.ok) {
+        // Cross-detection: 8-char alphanumeric code might be an affiliate code
+        const trimmed = input.trim();
+        if (/^[A-Za-z0-9]{8}$/.test(trimmed) && response.status === 404) {
+          setAffiliateHint(trimmed.toUpperCase());
+        }
         throw new Error(data.error || '招待コードが見つかりません');
       }
 
@@ -257,6 +264,25 @@ export function InviteEnterClient({
 
                 {error && (
                   <p className="text-red-400 text-sm">{error}</p>
+                )}
+
+                {affiliateHint && (
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <Info className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm text-amber-400">
+                          アフィリエイトコードではありませんか？
+                        </p>
+                        <a
+                          href={`/settings/affiliate?code=${affiliateHint}`}
+                          className="text-sm text-amber-400 underline hover:text-amber-300 mt-1 inline-block"
+                        >
+                          アフィリエイトコード入力ページへ
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 <Button

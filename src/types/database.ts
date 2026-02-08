@@ -329,6 +329,21 @@ export interface UserBadgeWithBadge extends UserBadge {
   badge: Badge;
 }
 
+export interface AffiliateCode {
+  id: string;
+  code: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface AffiliateCodeUse {
+  id: string;
+  affiliate_code_id: string;
+  user_id: string;
+  created_at: string;
+}
+
 export interface IdentityVerificationRequest {
   id: string;
   user_id: string;
@@ -534,6 +549,24 @@ export interface Database {
           action: string;
         };
         Update: Partial<UserActivityLog>;
+        Relationships: [];
+      };
+      affiliate_codes: {
+        Row: AffiliateCode;
+        Insert: Partial<AffiliateCode> & {
+          code: string;
+          name: string;
+        };
+        Update: Partial<AffiliateCode>;
+        Relationships: [];
+      };
+      affiliate_code_uses: {
+        Row: AffiliateCodeUse;
+        Insert: Partial<AffiliateCodeUse> & {
+          affiliate_code_id: string;
+          user_id: string;
+        };
+        Update: Partial<AffiliateCodeUse>;
         Relationships: [];
       };
     };
