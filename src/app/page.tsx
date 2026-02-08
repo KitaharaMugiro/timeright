@@ -140,7 +140,7 @@ function LandingPageContent() {
   const searchParams = useSearchParams();
   const [nextEvent, setNextEvent] = useState<{ area: string; date: string } | null>(null);
 
-  const lineUrl = getLineUrl(searchParams.get('s'));
+  const lineUrl = getLineUrl(searchParams.get('utm_source'));
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +165,7 @@ function LandingPageContent() {
     if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
       window.fbq('track', 'CompleteRegistration');
     }
-    console.log('[DEBUG] s=', searchParams.get('s'), '→', lineUrl); // TODO: 確認後削除
+    console.log('[DEBUG] utm_source=', searchParams.get('utm_source'), '→', lineUrl); // TODO: 確認後削除
     window.location.href = lineUrl;
   };
 
