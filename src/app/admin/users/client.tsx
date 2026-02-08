@@ -36,6 +36,7 @@ import {
   FileCheck,
   FileX,
   Send,
+  MessageCircle,
 } from 'lucide-react';
 import type { Gender } from '@/types/database';
 
@@ -201,6 +202,11 @@ export function AdminUsersClient() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
+  // Message dialog
+  const [messageTarget, setMessageTarget] = useState<{ id: string; name: string; lineUserId: string } | null>(null);
+  const [messageText, setMessageText] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+
   const fetchUsers = useCallback(async (page: number = 1) => {
     setLoading(true);
     try {
@@ -258,6 +264,38 @@ export function AdminUsersClient() {
   const handleBack = () => {
     setSelectedUser(null);
     setActivities([]);
+  };
+
+  const openMessageDialog = (user: { id: string; display_name: string; line_user_id: string | null }) => {
+    if (!user.line_user_id) return;
+    setMessageTarget({ id: user.id, name: user.display_name, lineUserId: user.line_user_id });
+    setMessageText('');
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageTarget || !messageText.trim()) return;
+    setSendingMessage(true);
+    try {
+      const res = await fetch('/api/admin/participants/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lineUserIds: [messageTarget.lineUserId],
+          message: messageText.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`${messageTarget.name}にメッセージを送信しました`);
+        setMessageTarget(null);
+      } else {
+        alert(`送信に失敗しました: ${data.error || '不明なエラー'}`);
+      }
+    } catch {
+      alert('送信中にエラーが発生しました');
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   // Detail view
@@ -318,7 +356,7 @@ export function AdminUsersClient() {
                         {selectedUser.job || '-'}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-4 mt-2 text-sm">
+                    <div className="flex flex-wrap gap-4 mt-2 text-sm items-center">
                       <span className={cn(
                         'px-2 py-0.5 rounded',
                         selectedUser.subscription_status === 'active' && 'bg-success/10 text-success',
@@ -343,6 +381,17 @@ export function AdminUsersClient() {
                       <span className="text-slate-500">
                         登録: {formatDate(selectedUser.created_at)}
                       </span>
+                      {selectedUser.line_user_id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="ml-auto"
+                          onClick={() => openMessageDialog(selectedUser)}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+                          LINEを送る
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -422,6 +471,60 @@ export function AdminUsersClient() {
             )}
           </div>
         </div>
+
+        {/* LINE message dialog */}
+        {messageTarget && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <Card className="glass-card border-slate-700 w-full max-w-md">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-green-400" />
+                    LINEメッセージ送信
+                  </h3>
+                  <button
+                    onClick={() => setMessageTarget(null)}
+                    className="text-slate-400 hover:text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-sm text-slate-400 mb-4">
+                  送信先: <span className="text-white font-medium">{messageTarget.name}</span>
+                </p>
+                <textarea
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="メッセージを入力..."
+                  rows={5}
+                  className="w-full rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 p-3 text-sm focus:outline-none focus:border-rose-500 resize-none"
+                />
+                <div className="flex justify-end gap-3 mt-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setMessageTarget(null)}
+                    disabled={sendingMessage}
+                  >
+                    キャンセル
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSendMessage}
+                    disabled={!messageText.trim() || sendingMessage}
+                  >
+                    {sendingMessage ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                    ) : (
+                      <Send className="w-4 h-4 mr-1.5" />
+                    )}
+                    送信
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </AdminLayout>
     );
   }
@@ -557,6 +660,20 @@ export function AdminUsersClient() {
                       </div>
                     </div>
 
+                    {/* LINE message button */}
+                    {user.line_user_id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openMessageDialog(user);
+                        }}
+                        className="p-1.5 rounded-md text-slate-400 hover:text-green-400 hover:bg-slate-700 transition-colors"
+                        title="LINEメッセージを送る"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
+                    )}
+
                     <ChevronRight className="w-4 h-4 text-slate-600" />
                   </div>
                 </CardContent>
@@ -592,6 +709,60 @@ export function AdminUsersClient() {
           </div>
         )}
       </div>
+
+      {/* LINE message dialog */}
+      {messageTarget && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <Card className="glass-card border-slate-700 w-full max-w-md">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-green-400" />
+                  LINEメッセージ送信
+                </h3>
+                <button
+                  onClick={() => setMessageTarget(null)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-slate-400 mb-4">
+                送信先: <span className="text-white font-medium">{messageTarget.name}</span>
+              </p>
+              <textarea
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                placeholder="メッセージを入力..."
+                rows={5}
+                className="w-full rounded-lg bg-slate-800 border border-slate-600 text-white placeholder-slate-500 p-3 text-sm focus:outline-none focus:border-rose-500 resize-none"
+              />
+              <div className="flex justify-end gap-3 mt-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMessageTarget(null)}
+                  disabled={sendingMessage}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSendMessage}
+                  disabled={!messageText.trim() || sendingMessage}
+                >
+                  {sendingMessage ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-1.5" />
+                  )}
+                  送信
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </AdminLayout>
   );
 }
