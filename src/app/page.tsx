@@ -165,6 +165,7 @@ function LandingPageContent() {
     if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
       window.fbq('track', 'CompleteRegistration');
     }
+    console.log('[DEBUG] s=', searchParams.get('s'), '→', lineUrl); // TODO: 確認後削除
     window.location.href = lineUrl;
   };
 

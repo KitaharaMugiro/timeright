@@ -110,7 +110,7 @@ const sections = [
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50 text-neutral-900 relative overflow-hidden">
       <Particles className="absolute inset-0 pointer-events-none" quantity={15} color="#FF6B6B" staticity={60} />
 
       {/* Header */}
