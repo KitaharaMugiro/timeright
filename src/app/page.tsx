@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { getLineUrl } from '@/lib/line-urls';
@@ -129,6 +129,14 @@ const testimonials = [
 ];
 
 export default function LandingPage() {
+  return (
+    <Suspense>
+      <LandingPageContent />
+    </Suspense>
+  );
+}
+
+function LandingPageContent() {
   const searchParams = useSearchParams();
   const [nextEvent, setNextEvent] = useState<{ area: string; date: string } | null>(null);
 
